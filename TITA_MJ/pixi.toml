@@ -1,0 +1,65 @@
+[workspace]
+channels = [
+  "https://prefix.dev/pixi-build-backends",
+  "https://prefix.dev/conda-forge",
+]
+name = "titamj"
+platforms = ["linux-64"]
+version = "0.1.0"
+preview = ["pixi-build"]
+
+[package]
+name = "tita_mj"
+version = "0.1.0"
+description = "Pixi environment for building the TITA MuJoCo project"
+
+[package.build]
+backend = { name = "pixi-build-cmake", version = "==0.3.5" }
+
+[package.build.config]
+extra-args = ["-DBUILD_PYTHON_BINDINGS=ON"]
+
+[package.host-dependencies]
+python = "3.12.0"
+cmake = ">=3.16"
+ninja = "*"
+cxx-compiler = "*"
+glfw = "*"
+pinocchio = "*"
+pybind11 = "*"
+eigen = "3.4.*"
+libmujoco = "==3.3.7"
+mesalib = "*"         
+libgl-devel = "*"     
+libglu = "*"          
+xorg-libx11 = "*"     
+xorg-libxext = "*"    
+
+# Conda/conda-forge dependencies to create a reproducible build environment.
+# Adjust versions as needed for your system. MuJoCo is expected to be installed
+# separately under $HOME/mujoco (binary + license). If you prefer a pip-based
+# MuJoCo install (python binding), see the `install_mujoco` task below.
+[dependencies]
+python = "3.12.0"
+cmake = ">=3.16"
+nanobind = "2.8.*"
+libmujoco = "==3.3.7"
+gcc_linux-64 = "*"
+gxx_linux-64 = "*"
+#blasfeo = "*"
+#hpipm = "*"
+numpy = "*"
+ninja = "*"
+pip = "*"
+
+# Optional: provide a pip task to install mujoco python bindings if you want to
+# manage MuJoCo via pip rather than a system-local install. Uncomment to use.
+[tasks.install_mujoco]
+cmd = "pip install mujoco==2.3.2 mujoco-py"
+description = """Install MuJoCo python bindings via pip (optional). Ensure MuJoCo
+binaries are available under $HOME/mujoco or follow mujoco docs."""
+
+[tasks]
+train = "python3 src/wm.py"
+cpp = "cd exec && ./main; cd .."
+view = "conda activate tianshou && python3 tesi/test_python/wm_viewer.py; conda deactivate"

@@ -416,7 +416,7 @@ public:
 
     auto end_time = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = (end_time - start_time) * 1000;
-    std::cout << "DDP Total Time: " << elapsed.count() << " ms" << std::endl;
+    //std::cout << "DDP Total Time: " << elapsed.count() << " ms" << std::endl;
   }
 
   // setters

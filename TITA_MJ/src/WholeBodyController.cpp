@@ -406,12 +406,12 @@ WholeBodyController::compute_inverse_dynamics(
   
 
   // DEBUG PRINT
-  std::cout << " r_wheel_center" << r_wheel_center << std::endl;
-  std::cout << " l_wheel_center" << l_wheel_center << std::endl;
-  std::cout << " current_com_pos" << current_com_pos << std::endl;
+  //std::cout << " r_wheel_center" << r_wheel_center << std::endl;
+  //std::cout << " l_wheel_center" << l_wheel_center << std::endl;
+  //std::cout << " current_com_pos" << current_com_pos << std::endl;
 
-  std::cout << " right_contact" << right_contact << std::endl;
-  std::cout << " left_contact" << left_contact << std::endl;
+  //std::cout << " right_contact" << right_contact << std::endl;
+  //std::cout << " left_contact" << left_contact << std::endl;
 
   // std::cout << "err_com" << err_com << std::endl;
   // std::cout << "err_rwheel" << err_rwheel << std::endl;
@@ -449,7 +449,7 @@ WholeBodyController::compute_inverse_dynamics(
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
 
   // Stampa del tempo di esecuzione
-  std::cout << "Tempo di esecuzione del controllore Whole Body: " << duration << " microsecondi" << std::endl;
+  //std::cout << "Tempo di esecuzione del controllore Whole Body: " << duration << " microsecondi" << std::endl;
 
 
   JointCommand joint_command;

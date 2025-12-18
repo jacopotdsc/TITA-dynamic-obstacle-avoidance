@@ -1,5 +1,5 @@
 #include <WalkingManager.hpp>
-
+#include <pinocchio/parsers/mjcf.hpp>
 
 namespace labrob {
 
@@ -7,13 +7,19 @@ bool WalkingManager::init(const labrob::RobotState& initial_robot_state,
                      std::map<std::string, double> &armatures) {
     
     // Read URDF from file:
-    std::string robot_description_filename = "../tita_description/tita.urdf";
+    std::string robot_description_urdf = "/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/tita_description/tita.urdf";
+    std::string robot_description_xml = "/home/ubuntu/miniconda3/envs/tianshou/lib/python3.12/site-packages/gymnasium/envs/mujoco/assets/tita_mjx.xml";
 
     // Build Pinocchio model and data from URDF:
     pinocchio::Model full_robot_model;
     pinocchio::JointModelFreeFlyer root_joint;
+    //pinocchio::mjcf::buildModel(
+    //    robot_description_xml, 
+    //    full_robot_model
+    //);
+    //pinocchio::mjcf::buildModelFromXML(robot_description_xml, full_robot_model, false);
     pinocchio::urdf::buildModel(
-        robot_description_filename,
+        robot_description_urdf,
         root_joint,
         full_robot_model
     );
@@ -267,7 +273,7 @@ void WalkingManager::update(
     double x_curr = p_CoM(0);
     double step_x = 0.4; 
     double tresh = 0.01;
-    double x_goal = 0.4;
+    double x_goal = 4.0;
     double step_z = -0.01; 
     double h_goal = 0.25;
      for (int i = 0; i < 200+1; ++i)
@@ -288,13 +294,13 @@ void WalkingManager::update(
         pcom_ref(1,i) = 0.0;
 
     
-        double h_pred = h_curr + step_z * step_index;
-        if (std::abs(h_goal - h_pred) > tresh && (h_goal - h_pred) < 0){
-            pcom_ref(2,i) = h_pred;
-        }else{
-            pcom_ref(2,i) = h_goal;
-        }
-        // pcom_ref(2,i) = 0.4;
+        //double h_pred = h_curr + step_z * step_index;
+        //if (std::abs(h_goal - h_pred) > tresh && (h_goal - h_pred) < 0){
+        //    pcom_ref(2,i) = h_pred;
+        //}else{
+        //    pcom_ref(2,i) = h_goal;
+        //}
+        pcom_ref(2,i) = 0.4;
 
     }
     
@@ -325,20 +331,20 @@ void WalkingManager::update(
           (r_wheel_center.translation()(0) + l_wheel_center.translation()(0))/2 , (l_wheel_center.translation()(1)+r_wheel_center.translation()(1))/2,
           (curr_pr_vel(0)+curr_pl_vel(0))/2, (curr_pr_vel(1) + curr_pl_vel(1))/2;
 
-    std::cout << "x0" << x0 << std::endl;
+    //std::cout << "x0" << x0 << std::endl;
     mpc_.solve(x0);
 
     SolutionMPC sol = mpc_.get_solution();
 
     auto end_time_mpc = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_time_mpc = (end_time_mpc - start_time_mpc) * 1000;
-    std::cout << "MPC solve took: " << elapsed_time_mpc.count() << " ms" << std::endl;
+    //std::cout << "MPC solve took: " << elapsed_time_mpc.count() << " ms" << std::endl;
 
 
-    std::cout << "zcom" << p_CoM(2) << std::endl;
-    std::cout << "zcom_des" << sol.com.pos(2) << std::endl;
-    std::cout << "v_zcom" << v_CoM(2) << std::endl;
-    std::cout << "v_zcom_des" << sol.com.vel(2) << std::endl;
+    //std::cout << "zcom" << p_CoM(2) << std::endl;
+    //std::cout << "zcom_des" << sol.com.pos(2) << std::endl;
+    //std::cout << "v_zcom" << v_CoM(2) << std::endl;
+    //std::cout << "v_zcom_des" << sol.com.vel(2) << std::endl;
 
     
     des_configuration_.com.pos(2) = sol.com.pos(2);  
@@ -371,14 +377,14 @@ void WalkingManager::update(
 
     auto end_time = std::chrono::system_clock::now();
     auto elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
-    std::cout << "WalkingManager::update() took " << elapsed_time << " us" << std::endl;
+    //std::cout << "WalkingManager::update() took " << elapsed_time << " us" << std::endl;
     
     // Update timing in milliseconds.
     // NOTE: assuming update() is actually called every controller_timestep_msec_
     //       milliseconds.
     t_msec_ += controller_timestep_msec_;
 
-    std::cout << "t_msec_ " << t_msec_ << std::endl;
+    //std::cout << "t_msec_ " << t_msec_ << std::endl;
 
     // Log:
     state_log_file_

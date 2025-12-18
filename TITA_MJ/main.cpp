@@ -31,6 +31,7 @@ int main() {
   // Load MJCF (for Mujoco):
   const int kErrorLength = 1024;          // load error string length
   char loadError[kErrorLength] = "";
+  //const char* mjcf_filepath = "/home/ubuntu/miniconda3/envs/tianshou/lib/python3.12/site-packages/gymnasium/envs/mujoco/assets/tita_mjx.xml"; 
   const char* mjcf_filepath = "../tita_mj_description/tita.mjcf";
   mjModel* mj_model_ptr = mj_loadXML(mjcf_filepath, nullptr, loadError, kErrorLength);
   if (!mj_model_ptr) {
@@ -82,6 +83,7 @@ int main() {
     std::string joint_name = std::string(mj_id2name(mj_model_ptr, mjOBJ_JOINT, joint_id));
     int dof_id = mj_model_ptr->jnt_dofadr[joint_id];
     armatures[joint_name] = mj_model_ptr->dof_armature[dof_id];
+    //std::cout << "Joint: " << joint_name << " | Armature: " << armatures[joint_name] << std::endl;
   }
 
 
@@ -100,14 +102,31 @@ int main() {
   // Mujoco UI
   auto& mujoco_ui = *labrob::MujocoUI::getInstance(mj_model_ptr, mj_data_ptr);
 
-  double dt = mj_model_ptr->opt.timestep;   // simulation timestep
-  std::cout<< "simulation dt: " << dt << std::endl;
-  std::cout<< "simulation freq: " << 1.0/dt << std::endl;
+  double dt = mj_model_ptr->opt.timestep;   // simulation timestep: 0.002
+  //std::cout<< "simulation dt: " << dt << std::endl;
+  //std::cout<< "simulation freq: " << 1.0/dt << std::endl;
 
   static int framerate = 60.0;
   bool first_frame = false;
 
   int timestep_counter = 0;
+
+    //std::cout << "\n--- 2. MUJOCO ACTUATORS (CTRL ORDER) ---" << std::endl;
+    //std::cout << "Totale Attuatori (m->nu): " << mj_model_ptr->nu << std::endl;
+
+    for (int i = 0; i < mj_model_ptr->nu; ++i) {
+        // In MuJoCo, l'attuatore è collegato a un giunto tramite 'actuator_trnid'
+        // trnid[2*i] è l'ID del giunto, trnid[2*i+1] è il target (es. posizione/velocità)
+        int joint_id = mj_model_ptr->actuator_trnid[2 * i];
+        
+        // Recupera il nome del giunto controllato da questo attuatore
+        const char* joint_name = mj_id2name(mj_model_ptr, mjOBJ_JOINT, joint_id);
+        const char* actuator_name = mj_id2name(mj_model_ptr, mjOBJ_ACTUATOR, i);
+        //std::cout << "Ctrl Index " << i 
+        //          << " [Actuator: " << (actuator_name ? actuator_name : "???") << "]"
+        //          << " ---> Muove il giunto: " << (joint_name ? joint_name : "???") 
+        //          << std::endl;
+    }
 
   // Simulation loop:
   while (!mujoco_ui.windowShouldClose()) {
@@ -127,7 +146,8 @@ int main() {
     // apply_disturbance(mj_model_ptr, mj_data_ptr, timestep_counter);
     ++timestep_counter;
     
-    mj_step1(mj_model_ptr, mj_data_ptr);
+    mj_step(mj_model_ptr, mj_data_ptr);
+    //mj_step1(mj_model_ptr, mj_data_ptr);
     
     if (first_frame == true) {
       mujoco_ui.render();
@@ -156,7 +176,7 @@ int main() {
     //     }
 
 
-    mj_step2(mj_model_ptr, mj_data_ptr);
+    //mj_step2(mj_model_ptr, mj_data_ptr);
 
     
     joint_vel_log_file << std::endl;
@@ -170,15 +190,15 @@ int main() {
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
 
   // Stampa del tempo di esecuzione
-  std::cout << "Controller period: " << duration << " microseconds" << std::endl;
+  //std::cout << "Controller period: " << duration << " microseconds" << std::endl;
   
   
   double sim_elapsed = end_sim - simstart;
   double real_elapsed = std::chrono::duration<double>(end_time - start_time).count();
   double RTF = sim_elapsed / real_elapsed;
-  std::cout << "Simulated time: " << sim_elapsed << std::endl;
-  std::cout << "Real time: " << real_elapsed << std::endl;
-  std::cout << "Real-time factor: " << RTF << std::endl;
+  //std::cout << "Simulated time: " << sim_elapsed << std::endl;
+  //std::cout << "Real time: " << real_elapsed << std::endl;
+  //std::cout << "Real-time factor: " << RTF << std::endl;
 
   mujoco_ui.render();
   }
