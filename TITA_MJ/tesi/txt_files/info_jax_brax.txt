@@ -1,0 +1,195 @@
+https://github.com/google/brax/blob/main/brax/training/agents/ppo/train.py
+
+
+action_repeat: 1        # for how much steps execute the selected action
+batch_size: 256         # SGD batch size
+discounting: 0.97
+entropy_cost: 0.01
+episode_length: 1000
+learning_rate: 0.0003
+max_grad_norm: 1.0
+normalize_observations: true
+num_envs: 8192                  #  = batch_size * num_minibatches
+num_evals: 10               # numero of enviroment used for evaluation
+num_minibatches: 32
+num_resets_per_eval: 1      # how much times reset between each eval
+num_timesteps: 200000000    # total between all environments
+num_updates_per_batch: 4    # how much times parse whole dataset = num_envs * rollout_lenght
+reward_scaling: 1.0 
+unroll_length: 20         # how much time unroll each environment before perform ppo step
+
+----------------------------
+dataset = num_envs * rollout_lenght. It is parsed num_updates_per_batch
+batch_size: the batch size of SGD step
+num_minibatches: how divide the dataset to obtain smaller dataset. how much times run SGD step on the dataset
+num_updates_per_batch: how much times parse the dataset ( i.e. each minibatches is parsed num_updates_per_batch)
+
+assert batch_size * num_minibatches % num_envs == 0
+ensure that num_envs = batch_size * num_minibatches
+
+batch_size (256): the batch size for each minibatch SGD step
+num_minibatches (32): the number of times to run the SGD step, each with a
+      different minibatch with leading dimension of `batch_size` 
+num_updates_per_batch (4): the number of times to run the gradient update over
+      all minibatches before doing a new environment rollout
+
+unroll_length (20): the number of timesteps to unroll in each environment. The
+      PPO loss is computed over `unroll_length` timesteps
+
+TODO: per quanti steps
+
+---------------------------
+
+(state, _), data = jax.lax.scan(
+        f,
+        (state, key_generate_unroll),
+        (),
+        length=batch_size * num_minibatches // num_envs,
+    )
+
+line 563: Have leading dimensions (batch_size * num_minibatches, unroll_length)
+          (256*32=8192, 20) -> total data
+
+if num_envs = 8192 -> jax.lax.scan executed once
+if num_envs = 2048 -> jax.lax.scan exectuted 4 times
+
+
+assert batch_size * num_minibatches % num_envs == 0
+batch_size: 256
+num_minibatches: 32
+num_envs: 8192 / 2048
+
+(batch_size * num_minibatches) / num_envs = 1 or 4
+
+jax.lax.scan = 32*256 = 8192 / 8192 = 1
+jax.lax.scan = 32*256 = 8192 / 2048 = 4
+
+scan_execution = 1 or 4
+
+
+579: passati tutti i dati 
+
+
+-----------------------
+
+XML information
+
+- range: joint limits
+- forcerange: Range for clamping the force output.
+- ctrlrange Range for clamping the control input.  ( velocity actuator )
+
+change actuator to velocity, not position
+
+- actuator_lenghtrange: feasibile actuator lenght range ( used fot prismatic)
+- actuator_forcerange: range of forces
+- actuator_ctrlrange: range of control 
+- actuator_ctrllimited: is control limited                       (nu x 1)
+- actuator_forcelimited: is force limited                        (nu x 1)
+- actuator_actlimited: is activation limited  ( for prismatic )
+
+
+TODO: robot axis: left and right are not specular.
+      check in viewer with 
+      - rendering frame Body
+      - openGL effect CullFace, wireframe
+      - group enable geom 01
+
+check different between current cml and tita_converted.xml
+check visual stuffs and geoms
+
+manca randomizer
+
+-----------------------
+
+Informazioni
+
+training: 2h 30min, A100, 20k steps, 0.002 sim_dt ( go1 = 0.004)
+stand-up: 3 min + 11 min, A100k, 10k steps, 0.004 simtdt
+
+come sono comandati i motori del tita: 
+  tramite torque diretta oppure c'è un low level controller ( se ho capito è presente ) 
+  e cosa prende in input ed i suoi guadagni
+output della rete: 
+  torque, comandi velocità, forze di contatto 
+interazione con MPC e/o WBC:
+test di altri approcci:
+  uso algoritmo off-policy, ppo ( on policy ) vs sac ( off policy ),
+  adesso senza controllore?
+
+
+-----------------
+
+Train con cmd vel: 1h, A100, 100kk steps
+
+def default_config() -> config_dict.ConfigDict:
+  return config_dict.create(
+      ctrl_dt=0.02,
+      sim_dt=0.004,
+      episode_length=1000,
+      Kp=35.0,
+      Kd=10,
+      action_repeat=1,
+      action_scale=1.0,
+      history_len=1,
+      soft_joint_pos_limit_factor=0.95,
+      noise_config=config_dict.create(
+          level=1.0,  # Set to 0.0 to disable noise.
+          scales=config_dict.create(
+              joint_pos=0.03,
+              joint_vel=1.5,
+              gyro=0.2,
+              gravity=0.05,
+              linvel=0.1,
+          ),
+      ),
+      reward_config=config_dict.create(
+          scales=config_dict.create(
+              # tracking
+              tracking_lin_vel=1.0, 
+              tracking_ang_vel=1.0, 
+              # base
+              lin_vel_z=0.0,
+              ang_vel_xy=0.0,
+              orientation=1.0,
+              base_height=0.5, # work with base_height_target
+              # Other.
+              dof_pos_limits=-0.1,
+              pose=0.0,
+              # Other.
+              termination=-1.0,
+              stand_still=-0.0,
+              # Regularization.
+              torques=-0.00005,
+              action_rate=-0.001, 
+              energy=-0.0001,
+              # Feet.
+              #feet_clearance=-2.0,
+              #feet_height=-0.2,
+              #feet_slip=-0.1,
+              #feet_air_time=0.1,
+          ),
+          tracking_sigma=0.25,
+          max_foot_height=0.1,
+          base_height_target=0.40,
+      ),
+      pert_config=config_dict.create(
+          enable=False,
+          velocity_kick=[0.0, 3.0],
+          kick_durations=[0.05, 0.2],
+          kick_wait_times=[1.0, 3.0],
+      ),
+      command_config=config_dict.create(
+          # Uniform distribution for command amplitude.
+          a=[1.5, 0.8, 1.2],
+          # Probability of not zeroing out new command.
+          b=[0.9, 0.25, 0.5],
+      ),
+  )
+
+---------------------------
+
+
+python binding
+cerca: nano bind
+
+export LD_PRELOAD=/home/ubuntu/Desktop/repo_rl/TITA_MJ

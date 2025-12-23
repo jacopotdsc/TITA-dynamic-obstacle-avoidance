@@ -4,23 +4,19 @@ project(TITA_MJ)
 option(BUILD_PYTHON_BINDINGS "Decide if compile the bindings")
 
 if(BUILD_PYTHON_BINDINGS)
-    message(STATUS ">>> MODE: PYTHON, compilining wm.so)")
-else()
-    message(STATUS ">>> MODE: C++ ")
-endif()
-
-
-if(BUILD_PYTHON_BINDINGS)
 message(STATUS ">>> MODE: PYTHON, compilining wm.so)")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+set(CMAKE_INSTALL_RPATH "${PROJECT_SOURCE_DIR}/compiled;$ENV{CONDA_PREFIX}/lib")
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
 find_package(glfw3 REQUIRED)
 find_package(pinocchio REQUIRED)
 find_package(pybind11 REQUIRED)
 find_package(Eigen3 REQUIRED)
+
+set(CONDA_PREFIX $ENV{CONDA_PREFIX})
 
 find_package(mujoco CONFIG QUIET)
 if(TARGET mujoco::mujoco)
@@ -35,9 +31,6 @@ else()
     set_target_properties(mujoco::mujoco PROPERTIES IMPORTED_LOCATION ${MUJOCO_LIBRARY})
 endif()
 
-#set(MUJOCO_LIBRARY "$ENV{HOME}/.pixi/envs/default/lib/libmujoco.so")
-#set(MUJOCO_INCLUDE_DIR "$ENV{HOME}/.pixi/envs/default/include")
-
 include_directories(${MUJOCO_INCLUDE_DIR})
 
 if(NOT MUJOCO_LIBRARY AND NOT TARGET mujoco::mujoco)
@@ -45,14 +38,10 @@ if(NOT MUJOCO_LIBRARY AND NOT TARGET mujoco::mujoco)
 endif()
 
 
-# Manually set INCLUDE_DIRS and LIBRARIES since not handled in blasfeo and hpipm
 set(blasfeo_INCLUDE_DIRS /home/ubuntu/.local/blasfeo/include)
 set(hpipm_INCLUDE_DIRS /home/ubuntu/.local/hpipm/include)
 set(blasfeo_LIBRARIES /home/ubuntu/.local/blasfeo/lib/libblasfeo.a)
 set(hpipm_LIBRARIES /home/ubuntu/.local/hpipm/lib/libhpipm.a)
-
-#include_directories(${BLASFEO_INCLUDE_DIR} ${HPIPM_INCLUDE_DIR})
-#include_directories(${PROJECT_SOURCE_DIR}/include $ENV{HOME}/.local/include)
 
 add_library(wm MODULE
     src/JointCommand.cpp
@@ -92,6 +81,7 @@ install(TARGETS wm
 message(STATUS ">>> MODE: PYTHON, compilining wm.so)")
 
 else()
+
 message(STATUS ">>> MODE: C++ ")
 
 set(CMAKE_CXX_STANDARD 17)
@@ -172,4 +162,5 @@ target_compile_options(UtilsLib PRIVATE -Wno-deprecated-declarations -Wno-macro-
 target_compile_options(main PRIVATE -Wno-deprecated-declarations -Wno-macro-redefined)
 
 message(STATUS ">>> MODE: C++ ")
+
 endif()

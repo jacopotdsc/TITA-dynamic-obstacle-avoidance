@@ -1,0 +1,34 @@
+Tianshou framework: https://github.com/thu-ml/tianshou
+
+implementation of different algorithm from the respective laboratory.
+It use gymnasium enviroment and build up wrapper to be compatible
+to the framework that they developed. 
+
+- use of gymnaiusm enviroment: they run on cpu ( return numpy array )
+- networks can be moved into GPU
+
+- when calling metodo run_training(), it take in input a TTrainerParams
+    that call a run() function. In PPO it is always perform a reset of the buffer
+    when it call ._training_step() ( search class OnPolicyTrainer ), it call this function define in OnlineTrainer
+    and it has the reset of the buffer
+
+- in training_step() it is called _collect_training_data() that call collect()
+- collect() call _collect() which is define in the BaseCollector()
+- is is called _compute_action_policy_hidden() which call env.step()
+
+---------
+tianshou parameters
+
+- epoch_num_steps: 
+    for online training: total number of enviroment steps to collect
+    for offline training: total number of training step per epoch
+- collection_step_num_env_steps: number of transition collected per steps
+- update_step_num_repetitions: number of times the data are used for gradient update
+- test_step_num_episodes: steps to colleact in each test step
+
+--------
+
+export LD_PRELOAD=/home/ubuntu/Desktop/repo_rl/TITA_MJ
+
+ 2025  export OMP_NUM_THREADS=1
+ 2026  export MKL_NUM_THREADS=1

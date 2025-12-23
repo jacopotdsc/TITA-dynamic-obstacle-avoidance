@@ -32,7 +32,7 @@ int main() {
   const int kErrorLength = 1024;          // load error string length
   char loadError[kErrorLength] = "";
   //const char* mjcf_filepath = "/home/ubuntu/miniconda3/envs/tianshou/lib/python3.12/site-packages/gymnasium/envs/mujoco/assets/tita_mjx.xml"; 
-  const char* mjcf_filepath = "../tita_mj_description/tita.mjcf";
+  const char* mjcf_filepath = "/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/tita_mj_description/tita.mjcf";
   mjModel* mj_model_ptr = mj_loadXML(mjcf_filepath, nullptr, loadError, kErrorLength);
   if (!mj_model_ptr) {
     std::cerr << "Error loading model: " << loadError << std::endl;

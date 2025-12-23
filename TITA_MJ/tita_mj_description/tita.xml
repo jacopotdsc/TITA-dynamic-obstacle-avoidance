@@ -4,23 +4,24 @@
   <default>
     <default class="robot">
       <!--geom condim="1" contype="0" conaffinity="1"/-->
-      <joint armature="0.000" damping="0.0" limited="true" solreflimit="0.02 1"/>
+      <joint armature="0.001" damping="0.5" limited="true" solreflimit="0.02 1"/>
+      <position inheritrange="1" kp="70" kv="10" forcerange="-100 100"/>
 
       <default class="motor_1">
         <joint range="-0.785398 0.785398" />
-        <motor ctrllimited="true" ctrlrange="-100 100" forcerange="-100 100"/>
+        <motor ctrllimited="true" forcerange="-100 100"/>
       </default>
       <default class="motor_2">
         <joint range="-1.919862 3.490659" />
-          <motor ctrllimited="true" ctrlrange="-100 100" forcerange="-100 100"/>
+          <motor ctrllimited="true" forcerange="-100 100"/>
       </default>
       <default class="motor_3">
         <joint range="-2.670354 -0.698132" />
-        <motor ctrllimited="true" ctrlrange="-100 100" forcerange="-100 100"/>
+        <motor ctrllimited="true" forcerange="-100 100"/>
       </default>
       <default class="motor_4">
-        <joint range="-999999 999999" />
-        <motor ctrllimited="true" ctrlrange="-100 100" forcerange="-100 100"/>
+        <joint range="-3 3" />
+        <motor ctrllimited="true" forcerange="-100 100"/>
       </default>
       <default class="visual">
         <geom material="visualgeom" contype="0" conaffinity="0" group="2" />
@@ -147,14 +148,14 @@
   </worldbody>
 
   <actuator>
-    <motor name="joint_left_leg_1_ctrl" joint="joint_left_leg_1" class="motor_1" />
-    <motor name="joint_left_leg_2_ctrl" joint="joint_left_leg_2" class="motor_2" />
-    <motor name="joint_left_leg_3_ctrl" joint="joint_left_leg_3" class="motor_3" />
-    <motor name="joint_left_leg_4_ctrl" joint="joint_left_leg_4" class="motor_4" />
-    <motor name="joint_right_leg_1_ctrl" joint="joint_right_leg_1" class="motor_1" />
-    <motor name="joint_right_leg_2_ctrl" joint="joint_right_leg_2" class="motor_2" />
-    <motor name="joint_right_leg_3_ctrl" joint="joint_right_leg_3" class="motor_3" />
-    <motor name="joint_right_leg_4_ctrl" joint="joint_right_leg_4" class="motor_4" />
+    <position name="joint_left_leg_1_ctrl" joint="joint_left_leg_1" class="motor_1" />
+    <position name="joint_left_leg_2_ctrl" joint="joint_left_leg_2" class="motor_2" />
+    <position name="joint_left_leg_3_ctrl" joint="joint_left_leg_3" class="motor_3" />
+    <position name="joint_left_leg_4_ctrl" joint="joint_left_leg_4" class="motor_4" />
+    <position name="joint_right_leg_1_ctrl" joint="joint_right_leg_1" class="motor_1" />
+    <position name="joint_right_leg_2_ctrl" joint="joint_right_leg_2" class="motor_2" />
+    <position name="joint_right_leg_3_ctrl" joint="joint_right_leg_3" class="motor_3" />
+    <position name="joint_right_leg_4_ctrl" joint="joint_right_leg_4" class="motor_4" />
   </actuator>
 
   <contact>

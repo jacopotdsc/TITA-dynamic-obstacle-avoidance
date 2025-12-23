@@ -1,0 +1,9 @@
+- python binding per MPC callable on python
+- find other application MPC + RL
+- give agility to robot e.g.when turning
+   it bend its floating base
+- one leg obstacle crossing
+- jumping learning
+- decide type of jumping for legs ( i.e. modify MPC) ( gait learning ?)
+
+- torque: don't minime torque on wheels, instead maximize

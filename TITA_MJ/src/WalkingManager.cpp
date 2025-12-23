@@ -1,5 +1,4 @@
 #include <WalkingManager.hpp>
-#include <pinocchio/parsers/mjcf.hpp>
 
 namespace labrob {
 
@@ -8,16 +7,10 @@ bool WalkingManager::init(const labrob::RobotState& initial_robot_state,
     
     // Read URDF from file:
     std::string robot_description_urdf = "/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/tita_description/tita.urdf";
-    std::string robot_description_xml = "/home/ubuntu/miniconda3/envs/tianshou/lib/python3.12/site-packages/gymnasium/envs/mujoco/assets/tita_mjx.xml";
 
     // Build Pinocchio model and data from URDF:
     pinocchio::Model full_robot_model;
     pinocchio::JointModelFreeFlyer root_joint;
-    //pinocchio::mjcf::buildModel(
-    //    robot_description_xml, 
-    //    full_robot_model
-    //);
-    //pinocchio::mjcf::buildModelFromXML(robot_description_xml, full_robot_model, false);
     pinocchio::urdf::buildModel(
         robot_description_urdf,
         root_joint,
@@ -273,7 +266,7 @@ void WalkingManager::update(
     double x_curr = p_CoM(0);
     double step_x = 0.4; 
     double tresh = 0.01;
-    double x_goal = 4.0;
+    double x_goal = 0.0;
     double step_z = -0.01; 
     double h_goal = 0.25;
      for (int i = 0; i < 200+1; ++i)
