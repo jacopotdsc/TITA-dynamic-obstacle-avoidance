@@ -3,17 +3,18 @@ import torch
 import numpy as np
 import os
 from torch import nn
+from torch.distributions import Distribution, Independent, Normal
 
 # Tianshou imports
 from tianshou.data import Batch
 from tianshou.algorithm.modelfree.reinforce import ProbabilisticActorPolicy
 from tianshou.utils.net.common import Net
 from tianshou.utils.net.continuous import ContinuousActorProbabilistic, ContinuousCritic
+from tianshou.utils.space_info import SpaceInfo
 
-
-def dist_fn(loc_scale: tuple[torch.Tensor, torch.Tensor]) -> torch.distributions.Distribution:
-    loc, scale = loc_scale
-    return torch.distributions.Independent(torch.distributions.Normal(loc, scale), 1)
+def dist_fn(loc_scale: tuple[torch.Tensor, torch.Tensor]) -> Distribution:
+        loc, scale = loc_scale
+        return Independent(Normal(loc, scale), 1)
 
 def watch_agent_separate_weights(
     task_name: str,
@@ -28,25 +29,23 @@ def watch_agent_separate_weights(
     # Parametri ambiente
     state_shape = env.observation_space.shape or env.observation_space.n
     action_shape = env.action_space.shape or env.action_space.n
-    max_action = env.action_space.high[0]
+    max_action = SpaceInfo.from_env(env).action_info.max_action
 
     print(f"Obs: {state_shape}, Action: {action_shape}, Max Action: {max_action}")
-
-    # --- 1. RICOSTRUZIONE RETI (Deve essere identica al training) ---
     
     # ----- Network setup ----- 
     net = Net(
         state_shape=state_shape,
         hidden_sizes=hidden_sizes,
-        activation=nn.ReLU,
+        activation=nn.Tanh,
     )
     
     actor = ContinuousActorProbabilistic(
         preprocess_net=net,
         action_shape=action_shape,
         max_action=max_action,
-        unbounded=False,
-        conditioned_sigma=True,
+        unbounded=False, # if true apply tanh to output, else max_action = 1.0
+        conditioned_sigma=False, # if true, sigma is output of a simple network, else is a parameter
     )
     actor = actor.to(device)
     
@@ -54,7 +53,7 @@ def watch_agent_separate_weights(
         preprocess_net=Net(
             state_shape=state_shape,
             hidden_sizes=hidden_sizes,
-            activation=nn.ReLU,
+            activation=nn.Tanh,
         ),
         hidden_sizes=hidden_sizes,
     )
@@ -74,20 +73,17 @@ def watch_agent_separate_weights(
     else:
         print("Warning: File Critic non trovato. Procedo senza (per il render basta l'actor).")
 
-    # --- 3. CREAZIONE POLICY ---
-    # Creiamo la policy usando le reti GIÀ caricate
-
     #dist_fn =torch.distributions.Normal
     policy = ProbabilisticActorPolicy(
         actor=actor,
         dist_fn=dist_fn,
+        action_scaling=True,
         action_space=env.action_space,
-        deterministic_eval=True 
-    )
+        deterministic_eval=True, # If true, no randomness in eval mode for output
+        )
     policy.eval()
 
     # --- 4. LOOP DI RENDERING ---
-    print("\nPremere Ctrl+C per terminare.")
     try:
         obs, info = env.reset()
         total_reward = 0
@@ -100,22 +96,20 @@ def watch_agent_separate_weights(
                 result = policy(batch)
             
             # Se result.act è un tensore, lo convertiamo; se è numpy, lo usiamo direttamente
-            action = result.act[0]
+            action = np.array([0.0]*8)#result.act[0]
             if isinstance(action, torch.Tensor):
                 action = action.cpu().numpy()
-            
-            print(action)
 
             obs, reward, terminated, truncated, info = env.step(action)
             total_reward += reward
-            
+
             if terminated or truncated:
-                print(f"Episodio terminato. Reward totale: {total_reward:.2f}")
-                obs, info = env.reset()
-                total_reward = 0
+                print(f"Episode terminated, total reward: {total_reward:.2f}")
+                break
+
                 
     except KeyboardInterrupt:
-        print("\nStop manuale.")
+        pass
     finally:
         env.close()
 
@@ -127,7 +121,7 @@ if __name__ == "__main__":
     path_critic = "critic_state_dict.pt"
 
     import sys
-    sys.path.insert(0, '/home/ubuntu/miniconda3/envs/tianshou/lib/python3.12/site-packages')
+    sys.path.insert(0, '/home/ubuntu/miniconda3/envs/tianshou_gpu/lib/python3.12/site-packages')
 
     gym.register(
         id="Tita-v0",

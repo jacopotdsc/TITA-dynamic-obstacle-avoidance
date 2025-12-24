@@ -9,15 +9,17 @@ path2 = base_string + "_src/locomotion/go1/xmls/scene_mjx_flat_terrain.xml"
 path3 = base_string + "tesi/tita/urdf/tita_description.urdf"
 path4 = base_string + "tesi/test_python/tita_converted.xml"
 path5 = "/home/ubuntu/miniconda3/envs/tianshou/lib/python3.12/site-packages/gymnasium/envs/mujoco/assets/tita_mjx.xml"
-
-path = path5
+path6 = "/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/tita_mj_description/tita.xml"
+path = path6
 
 model = mujoco.MjModel.from_xml_path(path)
 data = mujoco.MjData(model)
 default_pose = model.keyframe("home").qpos
 default_ctrl = default_pose[7:]
-data.qpos = default_pose
-data.ctrl = default_ctrl
+#data.qpos = default_pose
+#data.ctrl = default_ctrl
+
+print("Target Motori inviato:", data.ctrl)
 
 body_coordinate = data.qpos[0:3]
 print("Initial body coordinate:", body_coordinate)
@@ -67,7 +69,6 @@ for i in range(model.nu):
 
     ctrl_range = model.actuator_ctrlrange[i]
     force_range = model.actuator_forcerange[i]
-    length_range = model.actuator_lengthrange[i]
 
     print(f"{name} ->", end="")
     if s_ctrl == "ON":
@@ -78,10 +79,7 @@ for i in range(model.nu):
         print(f" Force range: {force_range},", end="")
     else:
         print(f" Force range: {s_force}", end="")
-    if s_act == "ON":
-        print(f" Actuator range: {length_range}", end="")
-    else:
-        print(f" Actuator range: {s_act}", end="")
+
     print()
 
 print("-------------------------------------------------\n")
@@ -94,20 +92,13 @@ print("Actuator gainprm:", actuator_gainprtm)
 print("Actuator biasprm:", actuator_biasprm)
 
 print("\n-----------------------------------------------------")
-viewer = mujoco.viewer.launch_passive(model, data) 
+viewer = mujoco.viewer.launch(model, data) 
 
-
-while True:
+while viewer.is_running():
     try:
-        if viewer.is_running:
-            time.sleep(0.1)
-            body_coordinate = data.qpos[0:3]
-            mujoco.mj_step(model, data)
-            #print(f"prev: {[f'{x:.3f}' for x in body_coordinate]}")
-            viewer.sync()
-        else:
-            break
+        mujoco.mj_step(model, data)
+        viewer.sync()
     except KeyboardInterrupt:
         break
-# close
+
 viewer.close()

@@ -1,27 +1,26 @@
 <mujoco model="tita">
-  <compiler angle="radian" autolimits="true" />
+  <compiler angle="radian" meshdir="/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/tita_mj_description"autolimits="true"/>
 
   <default>
     <default class="robot">
       <!--geom condim="1" contype="0" conaffinity="1"/-->
-      <joint armature="0.001" damping="0.5" limited="true" solreflimit="0.02 1"/>
-      <position inheritrange="1" kp="70" kv="10" forcerange="-100 100"/>
+      <joint armature="0.001" damping="0.0" limited="true" solreflimit="0.02 1"/>
 
       <default class="motor_1">
         <joint range="-0.785398 0.785398" />
-        <motor ctrllimited="true" forcerange="-100 100"/>
+        <motor ctrllimited="true" ctrlrange="-100 100" forcerange="-100 100"/>
       </default>
       <default class="motor_2">
         <joint range="-1.919862 3.490659" />
-          <motor ctrllimited="true" forcerange="-100 100"/>
+        <motor ctrllimited="true" ctrlrange="-100 100" forcerange="-100 100"/>
       </default>
       <default class="motor_3">
         <joint range="-2.670354 -0.698132" />
-        <motor ctrllimited="true" forcerange="-100 100"/>
+        <motor ctrllimited="true" ctrlrange="-100 100" forcerange="-100 100"/>
       </default>
       <default class="motor_4">
         <joint range="-3 3" />
-        <motor ctrllimited="true" forcerange="-100 100"/>
+        <motor ctrllimited="true" ctrlrange="-100 100" forcerange="-100 100"/>
       </default>
       <default class="visual">
         <geom material="visualgeom" contype="0" conaffinity="0" group="2" />
@@ -94,20 +93,20 @@
         <geom name="imu_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" material="red" type="box" size="0.0005 0.0005 0.0005" class="visual" />
       </body>
       <body name="left_leg_1" pos="0 0.0895 0" quat="0.49999816339744846 0.4999999999966269 0.5000018366025516 0.4999999999966269">
-        <joint name="joint_left_leg_1" type="hinge" ref="0.0" class="motor_1" range="-0.785398 0.785398" axis="0 0 1" />
+        <joint name="joint_left_leg_1" type="hinge" ref="0.0" class="motor_1" axis="0 0 1" />
         <inertial pos="0.0016025 5.0253E-05 0.000638" quat="1.0 0.0 0.0 0.0" mass="2.064" diaginertia="0.0043044 0.0029982 0.0022703" />
         <geom name="left_leg_1_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" material="black" type="mesh" mesh="left_leg_1.STL" class="visual" />
         <body name="left_leg_2" pos="0.1426 0 0" quat="0.49999816339744846 -0.4999999999966269 0.5000018366025516 -0.4999999999966269">
-          <joint name="joint_left_leg_2" type="hinge" ref="0.0" class="motor_2" range="-1.919862 3.490659" axis="0 0 1" />
+          <joint name="joint_left_leg_2" type="hinge" ref="0.0" class="motor_2" axis="0 0 1" />
           <inertial pos="0.021763 0.0019069 -0.027868" quat="1.0 0.0 0.0 0.0" mass="3.0984" diaginertia="0.0029784 0.0064836 0.0088353" />
           <geom name="left_leg_2_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" material="black" type="mesh" mesh="left_leg_2.STL" class="visual" />
           <body name="left_leg_3" pos="0.2 0 0" quat="1.0 0.0 0.0 0.0">
-            <joint name="joint_left_leg_3" type="hinge" ref="0.0" class="motor_3" range="-2.670354 -0.698132" axis="0 0 1" />
+            <joint name="joint_left_leg_3" type="hinge" ref="0.0" class="motor_3" axis="0 0 1" />
             <inertial pos="0.095348 0.011698 0.001838" quat="1.0 0.0 0.0 0.0" mass="0.57244" diaginertia="0.00030595 0.0032009 0.0034209" />
             <geom name="left_leg_3_collision" pos="0.1 0.021 -0.002" quat="0.9978556418172091 0.0 0.0 -0.06545317481654923" type="box" size="0.1 0.035 0.025" class="collision" />
             <geom name="left_leg_3_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" material="black" type="mesh" mesh="left_leg_3.STL" class="visual" />
             <body name="left_leg_4" pos="0.2 0 0.0514" quat="1.0 0.0 0.0 0.0">
-              <joint name="joint_left_leg_4" type="hinge" ref="0.0" class="motor_4" range="-6.283185e4 6.283185e4" axis="0 0 1" />
+              <joint name="joint_left_leg_4" type="hinge" ref="0.0" class="motor_4" axis="0 0 1" />
               <inertial pos="-2.267E-06 -1.6471E-06 -0.00095616" quat="1.0 0.0 0.0 0.0" mass="1.5094" diaginertia="0.0035466 0.0035053 0.0069049" />
               <geom name="left_leg_4_collision" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="cylinder" size="0.0925 0.017" class="collision" />
               <geom name="left_leg_4_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" material="black" type="mesh" mesh="left_leg_4.STL" class="visual" />
@@ -117,20 +116,20 @@
         </body>
       </body>
       <body name="right_leg_1" pos="0 -0.0895 0" quat="0.49999816339744846 0.4999999999966269 0.5000018366025516 0.4999999999966269">
-        <joint name="joint_right_leg_1" type="hinge" ref="0.0" class="motor_1" range="-0.785398 0.785398" axis="0 0 1" />
+        <joint name="joint_right_leg_1" type="hinge" ref="0.0" class="motor_1" axis="0 0 1" />
         <inertial pos="-0.0016025 5.0253E-05 0.00063801" quat="1.0 0.0 0.0 0.0" mass="2.064" diaginertia="0.0043044 0.0029982 0.0022703" />
         <geom name="right_leg_1_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" material="black" type="mesh" mesh="right_leg_1.STL" class="visual" />
         <body name="right_leg_2" pos="-0.1426 0 0" quat="0.49999816339744846 -0.4999999999966269 0.5000018366025516 -0.4999999999966269">
-          <joint name="joint_right_leg_2" type="hinge" ref="0.0" class="motor_2" range="-1.919862 3.490659" axis="0 0 1" />
+          <joint name="joint_right_leg_2" type="hinge" ref="0.0" class="motor_2" axis="0 0 1" />
           <inertial pos="0.021763 0.0019065 0.027873" quat="1.0 0.0 0.0 0.0" mass="3.0987" diaginertia="0.0029784 0.0064836 0.0088353" />
           <geom name="right_leg_2_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" material="black" type="mesh" mesh="right_leg_2.STL" class="visual" />
           <body name="right_leg_3" pos="0.2 0 0" quat="1.0 0.0 0.0 0.0">
-            <joint name="joint_right_leg_3" type="hinge" ref="0.0" class="motor_3" range="-2.670354 -0.698132" axis="0 0 1" />
+            <joint name="joint_right_leg_3" type="hinge" ref="0.0" class="motor_3" axis="0 0 1" />
             <inertial pos="0.095348 0.011698 -0.001838" quat="1.0 0.0 0.0 0.0" mass="0.57244" diaginertia="0.00030595 0.0032009 0.0034209" />
             <geom name="right_leg_3_collision" pos="0.1 0.021 -0.002" quat="0.9978556418172091 0.0 0.0 -0.06545317481654923" type="box" size="0.1 0.035 0.025" class="collision" />
             <geom name="right_leg_3_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" material="black" type="mesh" mesh="right_leg_3.STL" class="visual" />
             <body name="right_leg_4" pos="0.2 0 -0.0514" quat="1.0 0.0 0.0 0.0">
-              <joint name="joint_right_leg_4" type="hinge" ref="0.0" class="motor_4" range="-6.283185e4 6.283185e4" axis="0 0 1" />
+              <joint name="joint_right_leg_4" type="hinge" ref="0.0" class="motor_4" axis="0 0 1" />
               <inertial pos="-2.3798E-06 -1.5854E-06 0.00095595" quat="1.0 0.0 0.0 0.0" mass="1.5094" diaginertia="0.0035465 0.0035052 0.0069047" />
               <geom name="right_leg_4_collision" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="cylinder" size="0.0925 0.017" class="collision" />
               <geom name="right_leg_4_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" material="black" type="mesh" mesh="right_leg_4.STL" class="visual" />
@@ -148,14 +147,14 @@
   </worldbody>
 
   <actuator>
-    <position name="joint_left_leg_1_ctrl" joint="joint_left_leg_1" class="motor_1" />
-    <position name="joint_left_leg_2_ctrl" joint="joint_left_leg_2" class="motor_2" />
-    <position name="joint_left_leg_3_ctrl" joint="joint_left_leg_3" class="motor_3" />
-    <position name="joint_left_leg_4_ctrl" joint="joint_left_leg_4" class="motor_4" />
-    <position name="joint_right_leg_1_ctrl" joint="joint_right_leg_1" class="motor_1" />
-    <position name="joint_right_leg_2_ctrl" joint="joint_right_leg_2" class="motor_2" />
-    <position name="joint_right_leg_3_ctrl" joint="joint_right_leg_3" class="motor_3" />
-    <position name="joint_right_leg_4_ctrl" joint="joint_right_leg_4" class="motor_4" />
+    <motor name="joint_left_leg_1_ctrl" joint="joint_left_leg_1" class="motor_1" />
+    <motor name="joint_left_leg_2_ctrl" joint="joint_left_leg_2" class="motor_2" />
+    <motor name="joint_left_leg_3_ctrl" joint="joint_left_leg_3" class="motor_3" />
+    <motor name="joint_left_leg_4_ctrl" joint="joint_left_leg_4" class="motor_4" />
+    <motor name="joint_right_leg_1_ctrl" joint="joint_right_leg_1" class="motor_1" />
+    <motor name="joint_right_leg_2_ctrl" joint="joint_right_leg_2" class="motor_2" />
+    <motor name="joint_right_leg_3_ctrl" joint="joint_right_leg_3" class="motor_3" />
+    <motor name="joint_right_leg_4_ctrl" joint="joint_right_leg_4" class="motor_4" />
   </actuator>
 
   <contact>

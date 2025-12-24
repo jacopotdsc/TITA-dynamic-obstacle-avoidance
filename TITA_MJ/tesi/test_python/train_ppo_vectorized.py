@@ -12,6 +12,13 @@ import torch
 from torch import nn
 from torch.distributions import Distribution, Independent, Normal
 
+
+
+from tianshou.algorithm import TD3
+from tianshou.algorithm.modelfree.ddpg import ContinuousDeterministicPolicy
+from tianshou.algorithm import SAC
+from tianshou.exploration import GaussianNoise
+
 from tianshou.algorithm import PPO
 from tianshou.algorithm.modelfree.reinforce import ProbabilisticActorPolicy
 from tianshou.algorithm.optim import AdamOptimizerFactory
@@ -23,9 +30,9 @@ from tianshou.utils.net.common import Net
 from tianshou.utils.net.continuous import ContinuousActorProbabilistic, ContinuousCritic
 from tianshou.utils.space_info import SpaceInfo
 
-def dist_fn(loc_scale):
-    loc, scale = loc_scale
-    return torch.distributions.Independent(torch.distributions.Normal(loc, scale), 1)
+def dist_fn(loc_scale: tuple[torch.Tensor, torch.Tensor]) -> Distribution:
+        loc, scale = loc_scale
+        return Independent(Normal(loc, scale), 1)
 
 def main():
 
@@ -40,7 +47,7 @@ def main():
 
     if task == "Tita-v0":
         import sys
-        sys.path.insert(0, '/home/ubuntu/miniconda3/envs/tianshou/lib/python3.12/site-packages')
+        sys.path.insert(0, '/home/ubuntu/miniconda3/envs/tianshou_gpu/lib/python3.12/site-packages')
 
         gym.register(
             id="Tita-v0",
@@ -66,39 +73,108 @@ def main():
 
 
     # ----- Network setup ----- 
-    net = Net(
-        state_shape=state_shape,
-        hidden_sizes=hidden_sizes,
-        activation=nn.ReLU,
-    )
-    
-    actor = ContinuousActorProbabilistic(
-        preprocess_net=net,
-        action_shape=action_shape,
-        max_action=max_action,
-        unbounded=False,
-        conditioned_sigma=True,
-    )
-    actor = actor.to(device)
-    
-    critic = ContinuousCritic(
-        preprocess_net=Net(
+    use_ppo = True
+
+    if use_ppo == True:
+        net = Net(
             state_shape=state_shape,
             hidden_sizes=hidden_sizes,
-            activation=nn.ReLU,
-        ),
-        hidden_sizes=hidden_sizes,
-    )
-    critic = critic.to(device)
-    
-    policy = ProbabilisticActorPolicy(
-        actor=actor,
-        dist_fn=dist_fn,
-        action_space=env_single.action_space,
-        deterministic_eval=True,
-        action_scaling=True,
-    )
+            activation=nn.Tanh,
+        )
+        
+        actor = ContinuousActorProbabilistic(
+            preprocess_net=net,
+            action_shape=action_shape,
+            max_action=max_action,
+            unbounded=False, # if true apply tanh to output, else max_action = 1.0
+            conditioned_sigma=False, # if true, sigma is output of a simple network, else is a parameter
+        )
+        actor = actor.to(device)
+        
+        critic = ContinuousCritic(
+            preprocess_net=Net(
+                state_shape=state_shape,
+                hidden_sizes=hidden_sizes,
+                activation=nn.Tanh,
+            ),
+            hidden_sizes=hidden_sizes,
+        )
+        critic = critic.to(device)
+        
+        policy = ProbabilisticActorPolicy(
+            actor=actor,
+            dist_fn=dist_fn,
+            action_scaling=True,
+            action_space=env_single.action_space,
+            deterministic_eval=True, # If true, no randomness in eval mode for output
+        )
 
+        # ----- Create PPO algorithm -----
+        optim = AdamOptimizerFactory(lr=lr)
+        
+        algo = PPO(
+            policy=policy,
+            critic=critic,
+            optim=optim,
+            eps_clip=0.2,
+            vf_coef=0.5,
+            ent_coef=0.01,
+            gae_lambda=0.95,
+            max_grad_norm=0.5,
+            gamma=0.99,
+        )
+    else:
+
+        net_a = Net(
+            state_shape=state_shape,
+            hidden_sizes=hidden_sizes,
+        )
+        actor = ContinuousActorDeterministic(
+            preprocess_net=net_a,
+            action_shape=action_shape,
+            max_action=max_action,
+        ).to(device)
+        actor_optim = AdamOptimizerFactory(lr=lr)
+
+        # critic network
+        net_c1 = Net(
+            state_shape=state_shape,
+            action_shape=action_shape,
+            hidden_sizes=hidden_sizes,
+            concat=True,
+        )
+        net_c2 = Net(
+            state_shape=state_shape,
+            action_shape=action_shape,
+            hidden_sizes=hidden_sizes,
+            concat=True,
+        )
+        critic1 = ContinuousCritic(preprocess_net=net_c1).to(device)
+        critic1_optim = AdamOptimizerFactory(lr=lr)
+        critic2 = ContinuousCritic(preprocess_net=net_c2).to(device)
+        critic2_optim = AdamOptimizerFactory(lr=lr)
+
+        policy = ContinuousDeterministicPolicy(
+            actor=actor,
+            exploration_noise=GaussianNoise(sigma=0.2),
+            action_space=env_single.action_space,
+        )
+
+        algo = TD3BC(
+            policy=policy,
+            policy_optim=actor_optim,
+            critic=critic1,
+            critic_optim=critic1_optim,
+            critic2=critic2,
+            critic2_optim=critic2_optim,
+            tau=tau,
+            gamma=gamma,
+            policy_noise=policy_noise,
+            update_actor_freq=update_actor_freq,
+            noise_clip=noise_clip,
+            alpha=alpha,
+            n_step_return_horizon=n_step,
+        )
 
     # Print device information for debugging ------
     try:
@@ -115,23 +191,8 @@ def main():
     print(f"Critic module device: {critic_dev}")
 
 
-    # ----- Create PPO algorithm -----
-    optim = AdamOptimizerFactory(lr=lr)
-    
-    algo = PPO(
-        policy=policy,
-        critic=critic,
-        optim=optim,
-        eps_clip=0.2,
-        vf_coef=0.5,
-        ent_coef=0.01,
-        gae_lambda=0.95,
-        max_grad_norm=0.5,
-        gamma=0.99,
-    )
-    
     buffer = VectorReplayBuffer(
-        total_size=4096*10,
+        total_size=1000*8,
         buffer_num=num_training_envs,
     )
     
@@ -165,22 +226,21 @@ def main():
             test_in_training=False,
 
             # Know parameters 
-            max_epochs=50,   
+            max_epochs=1,   
             batch_size=256,
 
             # online training: total number of enviroment steps to collect before updated
             # offline training: total number of training step per epoch before update
-            epoch_num_steps=10_000,   
+            epoch_num_steps=100*1,   
 
             # Transition to collect at each collection step
             # before network update update 
-            collection_step_num_env_steps=10_000, 
-
+            collection_step_num_env_steps=100*1, 
             # Number of training at each epoch: epoch_num_steps / collection_step_num_env_steps
 
             # The number of times data are used
             # for gradient updates
-            update_step_num_repetitions=50,
+            update_step_num_repetitions=1,
 
             # Number of episodes to colleact in each test step
             # i.e. number of run for evaluation
