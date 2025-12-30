@@ -273,14 +273,14 @@ void WalkingManager::update(
     {
         int step_index = floor(i / 100);
 
-        double x_pred = x_curr + step_x * step_index;
-        if ((std::abs(x_goal - x_pred) > tresh) && (x_pred < x_goal)){
-            pc_ref(0,i) = x_pred;
-        }else{
-            pc_ref(0,i) = x_goal;
-        }
+        //double x_pred = x_curr + step_x * step_index;
+        //if ((std::abs(x_goal - x_pred) > tresh) && (x_pred < x_goal)){
+        //    pc_ref(0,i) = x_pred;
+        //}else{
+        //    pc_ref(0,i) = x_goal;
+        //}
 
-        // pc_ref(0,i) = 0.0;
+        pc_ref(0,i) = 0.0;
         pc_ref(1,i) = 0.0;
         
         pcom_ref(0,i) = 0.0;

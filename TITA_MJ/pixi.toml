@@ -19,9 +19,18 @@ backend = { name = "pixi-build-cmake", version = "==0.3.5" }
 [package.build.config]
 extra-args = ["-DBUILD_PYTHON_BINDINGS=ON"]
 
+[package.build-dependencies]
+cmake = "3.27.*"
+ninja = "*"
+cxx-compiler = "*"
+sysroot_linux-64 = "2.17"  
+libstdcxx-ng = "*"
+binutils = "*"
+gcc_linux-64 = "*"
+
 [package.host-dependencies]
 python = "3.12.0"
-cmake = ">=3.16"
+cmake = "3.27.*"
 ninja = "*"
 cxx-compiler = "*"
 glfw = "*"
@@ -45,7 +54,7 @@ cmake = ">=3.16"
 nanobind = "2.8.*"
 libmujoco = "==3.3.7"
 gcc_linux-64 = "*"
-libstdcxx-ng = "*"
+#libstdcxx-ng = "*"
 gxx_linux-64 = "*"
 #blasfeo = "*"
 #hpipm = "*"

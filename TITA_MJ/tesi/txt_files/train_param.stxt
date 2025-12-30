@@ -1,0 +1,36 @@
+export LD_PRELOAD=$CONDA_PREFIX/lib/libstdc++.so.6
+
+Neural Network
+    [1024, 512]
+
+    Actor = Critc
+        output: (mu, sigma) 
+                mu = tanh(mu) * max_action, 
+                sigma = param
+        act_fn = tanh
+        weight_init = check fn
+
+PPO:
+    learning_rate = 0.00001
+    eps_clip = 0.1, ratio of change between new and old policy
+    vf_coef = 0.5, weight the value loss relative to actor loss in the overall of loss fn
+    ent_coef = 0.0, exploration
+    gae_lambe = 0.90, acting as a weighting factor for combining different n-step advantage estimators
+    max_grad_norm = 0.5, maximum L2 norm threshold for gradient clipping
+    gamma = 0.995, discount factor for future reward
+    
+Buffer: It is used for storing transition from different environments yet keeping the order of time
+    tota_size = 1000*num_train_env, total size of Buffer
+    buffer_num = num_train_env, number of ReplayBuffer it uses,
+
+Training:
+    train_env = 16
+    test_env = 4
+    normalize_observation = true, check 
+    
+    max_epoch = 100
+    batch_size = 512
+    epoch_num_step = 20_000, total steps per epoch_num_step
+    collection_step_num_env_step = 256*train_env, transition to collect before update
+    update_step_num_repetion = 10, updates after collection with same data
+    test_step_num = test_env

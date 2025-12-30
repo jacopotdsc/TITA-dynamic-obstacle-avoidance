@@ -16,7 +16,7 @@ find_package(pinocchio REQUIRED)
 find_package(pybind11 REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-set(CONDA_PREFIX $ENV{CONDA_PREFIX})
+#set(CONDA_PREFIX $ENV{CONDA_PREFIX})
 
 find_package(mujoco CONFIG QUIET)
 if(TARGET mujoco::mujoco)
