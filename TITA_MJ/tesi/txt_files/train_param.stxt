@@ -1,8 +1,8 @@
 export LD_PRELOAD=$CONDA_PREFIX/lib/libstdc++.so.6
+export OMP_NUM_THREADS=1
+
 
 Neural Network
-    [1024, 512]
-
     Actor = Critc
         output: (mu, sigma) 
                 mu = tanh(mu) * max_action, 
@@ -34,3 +34,48 @@ Training:
     collection_step_num_env_step = 256*train_env, transition to collect before update
     update_step_num_repetion = 10, updates after collection with same data
     test_step_num = test_env
+
+-------------
+
+offline_trainer = OffPolicyTrainerParams(
+            training_collector=train_collector, 
+            test_collector=test_collector,  
+            logger=logger,
+            save_best_fn=partial(save_best, alg_type=alg_type, actor_path=actor_path, critic_path=critic_path),
+            
+            test_in_training=False,
+
+            # Know parameters 
+            max_epochs=15,   
+            batch_size=1024,
+
+            # Total number of training steps to take per epoch
+            epoch_num_steps=10*num_training_envs, 
+
+            # the number of environment steps/transitions to collect in each collection step before the
+            # network update within each training step.
+            collection_step_num_env_steps=10*num_training_envs,
+            #collection_step_num_episodes=1*num_training_envs 
+            
+            # The number of times data 
+            update_step_num_gradient_steps_per_sample=10,
+
+            # Number of episodes to colleact in each test step
+            # i.e. number of run for evaluation
+            test
+
+
+Critic module device: cuda:0
+Starting training enviroment Tita-v0
+Initial test step: test_reward: 2035.364589 ± 0.000000, best_reward: 2035.364589 ± 0.000000 in #0
+Epoch #1: 100%|####################################################################################################| 160/160 [00:46<00:00,  3.42it/s, env_episode=0, env_step=160, n_ep=0, n_st=160, update_step=1]
+Epoch #1: test_reward: 1863.962029 ± 0.000000, best_reward: 2035.364589 ± 0.000000 in #0###########################| 160/160 [00:46<00:00,  3.42it/s, env_episode=0, env_step=160, n_ep=0, n_st=160, update_step=1]
+Epoch #2: 100%|####################################################################################################| 160/160 [00:46<00:00,  3.42it/s, env_episode=0, env_step=320, n_ep=0, n_st=160, update_step=2]
+Epoch #2: test_reward: 2913.722595 ± 0.000000, best_reward: 2913.722595 ± 0.000000 in #2###########################| 160/160 [00:46<00:00,  3.42it/s, env_episode=0, env_step=320, n_ep=0, n_st=160, update_step=2]
+Epoch #3: 100%|####################################################################################################| 160/160 [00:47<00:00,  3.35it/s, env_episode=0, env_step=480, n_ep=0, n_st=160, update_step=3]
+Epoch #3: test_reward: 2930.131228 ± 0.000000, best_reward: 2930.131228 ± 0.000000 in #3###########################| 160/160 [00:47<00:00,  3.35it/s, env_episode=0, env_step=480, n_ep=0, n_st=160, update_step=3]
+Epoch #4: 100%|####################################################################################################| 160/160 [00:48<00:00,  3.32it/s, env_episode=0, env_step=640, n_ep=0, n_st=160, update_step=4]
+Epoch #4: test_reward: 2975.945340 ± 0.000000, best_reward: 2975.945340 ± 0.000000 in #4###########################| 160/160 [00:48<00:00,  3.32it/s, env_episode=0, env_step=640, n_ep=0, n_st=160, update_step=4]
+
+
+---------------------------

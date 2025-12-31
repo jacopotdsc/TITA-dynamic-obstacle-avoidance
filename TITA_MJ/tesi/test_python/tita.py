@@ -12,6 +12,7 @@ import numpy as np
 import torch
 from torch import nn
 import cv2
+from functools import partial
 from torch.distributions import Distribution, Independent, Normal
 
 
@@ -30,6 +31,7 @@ from tianshou.algorithm.optim import AdamOptimizerFactory
 from tianshou.data import Collector, VectorReplayBuffer
 from tianshou.env import SubprocVectorEnv
 from tianshou.highlevel.logger import LoggerFactoryDefault
+from tianshou.utils.statistics import RunningMeanStd
 from tianshou.trainer import OnPolicyTrainerParams
 from tianshou.trainer import OffPolicyTrainerParams
 from tianshou.utils.net.common import Net
@@ -65,16 +67,45 @@ def parser_args():
     print(f"Script started with\n\ttask: {script_task},\n\talgorithm: {alg_type},\n\trender mode: {render_mode}\n")
     return script_task, alg_type, render_mode
 
+def save_best(algorithm, alg_type, actor_path, critic_path):
+    print("\tSaving best model weights\n")
+    os.makedirs(os.path.dirname(actor_path), exist_ok=True)
+    torch.save(algorithm.policy.actor.state_dict(), actor_path)
+
+    #if alg_type == _STR_PPO:
+    #    print("qui")
+    #    torch.save(algorithm.critic.state_dict(), critic_path)
+    #elif alg_type == _STR_SAC:
+    #    torch.save(algorithm.critic.critic1.state_dict(), critic_path.replace(".pt", "_1.pt"))
+    #    torch.save(algorithm.critic.critic2.state_dict(), critic_path.replace(".pt", "_2.pt"))
+    #else:
+    #    raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
+
 def test_enviroment(
         task_name: str,
         policy: nn.Module,
         render_mode: str = "human",
-        device: str = "cpu"
+        num_test_envs: int = 16,
     ):
 
+    test_envs = SubprocVectorEnv([lambda: create_wrapped_env(task_name) for _ in range(num_test_envs)], )
+    collector = Collector(policy, test_envs, exploration_noise=False)
+    collector.reset()
+    result = collector.collect(n_episode=num_test_envs, render=0)
+ 
+    print(result)
+    print(type(result))
+    print(f"\nResults test environment {task_name} (x{num_test_envs}):")
+    print(f"Mean reward:     {result.returns_stat.mean:3f}")
+    print(f"Std deviation:   ±{result.returns_stat.std:3f}")
+    print(f"Min / Max:        {result.returns_stat.min:.3f} / {result.returns_stat.max:.3f}")
+    print(f"Mean length:        {np.mean(result.lens):.1f}")
+    print(f"Num episodes:       {len(result.returns)}\n")
+    print("Finished testing in vectorized envs. Showing in viewer\n")
+
+    # --- Manual rendering ---
     env = gym.make(task_name, render_mode=render_mode)
 
-    # --- 4. LOOP DI RENDERING ---
     try:
         obs, info = env.reset()
         total_reward = 0
@@ -89,7 +120,6 @@ def test_enviroment(
                 action = action.cpu().numpy()
 
             # 2. Step Ambiente
-            print(action)
             obs, reward, terminated, truncated, info = env.step(action)
             total_reward += reward
 
@@ -144,15 +174,14 @@ def main():
     # ----- Parse arguments -----
     script_task, alg_type, render_mode = parser_args()
     
-
-    # ----- Hard-coded configuration -----
-    logdir = "log/ppo_vectorized"
+    # ----- Configuration -----
+    logdir = F"log/{alg_type}_vectorized"
     device = "cuda"
     task = "Tita-v0" #"Pendulum-v1"
-    lr = 0.000001
-    hidden_sizes = [256, 256]
+    lr = 0.0000001
+    hidden_sizes = [256, 256, 256]
     num_training_envs = 16
-    num_test_envs = 1
+    num_test_envs = 16
 
     if task == "Tita-v0":
         import sys
@@ -206,7 +235,7 @@ def main():
             preprocess_net=Net(
                 state_shape=state_shape,
                 action_shape=action_shape,
-                concat=False, # True for SAC
+                concat=False, # whether the input shape is concatenated by state_shape
                 hidden_sizes=hidden_sizes,
                 activation=nn.Tanh,
             ),
@@ -313,9 +342,9 @@ def main():
         print(f"Starting testing enviroment: {task}")
 
         policy.eval()
-        root = "/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/ppo_vectorized/"
-        path_actor = "actor_state_dict.pt"   
-        actor_path = root + path_actor
+        root = f"/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/{alg_type}_vectorized/weights"
+        path_actor = "actor_state_dict_256_256_256_sac_2025_12_31_08_28_20_final.pt"   
+        actor_path = os.path.join(root, path_actor)
 
         print(f"Loading Actor weights from: {actor_path}")
         if os.path.exists(actor_path):
@@ -327,7 +356,7 @@ def main():
             task_name=task,
             policy=policy,
             render_mode=render_mode,
-            device=device
+            num_test_envs=num_test_envs,
         )
 
         return
@@ -336,16 +365,19 @@ def main():
     else:
         raise ValueError("Either --train or --test must be specified.")
 
-    if script_task == _STR_PPO:
+    # ------ Buffer -------
+    if alg_type == _STR_PPO:
         buffer = VectorReplayBuffer(
             total_size=1000*num_training_envs,
             buffer_num=num_training_envs,
         )
-    else:
+    elif alg_type == _STR_SAC:
         buffer = VectorReplayBuffer(
-            total_size=1000,
-            buffer_num=2*num_training_envs,
+            total_size=1000*1000*num_training_envs,
+            buffer_num=num_training_envs,
         )
+    else:
+        raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
     
     # Create collectors (Collector works with DummyVectorEnv)
     train_collector = Collector(
@@ -368,30 +400,36 @@ def main():
         experiment_name= alg_type + "_".join(map(str, hidden_sizes)),
         run_id=task + "_" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     )
+
+    hsize_str = "_".join(map(str, hidden_sizes))
+    timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+    actor_path = os.path.join(logdir, f"weights/actor_state_dict_{hsize_str}_{alg_type}_{timestamp}.pt")
+    critic_path = os.path.join(logdir, f"weights/critic_state_dict_{hsize_str}_{alg_type}_{timestamp}.pt")
     
     # ----- Create trainer and run training -----   
     online_trainer = OnPolicyTrainerParams(
             training_collector=train_collector, 
             test_collector=test_collector,  
             logger=logger,
+            save_best_fn=partial(save_best, alg_type=alg_type, actor_path=actor_path, critic_path=critic_path),
             test_in_training=False,
 
             # Know parameters 
-            max_epochs=100,   
+            max_epochs=10,   
             batch_size=254,
 
             # online training: total number of enviroment steps to collect before updated
             # offline training: total number of training step per epoch before update
-            epoch_num_steps=1000*num_training_envs, #*num_test_envs,   
+            epoch_num_steps=100*num_training_envs, #*num_test_envs,   
 
             # Transition to collect at each collection step
             # before network update update 
-            collection_step_num_env_steps=1000*num_training_envs, 
+            collection_step_num_env_steps=20*num_training_envs, 
             # Number of training at each epoch: epoch_num_steps / collection_step_num_env_steps
 
             # The number of times data are used
             # for gradient updates
-            update_step_num_repetitions=10,
+            update_step_num_repetitions=2000,
 
             # Number of episodes to colleact in each test step
             # i.e. number of run for evaluation
@@ -402,21 +440,23 @@ def main():
             training_collector=train_collector, 
             test_collector=test_collector,  
             logger=logger,
+            save_best_fn=partial(save_best, alg_type=alg_type, actor_path=actor_path, critic_path=critic_path),
+            
             test_in_training=False,
 
             # Know parameters 
-            max_epochs=100,   
-            batch_size=254,
+            max_epochs=10,   
+            batch_size=2048,
 
-            # online training: total number of enviroment steps to collect before updated
-            # offline training: total number of training step per epoch before update
-            epoch_num_steps=10*num_training_envs, #*num_test_envs,   
+            # Total number of training steps to take per epoch
+            epoch_num_steps=10*num_training_envs, 
 
-            # Transition to collect at each collection step
-            # before network update update 
-            collection_step_num_env_steps=10*num_training_envs, 
-            # Number of training at each epoch: epoch_num_steps / collection_step_num_env_steps
-
+            # the number of environment steps/transitions to collect in each collection step before the
+            # network update within each training step.
+            collection_step_num_env_steps=10*num_training_envs,
+            #collection_step_num_episodes=1*num_training_envs 
+            
+            # The number of times data 
             update_step_num_gradient_steps_per_sample=10,
 
             # Number of episodes to colleact in each test step
@@ -445,12 +485,13 @@ def main():
     print(f"Saving weights in {logdir}")
     try:
         os.makedirs(logdir, exist_ok=True)
-        hsize_str = "_".join(map(str, hidden_sizes))
-        timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-        actor_path = os.path.join(logdir, f"actor_state_dict_{hsize_str}_{alg_type}_{timestamp}.pt")
-        critic_path = os.path.join(logdir, f"critic_state_dict_{hsize_str}_{alg_type}_{timestamp}.pt")
-        torch.save(actor.state_dict(), actor_path)
-        torch.save(critic.state_dict(), critic_path)
+        torch.save(actor.state_dict(), actor_path.replace(".pt", "_final.pt"))
+
+        if alg_type == _STR_PPO:
+            torch.save(critic.state_dict(), critic_path.replace(".pt", "_final.pt"))
+        elif alg_type == _STR_SAC:
+            torch.save(critic1.state_dict(), critic_path.replace(".pt", "_1_final.pt"))
+            torch.save(critic2.state_dict(), critic_path.replace(".pt", "_2_final.pt"))
 
         print(f"Saved actor weights to {actor_path}")
         print(f"Saved critic weights to {critic_path}")

@@ -1,0 +1,105 @@
+logdir = F"log/{alg_type}_vectorized"
+    device = "cuda"
+    task = "Tita-v0" #"Pendulum-v1"
+    lr = 0.0000001
+    hidden_sizes = [256, 256, 256]
+    num_training_envs = 16
+    num_test_envs = 16
+
+ buffer = VectorReplayBuffer(
+            total_size=1000*1000*num_training_envs,
+            buffer_num=num_training_envs,
+        )
+
+offline_trainer = OffPolicyTrainerParams(
+            training_collector=train_collector, 
+            test_collector=test_collector,  
+            logger=logger,
+            save_best_fn=partial(save_best, alg_type=alg_type, actor_path=actor_path, critic_path=critic_path),
+            
+            test_in_training=False,
+
+            # Know parameters 
+            max_epochs=10,   
+            batch_size=2048,
+
+            # Total number of training steps to take per epoch
+            epoch_num_steps=10*num_training_envs, 
+
+            # the number of environment steps/transitions to collect in each collection step before the
+            # network update within each training step.
+            collection_step_num_env_steps=10*num_training_envs,
+            #collection_step_num_episodes=1*num_training_envs 
+            
+            # The number of times data 
+            update_step_num_gradient_steps_per_sample=10,
+
+            # Number of episodes to colleact in each test step
+            # i.e. number of run for evaluation
+            test_step_num_episodes=num_test_envs,
+        )
+        
+(tianshou_gpu) ubuntu@vostro-5590:~/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ$ python3 tesi/test_python/tita.py --train sac
+Script started with
+        task: train,
+        algorithm: sac,
+        render mode: None
+
+Creating vectorized environments (task=Tita-v0)...
+Enviroment: Tita-v0
+Observation space: (40,)
+Action space: (8,)
+Action size: 100.0
+Device chosen for training/models: cuda
+Actor module device: cuda:0
+Critic module device: cuda:0
+Starting training enviroment Tita-v0
+        Saving best model weights
+
+Initial test step: test_reward: 2162.929669 ± 251.489719, best_reward: 2162.929669 ± 251.489719 in #0
+Epoch #1: 100%|#########################################################################################################################################################| 160/160 [01:27<00:00,  1.83it/s, env_episode=0, env_step=160, n_ep=0, n_st=160, update_step=1]
+Epoch #1Saving best model weights#######################################################################################################################################| 160/160 [01:27<00:00,  1.83it/s, env_episode=0, env_step=160, n_ep=0, n_st=160, update_step=1]
+
+Epoch #1: test_reward: 2441.534263 ± 123.355676, best_reward: 2441.534263 ± 123.355676 in #1
+Epoch #2: 100%|#########################################################################################################################################################| 160/160 [01:22<00:00,  1.93it/s, env_episode=0, env_step=320, n_ep=0, n_st=160, update_step=2]
+Epoch #2Saving best model weights#######################################################################################################################################| 160/160 [01:22<00:00,  1.93it/s, env_episode=0, env_step=320, n_ep=0, n_st=160, update_step=2]
+
+Epoch #2: test_reward: 2785.967242 ± 96.910021, best_reward: 2785.967242 ± 96.910021 in #2
+Epoch #3: 100%|#########################################################################################################################################################| 160/160 [01:21<00:00,  1.95it/s, env_episode=0, env_step=480, n_ep=0, n_st=160, update_step=3]
+Epoch #3: test_reward: 2718.822033 ± 426.623364, best_reward: 2785.967242 ± 96.910021 in #2#############################################################################| 160/160 [01:21<00:00,  1.95it/s, env_episode=0, env_step=480, n_ep=0, n_st=160, update_step=3]
+Epoch #4: 100%|#########################################################################################################################################################| 160/160 [01:21<00:00,  1.97it/s, env_episode=0, env_step=640, n_ep=0, n_st=160, update_step=4]
+Epoch #4Saving best model weights#######################################################################################################################################| 160/160 [01:21<00:00,  1.97it/s, env_episode=0, env_step=640, n_ep=0, n_st=160, update_step=4]
+
+Epoch #4: test_reward: 2903.570595 ± 73.336105, best_reward: 2903.570595 ± 73.336105 in #4
+Epoch #5: 100%|#########################################################################################################################################################| 160/160 [01:21<00:00,  1.96it/s, env_episode=0, env_step=800, n_ep=0, n_st=160, update_step=5]
+Epoch #5Saving best model weights#######################################################################################################################################| 160/160 [01:21<00:00,  1.96it/s, env_episode=0, env_step=800, n_ep=0, n_st=160, update_step=5]
+
+Epoch #5: test_reward: 2935.001980 ± 72.601829, best_reward: 2935.001980 ± 72.601829 in #5
+Epoch #6: 100%|#########################################################################################################################################################| 160/160 [01:21<00:00,  1.97it/s, env_episode=0, env_step=960, n_ep=0, n_st=160, update_step=6]
+Epoch #6: test_reward: 2861.305713 ± 291.208539, best_reward: 2935.001980 ± 72.601829 in #5#############################################################################| 160/160 [01:21<00:00,  1.97it/s, env_episode=0, env_step=960, n_ep=0, n_st=160, update_step=6]
+Epoch #7: 100%|########################################################################################################################################################| 160/160 [01:21<00:00,  1.97it/s, env_episode=0, env_step=1120, n_ep=0, n_st=160, update_step=7]
+Epoch #7Saving best model weights######################################################################################################################################| 160/160 [01:21<00:00,  1.97it/s, env_episode=0, env_step=1120, n_ep=0, n_st=160, update_step=7]
+
+Epoch #7: test_reward: 2947.623937 ± 94.570766, best_reward: 2947.623937 ± 94.570766 in #7
+Epoch #8: 100%|########################################################################################################################################################| 160/160 [01:21<00:00,  1.97it/s, env_episode=0, env_step=1280, n_ep=0, n_st=160, update_step=8]
+Epoch #8Saving best model weights######################################################################################################################################| 160/160 [01:21<00:00,  1.97it/s, env_episode=0, env_step=1280, n_ep=0, n_st=160, update_step=8]
+
+Epoch #8: test_reward: 2980.531486 ± 11.759180, best_reward: 2980.531486 ± 11.759180 in #8
+Epoch #9: 100%|########################################################################################################################################################| 160/160 [01:21<00:00,  1.97it/s, env_episode=0, env_step=1440, n_ep=0, n_st=160, update_step=9]
+Epoch #9: test_reward: 2976.686237 ± 10.344058, best_reward: 2980.531486 ± 11.759180 in #8#############################################################################| 160/160 [01:21<00:00,  1.97it/s, env_episode=0, env_step=1440, n_ep=0, n_st=160, update_step=9]
+Epoch #10: 100%|######################################################################################################################################################| 160/160 [01:21<00:00,  1.97it/s, env_episode=0, env_step=1600, n_ep=0, n_st=160, update_step=10]
+Epoch #10: test_reward: 2927.103340 ± 161.014292, best_reward: 2980.531486 ± 11.759180 in #8##########################################################################| 160/160 [01:21<00:00,  1.97it/s, env_episode=0, env_step=1600, n_ep=0, n_st=160, update_step=10]
+
+Training completed!
+Logs saved to log/sac_vectorized
+Saving weights in log/sac_vectorized
+Saved actor weights to log/sac_vectorized/weights/actor_state_dict_256_256_256_sac_2025_12_31_08_28_20.pt
+Saved critic weights to log/sac_vectorized/weights/critic_state_dict_256_256_256_sac_2025_12_31_08_28_20.pt
+
+
+Results eest environment Tita-v0 (x16):
+Mean reward:     2978.147794
+Std deviation:   ±17.102335
+Min / Max:        2917.276 / 2989.845
+Mean length:        1000.0
+Num episodes:       16
