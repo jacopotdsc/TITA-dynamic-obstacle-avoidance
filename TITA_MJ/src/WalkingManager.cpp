@@ -152,7 +152,9 @@ bool WalkingManager::init(const labrob::RobotState& initial_robot_state,
 
 void WalkingManager::update(
     const labrob::RobotState& robot_state,
-    labrob::JointCommand& joint_command) {
+    labrob::JointCommand& joint_command,
+    labrob::SolutionMPC& solution
+    ) {
 
     auto start_time = std::chrono::system_clock::now();
 
@@ -328,6 +330,7 @@ void WalkingManager::update(
     mpc_.solve(x0);
 
     SolutionMPC sol = mpc_.get_solution();
+    
 
     auto end_time_mpc = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_time_mpc = (end_time_mpc - start_time_mpc) * 1000;

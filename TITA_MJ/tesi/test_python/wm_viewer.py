@@ -101,8 +101,13 @@ while True:
             
             robot_state = wm.robot_state_from_mujoco(model, data)
             #print(robot_state)
-            torque = walking_manager.update(robot_state)
+            result_update = walking_manager.update(robot_state)
+            torque = result_update.cmd
+            mpc_solution = result_update.solution
 
+            print(torque)
+            print(mpc_solution)
+            print("------------------------")
             #for ( key, val) in torque:
             #    print(f"{key}: {val}")
         

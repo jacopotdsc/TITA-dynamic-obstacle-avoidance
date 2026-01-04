@@ -17,7 +17,8 @@ class WalkingManager {
 
   void update(
       const labrob::RobotState& robot_state,
-      labrob::JointCommand& joint_command
+      labrob::JointCommand& joint_command,
+      labrob::SolutionMPC& solution
   );
 
   labrob::DesiredConfiguration des_configuration_;

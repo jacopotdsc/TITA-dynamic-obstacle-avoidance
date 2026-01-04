@@ -11,6 +11,11 @@
 namespace py = pybind11;
 using namespace labrob;
 
+struct WalkingManagerResult {
+    JointCommand cmd;
+    SolutionMPC solution;
+};
+
 uintptr_t get_mujoco_ptr(py::object obj) {
     // 1. Se è già un intero (l'utente ha passato l'indirizzo a mano)
     if (py::isinstance<py::int_>(obj)) {
@@ -98,7 +103,6 @@ PYBIND11_MODULE(wm, m) {
         
         .def("__repr__", [](const RobotState &r) {
             std::stringstream ss;
-            ss << "<RobotState>\n";
             ss << "  Pos: [" << r.position.transpose() << "]\n";
             ss << "  Ori: [" << r.orientation.coeffs().transpose() << "]\n";
             ss << "  LinVel: [" << r.linear_velocity.transpose() << "]\n";
@@ -108,6 +112,44 @@ PYBIND11_MODULE(wm, m) {
             ss << "  Contacts: " << r.contact_points.size() << " active\n";
             ss << "  Total Force: [" << r.total_force.transpose() << "]";
             
+            return ss.str();
+        });
+    
+    py::class_<SolutionMPC::Com>(m, "Com")
+        .def_readwrite("pos", &SolutionMPC::Com::pos)
+        .def_readwrite("vel", &SolutionMPC::Com::vel)
+        .def_readwrite("acc", &SolutionMPC::Com::acc)
+
+        .def("__repr__", [](const SolutionMPC::Com &c) {
+            std::stringstream ss;
+            ss << "  pos: [" << c.pos.transpose() << "]\n";
+            ss << "  vel: [" << c.vel.transpose() << "]\n";
+            ss << "  acc: [" << c.acc.transpose() << "]\n";
+            return ss.str();
+        });
+
+    py::class_<SolutionMPC::Pc>(m, "Pc")
+        .def_readwrite("pos", &SolutionMPC::Pc::pos)
+        .def_readwrite("vel", &SolutionMPC::Pc::vel)
+        .def_readwrite("acc", &SolutionMPC::Pc::acc)
+
+        .def("__repr__", [](const SolutionMPC::Pc &p) {
+            std::stringstream ss;
+            ss << "  pos: [" << p.pos.transpose() << "]\n";
+            ss << "  vel: [" << p.vel.transpose() << "]\n";
+            ss << "  acc: [" << p.acc.transpose() << "]\n";
+            return ss.str();
+        });
+
+    py::class_<SolutionMPC>(m, "SolutionMPC")
+        .def(py::init<>())
+        .def_readwrite("com", &SolutionMPC::com)
+        .def_readwrite("pc", &SolutionMPC::pc)
+
+        .def("__repr__", [](const SolutionMPC &r) {
+            std::stringstream ss;
+            ss << py::repr(py::cast(r.com)).cast<std::string>() << "\n";
+            ss << py::repr(py::cast(r.pc)).cast<std::string>() << "\n";            
             return ss.str();
         });
 
@@ -121,7 +163,24 @@ PYBIND11_MODULE(wm, m) {
         })
         .def("__iter__", [](JointCommand &jc) {
             return py::make_iterator(jc.begin(), jc.end());
-        }, py::keep_alive<0, 1>());
+        }, py::keep_alive<0, 1>())
+
+        .def("__repr__", [](JointCommand &jc) {
+            std::stringstream ss;
+            ss << "[ ";
+            bool first = true;
+            for (const auto &pair : jc) {
+                if (!first) ss << ", ";
+                ss << "(" << pair.first << ":" << std::fixed << std::setprecision(4) << pair.second << ")";
+                first = false;
+            }
+            ss << " ]";
+            return ss.str();
+        });
+
+    py::class_<WalkingManagerResult>(m, "WalkingManagerResult")
+        .def_readwrite("cmd", &WalkingManagerResult::cmd)
+        .def_readwrite("solution", &WalkingManagerResult::solution);
 
     py::class_<WalkingManager>(m, "WalkingManager")
         .def(py::init<>())
@@ -133,9 +192,15 @@ PYBIND11_MODULE(wm, m) {
             }
             return wm.init(state, armatures_map);
         })
+
         .def("update", [](WalkingManager &wm, const RobotState &state) {
             JointCommand cmd;
-            wm.update(state, cmd);
-            return cmd;
+            SolutionMPC solution;
+            wm.update(state, cmd, solution);
+
+            WalkingManagerResult result;
+            result.cmd = cmd;
+            result.solution = solution;
+            return result;
         });
 }

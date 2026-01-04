@@ -32,7 +32,7 @@ int main() {
   const int kErrorLength = 1024;          // load error string length
   char loadError[kErrorLength] = "";
   //const char* mjcf_filepath = "/home/ubuntu/miniconda3/envs/tianshou/lib/python3.12/site-packages/gymnasium/envs/mujoco/assets/tita_mjx.xml"; 
-  const char* mjcf_filepath = "/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/tita_mj_description/tita.mjcf";
+  const char* mjcf_filepath = "/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/tita_mj_description/tita.xml";
   mjModel* mj_model_ptr = mj_loadXML(mjcf_filepath, nullptr, loadError, kErrorLength);
   if (!mj_model_ptr) {
     std::cerr << "Error loading model: " << loadError << std::endl;
@@ -140,7 +140,8 @@ int main() {
     
     // Walking manager
     labrob::JointCommand joint_command;
-    walking_manager.update(robot_state, joint_command);
+    labrob::SolutionMPC solution;
+    walking_manager.update(robot_state, joint_command, solution);
 
     // apply a disturbance
     // apply_disturbance(mj_model_ptr, mj_data_ptr, timestep_counter);
