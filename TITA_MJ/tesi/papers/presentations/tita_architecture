@@ -1,0 +1,96 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0" version="29.2.6">
+  <diagram name="Page-1" id="tS2hvCT5NKcv8QlqUC1s">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="kvDFFL_lB8uL_9_OTElc-11" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="cYFbfaNWcDnpsUjxyzyi-1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-250" y="40" />
+            </Array>
+            <mxPoint x="-370" y="40" as="sourcePoint" />
+            <mxPoint x="-89.99999999999977" y="19.69" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ug1tkQE3mUzsxMFn_PoJ-2" connectable="0" parent="kvDFFL_lB8uL_9_OTElc-11" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="INITIAL STATE X0&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;com_position&lt;/div&gt;&lt;div&gt;com_lin_velocity&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;base_linear_velocity&lt;/div&gt;&lt;div&gt;base_angular_velocity&lt;/div&gt;&lt;br&gt;&lt;div&gt;mean_wheels_xy_pos&lt;/div&gt;&lt;div&gt;mean_wheels_xy_vel&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.44" y="-1" as="geometry">
+            <mxPoint x="34" y="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kvDFFL_lB8uL_9_OTElc-19" edge="1" parent="1" source="cYFbfaNWcDnpsUjxyzyi-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.529;entryY=0.028;entryDx=0;entryDy=0;entryPerimeter=0;" target="Ug1tkQE3mUzsxMFn_PoJ-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kvDFFL_lB8uL_9_OTElc-20" connectable="0" parent="kvDFFL_lB8uL_9_OTElc-19" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&lt;div&gt;DESIRED&amp;nbsp;&lt;/div&gt;&lt;div&gt;CONFIGURATION&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;com_position&lt;/div&gt;&lt;div&gt;com_quaternion&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;com_linear_velocity&lt;/div&gt;&lt;div&gt;com_angular_velocity&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;joint_pos&lt;/div&gt;&lt;div&gt;joint_vel&lt;/div&gt;&lt;div&gt;joint_acc&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;in_contact&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.0081" as="geometry">
+            <mxPoint x="-47" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cYFbfaNWcDnpsUjxyzyi-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 18px;&quot;&gt;MPC&lt;/font&gt;" vertex="1">
+          <mxGeometry height="100" width="190" x="-50" y="-10" as="geometry" />
+        </mxCell>
+        <mxCell id="kvDFFL_lB8uL_9_OTElc-15" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.375;entryDx=0;entryDy=0;entryPerimeter=0;" target="cYFbfaNWcDnpsUjxyzyi-10">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="570" y="-250" />
+              <mxPoint x="570" y="10" />
+            </Array>
+            <mxPoint x="340" y="-250" as="sourcePoint" />
+            <mxPoint x="560" y="-30.25" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kvDFFL_lB8uL_9_OTElc-16" connectable="0" parent="kvDFFL_lB8uL_9_OTElc-15" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&lt;div&gt;ROBOT&lt;/div&gt;&lt;div&gt;STATE&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;com_position&lt;/div&gt;&lt;div&gt;com_quaternion&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;com_linear_velocity&lt;/div&gt;&lt;div&gt;com_angular_velocity&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;joint_pos&lt;/div&gt;&lt;div&gt;joint_vel&lt;/div&gt;&lt;div&gt;joint_acc&lt;/div&gt;&lt;div&gt;joint_effort&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;total_force ( on base? )&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;contact_points&lt;/div&gt;&lt;div&gt;contact_forces&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.1054" y="1" as="geometry">
+            <mxPoint x="-111" y="-63" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cYFbfaNWcDnpsUjxyzyi-10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="WBC" vertex="1">
+          <mxGeometry height="80" width="160" x="609.996003046761" y="-20" as="geometry" />
+        </mxCell>
+        <mxCell id="cYFbfaNWcDnpsUjxyzyi-15" edge="1" parent="1" source="cYFbfaNWcDnpsUjxyzyi-10" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="kvDFFL_lB8uL_9_OTElc-1" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="890" y="20" />
+            </Array>
+            <mxPoint x="450" y="360" as="sourcePoint" />
+            <mxPoint x="550" y="370" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cYFbfaNWcDnpsUjxyzyi-16" connectable="0" parent="cYFbfaNWcDnpsUjxyzyi-15" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;torques&lt;/font&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.2102" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kvDFFL_lB8uL_9_OTElc-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="TITA" vertex="1">
+          <mxGeometry height="80" width="160" x="960" y="-20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ug1tkQE3mUzsxMFn_PoJ-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="NEURAL NETWORK" vertex="1">
+          <mxGeometry height="100" width="190" x="10" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="Ug1tkQE3mUzsxMFn_PoJ-6" edge="1" parent="1" source="Ug1tkQE3mUzsxMFn_PoJ-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" target="cYFbfaNWcDnpsUjxyzyi-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ug1tkQE3mUzsxMFn_PoJ-4" parent="1" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#0080F0;shadow=0;dashed=0;shape=mxgraph.ios7.icons.add;" value="" vertex="1">
+          <mxGeometry height="80" width="80" x="425" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="Ug1tkQE3mUzsxMFn_PoJ-5" edge="1" parent="1" source="Ug1tkQE3mUzsxMFn_PoJ-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.562;entryY=1.013;entryDx=0;entryDy=0;entryPerimeter=0;" target="Ug1tkQE3mUzsxMFn_PoJ-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Ug1tkQE3mUzsxMFn_PoJ-7" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-380" y="245" />
+            </Array>
+            <mxPoint x="-380" y="234.98999999999998" as="sourcePoint" />
+            <mxPoint x="10" y="244.98999999999998" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ug1tkQE3mUzsxMFn_PoJ-8" connectable="0" parent="Ug1tkQE3mUzsxMFn_PoJ-7" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&lt;div&gt;OBSERVATION&amp;nbsp;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;TODO&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.44" y="-1" as="geometry">
+            <mxPoint x="118" y="-6" as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -12,9 +12,11 @@ import numpy as np
 import torch
 from torch import nn
 import cv2
+import git
+import time
 from functools import partial
+from gymnasium.wrappers import RecordVideo
 from torch.distributions import Distribution, Independent, Normal
-
 
 
 from tianshou.algorithm import TD3
@@ -50,36 +52,47 @@ def parser_args():
     group.add_argument("--train", 
                         nargs='?', 
                         const='sac',      
-                        choices=['ppo', 'sac'],
+                        choices=[_STR_PPO, _STR_SAC],
                         help="Start training. Options: 'ppo' or 'sac' (default: sac)")
     
     group.add_argument("--test", 
                         nargs='*',   
-                        choices=['sac', 'ppo' 'human', 'rgb'],
+                        choices=[_STR_SAC, _STR_PPO, 'human', 'rgb', 'rgb_array'],
                         help="Start testing. Options: 'human' or 'rgb' (default: human)")
     
     args = parser.parse_args()
 
     script_task = _STR_TEST if args.test is not None else _STR_TRAIN
     alg_type = args.train if args.train else ( _STR_PPO if _STR_PPO in args.test else _STR_SAC )
-    render_mode = ("rgb_array" if "rgb_array" in args.test else "human") if args.test is not None else None
+    render_mode = ("rgb_array" if ("rgb" or 'rgb_array' ) in args.test else "human") if args.test is not None else None
 
-    print(f"Script started with\n\ttask: {script_task},\n\talgorithm: {alg_type},\n\trender mode: {render_mode}\n")
+    print(f"Script started with\n\ttask: {script_task},\n\talgorithm: {alg_type},\n\trender mode: {render_mode}\n\tpid: {os.getpid()}\n")
     return script_task, alg_type, render_mode
 
-def save_best(algorithm, alg_type, actor_path, critic_path):
-    print("\tSaving best model weights\n")
+def get_git_root():
+    try:
+        repo = git.Repo(".", search_parent_directories=True)
+        return repo.working_tree_dir
+    except git.InvalidGitRepositoryError:
+        return None
+    
+def save_best(algorithm, alg_type, actor_policy, actor_path, critic_policy, critic_path):
     os.makedirs(os.path.dirname(actor_path), exist_ok=True)
-    torch.save(algorithm.policy.actor.state_dict(), actor_path)
+    torch.save(actor_policy.state_dict(), actor_path)
+    #print("\nSaved best actor policy")
 
-    #if alg_type == _STR_PPO:
-    #    print("qui")
-    #    torch.save(algorithm.critic.state_dict(), critic_path)
-    #elif alg_type == _STR_SAC:
-    #    torch.save(algorithm.critic.critic1.state_dict(), critic_path.replace(".pt", "_1.pt"))
-    #    torch.save(algorithm.critic.critic2.state_dict(), critic_path.replace(".pt", "_2.pt"))
-    #else:
-    #    raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
+    if alg_type == _STR_PPO:
+        print("qui")
+        torch.save(algorithm.policy.critic.state_dict(), critic_path)
+        #print("Saved best critic policy")
+    elif alg_type == _STR_SAC:
+        torch.save(critic_policy[0].state_dict(), critic_path.replace(".pt", "_1.pt"))
+        #print("Saved best critic1 policy")
+
+        torch.save(critic_policy[1].state_dict(), critic_path.replace(".pt", "_2.pt"))
+        #print("Saved best critic2 policy")
+    else:
+        raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
 
 def test_enviroment(
         task_name: str,
@@ -93,8 +106,6 @@ def test_enviroment(
     collector.reset()
     result = collector.collect(n_episode=num_test_envs, render=0)
  
-    print(result)
-    print(type(result))
     print(f"\nResults test environment {task_name} (x{num_test_envs}):")
     print(f"Mean reward:     {result.returns_stat.mean:3f}")
     print(f"Std deviation:   ±{result.returns_stat.std:3f}")
@@ -105,6 +116,20 @@ def test_enviroment(
 
     # --- Manual rendering ---
     env = gym.make(task_name, render_mode=render_mode)
+
+    # ----- Video recording setup -----
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    os.makedirs("videos", exist_ok=True)
+    video_folder = os.path.join("videos", f"{task_name}_{timestamp}")
+    
+    if render_mode == "rgb_array":
+        env = RecordVideo(
+            env, 
+            video_folder=video_folder,
+            name_prefix="eval",
+            episode_trigger=lambda episode_id: True 
+        )
+        print(f"Video recording enabled. File will be saved in: {video_folder}")
 
     try:
         obs, info = env.reset()
@@ -147,7 +172,9 @@ def test_enviroment(
     finally:
         env.close()
         cv2.destroyAllWindows() # Chiude la finestra OpenCV
-        print("Saved video, closed.")
+
+        if render_mode == "rgb_array":
+            print(f"Videos saved in: {video_folder}")
 
 def dist_fn(loc_scale: tuple[torch.Tensor, torch.Tensor]) -> Distribution:
     loc, scale = loc_scale
@@ -161,13 +188,13 @@ def create_wrapped_env(task: str) -> gym.Env:
 
 def init_layer_orthogonal(m):
     if isinstance(m, torch.nn.Linear):
-        torch.nn.init.orthogonal_(m.weight, gain=np.sqrt(2))
+        torch.nn.init.orthogonal_(m.weight, gain=1.0)
         torch.nn.init.constant_(m.bias, 0.0)
 
 def init_last_layer(m):
-        if isinstance(m, torch.nn.Linear):
-            torch.nn.init.orthogonal_(m.weight, gain=0.01)
-            torch.nn.init.constant_(m.bias, 0.0)
+    if isinstance(m, torch.nn.Linear):
+        torch.nn.init.orthogonal_(m.weight, gain=0.01)
+        torch.nn.init.constant_(m.bias, 0.0)
 
 def main():
 
@@ -175,13 +202,14 @@ def main():
     script_task, alg_type, render_mode = parser_args()
     
     # ----- Configuration -----
-    logdir = F"log/{alg_type}_vectorized"
+    logdir = os.path.join(get_git_root(), "TITA_MJ", "log", f"{alg_type}_logs")
     device = "cuda"
     task = "Tita-v0" #"Pendulum-v1"
     lr = 0.0000001
     hidden_sizes = [256, 256, 256]
-    num_training_envs = 16
-    num_test_envs = 16
+    num_training_envs = 4
+    num_test_envs = 4
+    num_view_test_env = 16
 
     if task == "Tita-v0":
         import sys
@@ -194,7 +222,6 @@ def main():
         )
     
     if script_task == _STR_TRAIN:
-        print(f"Creating vectorized environments (task={task})...")
         training_envs = SubprocVectorEnv( [lambda: create_wrapped_env(task) for _ in range(num_training_envs)], )
         test_envs = SubprocVectorEnv([lambda: create_wrapped_env(task) for _ in range(num_test_envs)], )
 
@@ -227,7 +254,7 @@ def main():
     actor.apply(init_layer_orthogonal)
     actor.mu.apply(init_last_layer)
     with torch.no_grad():
-            torch.nn.init.constant_(actor.sigma_param, -3.0)
+        torch.nn.init.constant_(actor.sigma_param, -3.0)
     actor = actor.to(device)
 
     if alg_type == _STR_PPO:
@@ -257,7 +284,7 @@ def main():
             policy=policy,
             critic=critic,
             optim=optim,
-            eps_clip=0.1,
+            eps_clip=0.2,
             vf_coef=0.5,
             ent_coef=0.0,
             gae_lambda=0.95,
@@ -275,6 +302,8 @@ def main():
             ),
             hidden_sizes=hidden_sizes,
         )
+        #critic1.apply(init_layer_orthogonal)
+        #critic1.mu.apply(init_last_layer)
         critic1 = critic1.to(device)
 
         critic2 = ContinuousCritic(
@@ -287,6 +316,8 @@ def main():
             ),
             hidden_sizes=hidden_sizes,
         )
+        #critic2.apply(init_layer_orthogonal)
+        #critic2.mu.apply(init_last_layer)
         critic2 = critic2.to(device)
 
         policy = SACPolicy(
@@ -314,14 +345,22 @@ def main():
     
     # Print device information for debugging ------
     try:
+        print(f"\nDevice chosen for training/models: {device}")
         actor_param = next(actor.parameters())
         actor_dev = actor_param.device
+        print(f"\tActor: {actor_dev}", end=", ")
         if alg_type == _STR_PPO:
             critic_param = next(critic.parameters())
             critic_dev = critic_param.device
+
+            print(f"Critic: {critic_dev}")
         elif alg_type == _STR_SAC:
-            critic_param = next(critic1.parameters())
-            critic_dev = critic_param.device
+            critic1_param = next(critic1.parameters())
+            critic1_dev = critic1_param.device
+            critic2_param = next(critic2.parameters())
+            critic2_dev = critic2_param.device
+            print(f"Critic1: {critic1_dev}", end=", ")
+            print(f"Critic2: {critic2_dev}")
         else:
             raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
     except StopIteration:
@@ -333,17 +372,13 @@ def main():
         else:
             raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
 
-    print(f"Device chosen for training/models: {device}")
-    print(f"Actor module device: {actor_dev}")
-    print(f"Critic module device: {critic_dev}")
-
     # ----- Cehck train / test task -----
     if script_task == _STR_TEST:
-        print(f"Starting testing enviroment: {task}")
+        print(f"\nStarting testing enviroment: {task}")
 
         policy.eval()
-        root = f"/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/{alg_type}_vectorized/weights"
-        path_actor = "actor_state_dict_256_256_256_sac_2025_12_31_08_28_20_final.pt"   
+        root = os.path.join(get_git_root(), "TITA_MJ", "log", "weights_saved")
+        path_actor = "stand_up_randomize_reset.pt"   
         actor_path = os.path.join(root, path_actor)
 
         print(f"Loading Actor weights from: {actor_path}")
@@ -356,12 +391,12 @@ def main():
             task_name=task,
             policy=policy,
             render_mode=render_mode,
-            num_test_envs=num_test_envs,
+            num_test_envs=num_view_test_env,
         )
 
-        return
+        return  
     elif script_task == _STR_TRAIN:
-        print(f"Starting training enviroment {task}")
+        print(f"\nStarting training enviroment {task}")
     else:
         raise ValueError("Either --train or --test must be specified.")
 
@@ -371,11 +406,17 @@ def main():
             total_size=1000*num_training_envs,
             buffer_num=num_training_envs,
         )
+        print("\nPPO Buffer parameters:")
+        print(f"\t Total size: {buffer.maxsize:_}")
+        print(f"\t Buffer num: {buffer.buffer_num}")
     elif alg_type == _STR_SAC:
         buffer = VectorReplayBuffer(
             total_size=1000*1000*num_training_envs,
             buffer_num=num_training_envs,
         )
+        print("\nSAC Buffer parameters:")
+        print(f"\t Total size: {buffer.maxsize:_}")
+        print(f"\t Buffer num: {buffer.buffer_num}")
     else:
         raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
     
@@ -403,71 +444,97 @@ def main():
 
     hsize_str = "_".join(map(str, hidden_sizes))
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-    actor_path = os.path.join(logdir, f"weights/actor_state_dict_{hsize_str}_{alg_type}_{timestamp}.pt")
-    critic_path = os.path.join(logdir, f"weights/critic_state_dict_{hsize_str}_{alg_type}_{timestamp}.pt")
+    actor_path = os.path.join(logdir,"weights", f"actor_state_dict_{hsize_str}_{alg_type}_{timestamp}.pt")
+    critic_path = os.path.join(logdir, "weights", f"critic_state_dict_{hsize_str}_{alg_type}_{timestamp}.pt")
     
-    # ----- Create trainer and run training -----   
-    online_trainer = OnPolicyTrainerParams(
-            training_collector=train_collector, 
-            test_collector=test_collector,  
-            logger=logger,
-            save_best_fn=partial(save_best, alg_type=alg_type, actor_path=actor_path, critic_path=critic_path),
-            test_in_training=False,
+    checkpath_root = os.path.join(get_git_root(), "TITA_MJ", "log", "weights_saved")
+    checkpath_path_actor = "stand_up_randomize_reset.pt"
+    checkpath_actor = os.path.join(checkpath_root, checkpath_path_actor)
+    if os.path.exists(checkpath_actor):
+        actor.load_state_dict(torch.load(checkpath_actor, map_location=device))
+    else:
+        print(f"Actor file not found: {checkpath_actor}\n -> Continuing training from scratch.")
 
-            # Know parameters 
-            max_epochs=10,   
-            batch_size=254,
-
-            # online training: total number of enviroment steps to collect before updated
-            # offline training: total number of training step per epoch before update
-            epoch_num_steps=100*num_training_envs, #*num_test_envs,   
-
-            # Transition to collect at each collection step
-            # before network update update 
-            collection_step_num_env_steps=20*num_training_envs, 
-            # Number of training at each epoch: epoch_num_steps / collection_step_num_env_steps
-
-            # The number of times data are used
-            # for gradient updates
-            update_step_num_repetitions=2000,
-
-            # Number of episodes to colleact in each test step
-            # i.e. number of run for evaluation
-            test_step_num_episodes=num_test_envs,
-        )
-    
-    offline_trainer = OffPolicyTrainerParams(
-            training_collector=train_collector, 
-            test_collector=test_collector,  
-            logger=logger,
-            save_best_fn=partial(save_best, alg_type=alg_type, actor_path=actor_path, critic_path=critic_path),
-            
-            test_in_training=False,
-
-            # Know parameters 
-            max_epochs=10,   
-            batch_size=2048,
-
-            # Total number of training steps to take per epoch
-            epoch_num_steps=10*num_training_envs, 
-
-            # the number of environment steps/transitions to collect in each collection step before the
-            # network update within each training step.
-            collection_step_num_env_steps=10*num_training_envs,
-            #collection_step_num_episodes=1*num_training_envs 
-            
-            # The number of times data 
-            update_step_num_gradient_steps_per_sample=10,
-
-            # Number of episodes to colleact in each test step
-            # i.e. number of run for evaluation
-            test_step_num_episodes=num_test_envs,
-        )
-
+    # ----- Create trainer and run training ----- 
     if alg_type == _STR_PPO:
-        trainer_type = online_trainer
-    elif alg_type == _STR_SAC:
-        trainer_type = offline_trainer
+        trainer_type = OnPolicyTrainerParams(
+                training_collector=train_collector, 
+                test_collector=test_collector,  
+                logger=logger,
+                save_best_fn=partial(save_best, alg_type=alg_type, actor_policy=actor, actor_path=actor_path, critic_policy=critic, critic_path=critic_path),
+                test_in_training=False,
+
+                # Know parameters 
+                max_epochs=10,   
+                batch_size=254,
+
+                # online training: total number of enviroment steps to collect before updated
+                # offline training: total number of training step per epoch before update
+                epoch_num_steps=100*num_training_envs, #*num_test_envs,   
+
+                # Transition to collect at each collection step
+                # before network update update 
+                collection_step_num_env_steps=200, #*num_training_envs, 
+                # Number of training at each epoch: epoch_num_steps / collection_step_num_env_steps
+
+                # The number of times data are used
+                # for gradient updates
+                update_step_num_repetitions=2000,
+
+                # Number of episodes to colleact in each test step
+                # i.e. number of run for evaluation
+                test_step_num_episodes=num_test_envs,
+            )
+        
+        print("\nPPO Training parameters:")
+        print("\t Num train/test envs: ", num_training_envs, "/", num_test_envs)
+        print("\t learning rate:", lr)
+        print("\t hidden sizes:", hidden_sizes)
+        print("\t Max epochs:", trainer_type.max_epochs)
+        print("\t Batch size:", trainer_type.batch_size)
+        print("\t Epoch num steps:", trainer_type.epoch_num_steps)
+        print("\t Collection step num env steps:", trainer_type.collection_step_num_env_steps)
+        print("\t Update step num repetitions:", trainer_type.update_step_num_repetitions)
+        print("\t Test step num episodes:", trainer_type.test_step_num_episodes, "\n")
+    elif alg_type == _STR_SAC: 
+        trainer_type = OffPolicyTrainerParams(
+                training_collector=train_collector, 
+                test_collector=test_collector,  
+                logger=logger,
+                save_best_fn=partial(save_best, alg_type=alg_type, actor_policy=actor, actor_path=actor_path, critic_policy=[critic1, critic2], critic_path=critic_path),
+                
+                test_in_training=False,
+
+                # Know parameters 
+                max_epochs=10,   
+                batch_size=256,
+
+                # Total number of training steps to take per epoch
+                epoch_num_steps=10*num_training_envs, 
+
+                # the number of environment steps/transitions to collect in each collection step before the
+                # network update within each training step.
+                collection_step_num_env_steps=20*num_training_envs,
+                #collection_step_num_episodes=1*num_training_envs 
+                
+                # The number of times data 
+                update_step_num_gradient_steps_per_sample=10,
+
+                # Number of episodes to colleact in each test step
+                # i.e. number of run for evaluation
+                test_step_num_episodes=num_test_envs,
+            )
+        
+        print("\nSAC Trainer parameters:")
+        print("\t Num train/test envs", num_training_envs, "/", num_test_envs)
+        print("\t learning rate:", lr)
+        print("\t hidden sizes:", hidden_sizes)
+        print("\t Max epochs:", trainer_type.max_epochs)
+        print("\t Batch size:", trainer_type.batch_size)
+        print("\t Epoch num steps:", trainer_type.epoch_num_steps)
+        print("\t Collection step num env steps:", trainer_type.collection_step_num_env_steps)
+        print("\t Update step num gradient steps per sample:", trainer_type.update_step_num_gradient_steps_per_sample)
+        print("\t Test step num episodes:", trainer_type.test_step_num_episodes, "\n")
     else:
         raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
 
@@ -486,15 +553,19 @@ def main():
     try:
         os.makedirs(logdir, exist_ok=True)
         torch.save(actor.state_dict(), actor_path.replace(".pt", "_final.pt"))
+        print(f"Saved actor weights to {actor_path}")
 
         if alg_type == _STR_PPO:
             torch.save(critic.state_dict(), critic_path.replace(".pt", "_final.pt"))
+            print(f"Saved critic weights to {critic_path}")
         elif alg_type == _STR_SAC:
             torch.save(critic1.state_dict(), critic_path.replace(".pt", "_1_final.pt"))
-            torch.save(critic2.state_dict(), critic_path.replace(".pt", "_2_final.pt"))
+            print(f"Saved critic1 weights to {critic_path.replace('.pt', '_1_final.pt')}")
 
-        print(f"Saved actor weights to {actor_path}")
-        print(f"Saved critic weights to {critic_path}")
+            torch.save(critic2.state_dict(), critic_path.replace(".pt", "_2_final.pt"))
+            print(f"Saved critic2 weights to {critic_path.replace('.pt', '_2_final.pt')}")
+        else:
+            raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
     except Exception as e:
         print("Could not save model weights:", e)
 

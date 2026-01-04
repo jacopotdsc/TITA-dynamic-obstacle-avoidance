@@ -1,9 +1,9 @@
-export LD_PRELOAD=$CONDA_PREFIX/lib/libstdc++.so.6
-export OMP_NUM_THREADS=1
+conda deactivate && cd /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/ && conda activate tianshou_gpu && export LD_PRELOAD=$CONDA_PREFIX/lib/libstdc++.so.6 && export OMP_NUM_THREADS=1
+export LD_PRELOAD=$CONDA_PREFIX/lib/libstdc++.so.6 && export OMP_NUM_THREADS=1
 
 
 Neural Network
-    Actor = Critc
+    Actor = Critcc
         output: (mu, sigma) 
                 mu = tanh(mu) * max_action, 
                 sigma = param

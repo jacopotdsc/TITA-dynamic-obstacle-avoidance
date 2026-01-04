@@ -172,15 +172,18 @@
   </sensor>
 
   <sensor>
-    <gyro site="imu" name="gyro"/>
+    <gyro site="imu" name="local_angvel"/>
     <velocimeter site="imu" name="local_linvel"/>
-    <accelerometer site="imu" name="accelerometer"/>
+    <accelerometer site="imu" name="local_linacc"/>
+
     <framezaxis objtype="site" objname="imu" name="upvector"/>
     <framexaxis objtype="site" objname="imu" name="forwardvector"/>
+
     <framelinvel objtype="site" objname="imu" name="global_linvel"/>
     <frameangvel objtype="site" objname="imu" name="global_angvel"/>
     <framepos objtype="site" objname="imu" name="position"/>
     <framequat objtype="site" objname="imu" name="orientation"/>
+
     <framelinvel objtype="site" objname="left_leg_4_site"  name="left_leg_4_site_global_linvel"/>
     <framelinvel objtype="site" objname="right_leg_4_site" name="right_leg_4_site_global_linvel"/>
     <framexaxis objtype="site"  objname="left_leg_4_site"  name="left_leg_4_site_upvector"/>

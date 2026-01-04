@@ -1,0 +1,103 @@
+batch size_1024
+
+1 training env with init sqrt(2)
+
+
+Initial test step: test_reward: 1320.043044 ± 0.000000, best_reward: 1320.043044 ± 0.000000 in #0
+Epoch #1: 20it [00:06,  3.02it/s, env_episode=0, env_step=20, n_ep=0, n_st=20, update_step=1]                                                                                                                                                                           
+Epoch #1: test_reward: 1192.283965 ± 0.000000, best_reward: 1320.043044 ± 0.000000 in #0ep=1]                                                                                                                                                                           
+Epoch #2: 20it [00:05,  3.51it/s, env_episode=0, env_step=40, n_ep=0, n_st=20, update_step=2]                                                                                                                                                                           
+Epoch #2: 20it [00:05,  3.51it/s, env_episode=0, env_step=40, n_ep=0, n_st=20, update_step=2]                                                                                                                                                                           
+
+Epoch #2: test_reward: 1555.554823 ± 0.000000, best_reward: 1555.554823 ± 0.000000 in #2
+Epoch #3: 20it [00:05,  3.52it/s, env_episode=0, env_step=60, n_ep=0, n_st=20, update_step=3]                                                                                                                                                                           
+Epoch #3: 20it [00:05,  3.52it/s, env_episode=0, env_step=60, n_ep=0, n_st=20, update_step=3]                                                                                                                                                                           
+
+Epoch #3: test_reward: 2157.466187 ± 0.000000, best_reward: 2157.466187 ± 0.000000 in #3
+Epoch #4: 20it [00:05,  3.54it/s, env_episode=0, env_step=80, n_ep=0, n_st=20, update_step=4]                                                                                                                                                                           
+Epoch #4: 20it [00:05,  3.54it/s, env_episode=0, env_step=80, n_ep=0, n_st=20, update_step=4]                                                                                                                                                                           
+
+Epoch #4: test_reward: 2523.421815 ± 0.000000, best_reward: 2523.421815 ± 0.000000 in #4
+Epoch #5: 20it [00:05,  3.53it/s, env_episode=0, env_step=100, n_ep=0, n_st=20, update_step=5]                                                                                                                                                                          
+Epoch #5: test_reward: 2454.100373 ± 0.000000, best_reward: 2523.421815 ± 0.000000 in #4tep=5]                                                                                                                                                                          
+Epoch #6: 20it [00:05,  3.51it/s, env_episode=0, env_step=120, n_ep=0, n_st=20, update_step=6]                                                                                                                                                                          
+Epoch #6: 20it [00:05,  3.51it/s, env_episode=0, env_step=120, n_ep=0, n_st=20, update_step=6]                                                                                                                                                                          
+
+Epoch #6: test_reward: 2562.011116 ± 0.000000, best_reward: 2562.011116 ± 0.000000 in #6
+Epoch #7: 20it [00:05,  3.51it/s, env_episode=0, env_step=140, n_ep=0, n_st=20, update_step=7]                                                                                                                                                                          
+Epoch #7: 20it [00:05,  3.51it/s, env_episode=0, env_step=140, n_ep=0, n_st=20, update_step=7]                                                                                                                                                                          
+
+Epoch #7: test_reward: 2777.834668 ± 0.000000, best_reward: 2777.834668 ± 0.000000 in #7
+Epoch #8: 20it [00:05,  3.51it/s, env_episode=0, env_step=160, n_ep=0, n_st=20, update_step=8]                                                                                                                                                                          
+Epoch #8: 20it [00:05,  3.51it/s, env_episode=0, env_step=160, n_ep=0, n_st=20, update_step=8]                                                                                                                                                                          
+
+Epoch #8: test_reward: 2870.185235 ± 0.000000, best_reward: 2870.185235 ± 0.000000 in #8
+Epoch #9: 20it [00:05,  3.49it/s, env_episode=0, env_step=180, n_ep=0, n_st=20, update_step=9]                                                                                                                                                                          
+Epoch #9: 20it [00:05,  3.49it/s, env_episode=0, env_step=180, n_ep=0, n_st=20, update_step=9]                                                                                                                                                                          
+
+Epoch #9: test_reward: 2909.320655 ± 0.000000, best_reward: 2909.320655 ± 0.000000 in #9
+Epoch #10: 20it [00:05,  3.47it/s, env_episode=0, env_step=200, n_ep=0, n_st=20, update_step=10]                                                                                                                                                                        
+Epoch #10: 20it [00:05,  3.47it/s, env_episode=0, env_step=200, n_ep=0, n_st=20, update_step=10]                                                                                                                                                                        
+Saved best actor policy
+
+
+------------------------------------------------------------------------
+4 env with weight init at sqrt(2)
+
+Initial test step: test_reward: 1937.737998 ± 0.000000, best_reward: 1937.737998 ± 0.000000 in #0
+Epoch #1: 80it [00:25,  3.18it/s, env_episode=0, env_step=80, n_ep=0, n_st=80, update_step=1]                                                                                                                                                            
+Epoch #1: test_reward: 1978.922671 ± 0.000000, best_reward: 1978.922671 ± 0.000000 in #1ep=1]                                                                                                                                                            
+Epoch #2: 80it [00:23,  3.46it/s, env_episode=0, env_step=160, n_ep=0, n_st=80, update_step=2]                                                                                                                                                           
+Epoch #2: test_reward: 2252.204663 ± 0.000000, best_reward: 2252.204663 ± 0.000000 in #2tep=2]                                                                                                                                                           
+Epoch #3: 80it [00:23,  3.47it/s, env_episode=0, env_step=240, n_ep=0, n_st=80, update_step=3]                                                                                                                                                           
+Epoch #3: test_reward: 2312.372991 ± 0.000000, best_reward: 2312.372991 ± 0.000000 in #3tep=3]                                                                                                                                                           
+Epoch #4: 80it [00:23,  3.44it/s, env_episode=0, env_step=320, n_ep=0, n_st=80, update_step=4]                                                                                                                                                           
+Epoch #4: test_reward: 2332.661748 ± 0.000000, best_reward: 2332.661748 ± 0.000000 in #4tep=4]                                                                                                                                                           
+Epoch #5: 80it [00:23,  3.44it/s, env_episode=0, env_step=400, n_ep=0, n_st=80, update_step=5]                                                                                                                                                           
+Epoch #5: test_reward: 2381.599791 ± 0.000000, best_reward: 2381.599791 ± 0.000000 in #5tep=5]                                                                                                                                                           
+Epoch #6: 80it [00:23,  3.39it/s, env_episode=0, env_step=480, n_ep=0, n_st=80, update_step=6]                                                                                                                                                           
+Epoch #6: test_reward: 2422.936303 ± 0.000000, best_reward: 2422.936303 ± 0.000000 in #6tep=6]                                                                                                                                                           
+Epoch #7: 80it [00:23,  3.44it/s, env_episode=0, env_step=560, n_ep=0, n_st=80, update_step=7]                                                                                                                                                           
+Epoch #7: test_reward: 2488.293845 ± 0.000000, best_reward: 2488.293845 ± 0.000000 in #7tep=7]                                                                                                                                                           
+Epoch #8: 80it [00:23,  3.44it/s, env_episode=0, env_step=640, n_ep=0, n_st=80, update_step=8]                                                                                                                                                           
+Epoch #8: test_reward: 2736.791280 ± 0.000000, best_reward: 2736.791280 ± 0.000000 in #8tep=8]                                                                                                                                                           
+Epoch #9: 80it [00:24,  3.28it/s, env_episode=0, env_step=720, n_ep=0, n_st=80, update_step=9]                                                                                                                                                           
+Epoch #9: test_reward: 2819.402397 ± 0.000000, best_reward: 2819.402397 ± 0.000000 in #9tep=9]                                                                                                                                                           
+Epoch #10: 80it [00:24,  3.31it/s, env_episode=0, env_step=800, n_ep=0, n_st=80, update_step=10]                                                                                                                                                         
+Epoch #10: test_reward: 2852.686724 ± 0.000000, best_reward: 2852.686724 ± 0.000000 in #10ep=10]                                                                                                                                                         
+Epoch #11: 80it [00:23,  3.46it/s, env_episode=0, env_step=880, n_ep=0, n_st=80, update_step=11]                                                                                                                                                         
+Epoch #11: test_reward: 2883.769419 ± 0.000000, best_reward: 2883.769419 ± 0.000000 in #11ep=11]                                                                                                                                                         
+Epoch #12: 80it [00:23,  3.34it/s, env_episode=0, env_step=960, n_ep=0, n_st=80, update_step=12]                                                                                                                                                         
+Epoch #12: test_reward: 2932.540280 ± 0.000000, best_reward: 2932.540280 ± 0.000000 in #12ep=12]                                                                                                                                                         
+Epoch #13: 80it [00:23,  3.41it/s, env_episode=0, env_step=1040, n_ep=0, n_st=80, update_step=13]                                                                                                                                                        
+Epoch #13: test_reward: 2950.228304 ± 0.000000, best_reward: 2950.228304 ± 0.000000 in #13tep=13]                                                                                                                                                        
+Epoch #14: 80it [00:23,  3.42it/s, env_episode=0, env_step=1120, n_ep=0, n_st=80, update_step=14]                                                                                                                                                        
+Epoch #14: test_reward: 2940.643938 ± 0.000000, best_reward: 2950.228304 ± 0.000000 in #13tep=14]                                                                                                                                                        
+Epoch #15: 80it [00:23,  3.39it/s, env_episode=0, env_step=1200, n_ep=0, n_st=80, update_step=15]                                                                                                                                                        
+Epoch #15: test_reward: 2946.162813 ± 0.000000, best_reward: 2950.228304 ± 0.000000 in #13tep=15]  
+
+----------------------------
+4 env with weight init at 1.0
+
+Initial test step: test_reward: 1842.152448 ± 0.000000, best_reward: 1842.152448 ± 0.000000 in #0
+Epoch #1: 80it [00:14,  5.69it/s, env_episode=0, env_step=80, n_ep=0, n_st=80, update_step=1]                                                                                                       
+Epoch #1: test_reward: 1978.764101 ± 0.000000, best_reward: 1978.764101 ± 0.000000 in #1ep=1]                                                                                                       
+Epoch #2: 80it [00:13,  5.95it/s, env_episode=0, env_step=160, n_ep=0, n_st=80, update_step=2]                                                                                                      
+Epoch #2: test_reward: 2442.711166 ± 0.000000, best_reward: 2442.711166 ± 0.000000 in #2tep=2]                                                                                                      
+Epoch #3: 80it [00:13,  5.75it/s, env_episode=0, env_step=240, n_ep=0, n_st=80, update_step=3]                                                                                                      
+Epoch #3: test_reward: 2913.338075 ± 0.000000, best_reward: 2913.338075 ± 0.000000 in #3tep=3]                                                                                                      
+Epoch #4: 80it [00:13,  5.94it/s, env_episode=0, env_step=320, n_ep=0, n_st=80, update_step=4]                                                                                                      
+Epoch #4: test_reward: 2966.766888 ± 0.000000, best_reward: 2966.766888 ± 0.000000 in #4tep=4]                                                                                                      
+Epoch #5: 80it [00:13,  5.99it/s, env_episode=0, env_step=400, n_ep=0, n_st=80, update_step=5]                                                                                                      
+Epoch #5: test_reward: 2967.030069 ± 0.000000, best_reward: 2967.030069 ± 0.000000 in #5tep=5]                                                                                                      
+Epoch #6: 80it [00:13,  5.96it/s, env_episode=0, env_step=480, n_ep=0, n_st=80, update_step=6]                                                                                                      
+Epoch #6: test_reward: 2966.377822 ± 0.000000, best_reward: 2967.030069 ± 0.000000 in #5tep=6]                                                                                                      
+Epoch #7: 80it [00:13,  5.90it/s, env_episode=0, env_step=560, n_ep=0, n_st=80, update_step=7]                                                                                                      
+Epoch #7: test_reward: 2970.182830 ± 0.000000, best_reward: 2970.182830 ± 0.000000 in #7tep=7]                                                                                                      
+Epoch #8: 80it [00:13,  5.94it/s, env_episode=0, env_step=640, n_ep=0, n_st=80, update_step=8]                                                                                                      
+Epoch #8: test_reward: 2973.214591 ± 0.000000, best_reward: 2973.214591 ± 0.000000 in #8tep=8]                                                                                                      
+Epoch #9: 80it [00:13,  5.95it/s, env_episode=0, env_step=720, n_ep=0, n_st=80, update_step=9]                                                                                                      
+Epoch #9: test_reward: 2981.177868 ± 0.000000, best_reward: 2981.177868 ± 0.000000 in #9tep=9]                                                                                                      
+Epoch #10: 80it [00:13,  5.95it/s, env_episode=0, env_step=800, n_ep=0, n_st=80, update_step=10]                                                                                                    
+Epoch #10: test_reward: 2985.835650 ± 0.000000, best_reward: 2985.835650 ± 0.000000 in #10ep=10]   
+

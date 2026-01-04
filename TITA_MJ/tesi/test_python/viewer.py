@@ -1,6 +1,47 @@
 import mujoco
 import mujoco.viewer
 import time
+import numpy as np
+
+np.set_printoptions(precision=2, suppress=True)
+
+def get_sensor_data(
+        model: mujoco.MjModel, data: mujoco.MjData, sensor_name: str
+    ) -> np.ndarray:
+        """Gets sensor data given sensor name."""
+        sensor_id = model.sensor(sensor_name).id
+        sensor_adr = model.sensor_adr[sensor_id]
+        sensor_dim = model.sensor_dim[sensor_id]
+        return data.sensordata[sensor_adr : sensor_adr + sensor_dim]
+
+def _get_obs(model, data) -> np.ndarray:
+        """Get the current observation."""
+        qpos = data.qpos.copy()
+        qvel = data.qvel.copy()
+
+        # Variable definition for readability
+        height = qpos[2] #np.array(qpos[2])
+        orientation = qpos[3:7]
+        linvel = get_sensor_data(model, data, "local_linvel")
+        linacc = get_sensor_data(model, data, "local_linacc")
+        joint_angles = qpos[7:]
+        joint_vel = qvel[6:]
+        joint_acc = data.qacc[6:]
+        joint_torque_controller_normalized = np.zeros_like(joint_vel) # info["tita_controller_output"]  / abs(self.model.actuator_forcerange[:, 1])
+        command = np.zeros(3)
+        
+        print("\n--- TITA ROBOT STATE ---")
+        print(f"Height:              {height:.4f} m")
+        print(f"Orientation (quat):  {orientation}")
+        print(f"Linear Velocity:     {linvel}")
+        print(f"Linear Acc (Gyro):   {linacc}")
+        print(f"Joint Angles:        {joint_angles}")
+        print(f"Joint Velocity:      {joint_vel}")
+        print(f"Joint Acceleration:  {joint_acc}")
+        print(f"Command (Input):     {command}")
+        print("-" * 30)
+        print(f"Controller Output:   {joint_torque_controller_normalized}")
+        print("------------------------\n")
 
 # path_tita_only = "/home/ubuntu/miniconda3/envs/mujoco_rl/lib/python3.12/site-packages/mujoco_playground/_src/locomotion/tita/xmls/tita_mjx.xml"
 base_string = "/home/ubuntu/miniconda3/envs/mujoco_rl/lib/python3.12/site-packages/mujoco_playground/"
@@ -18,6 +59,10 @@ default_pose = model.keyframe("home").qpos
 default_ctrl = default_pose[7:]
 #data.qpos = default_pose
 #data.ctrl = default_ctrl
+
+data.qpos[:] = np.copy(default_pose)
+data.qvel[:] = np.zeros(model.nv)
+mujoco.mj_forward(model, data)
 
 print("Target Motori inviato:", data.ctrl)
 
@@ -92,10 +137,13 @@ print("Actuator gainprm:", actuator_gainprtm)
 print("Actuator biasprm:", actuator_biasprm)
 
 print("\n-----------------------------------------------------")
-viewer = mujoco.viewer.launch(model, data) 
+viewer = mujoco.viewer.launch_passive(model, data) 
 
 while viewer.is_running():
     try:
+        print("Stepping simulation...")
+        _get_obs(model, data)
+        print("---------------")
         mujoco.mj_step(model, data)
         viewer.sync()
     except KeyboardInterrupt:
