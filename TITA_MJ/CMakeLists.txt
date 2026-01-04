@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(TITA_MJ)
 
 option(BUILD_PYTHON_BINDINGS "Decide if compile the bindings")
+set(LOCAL_DEP_DIR "${PROJECT_SOURCE_DIR}/../dependencies/local")
 
 if(BUILD_PYTHON_BINDINGS)
 message(STATUS ">>> MODE: PYTHON, compilining wm.so)")
@@ -38,10 +39,10 @@ if(NOT MUJOCO_LIBRARY AND NOT TARGET mujoco::mujoco)
 endif()
 
 
-set(blasfeo_INCLUDE_DIRS /home/ubuntu/.local/blasfeo/include)
-set(hpipm_INCLUDE_DIRS /home/ubuntu/.local/hpipm/include)
-set(blasfeo_LIBRARIES /home/ubuntu/.local/blasfeo/lib/libblasfeo.a)
-set(hpipm_LIBRARIES /home/ubuntu/.local/hpipm/lib/libhpipm.a)
+set(blasfeo_INCLUDE_DIRS "${LOCAL_DEP_DIR}/include")
+set(hpipm_INCLUDE_DIRS   "${LOCAL_DEP_DIR}/include")
+set(blasfeo_LIBRARIES    "${LOCAL_DEP_DIR}/lib/libblasfeo.a")
+set(hpipm_LIBRARIES      "${LOCAL_DEP_DIR}/lib/libhpipm.a")
 
 add_library(wm MODULE
     src/JointCommand.cpp
@@ -56,7 +57,8 @@ add_library(wm MODULE
 )
 target_include_directories(wm PRIVATE
     ${PROJECT_SOURCE_DIR}/include
-    $ENV{HOME}/.local/include
+    ${blasfeo_INCLUDE_DIRS}/include
+    ${hpipm_INCLUDE_DIRS}
     ${blasfeo_INCLUDE_DIRS}
     ${hpipm_INCLUDE_DIRS}
 )
@@ -67,8 +69,8 @@ target_link_libraries(wm PRIVATE
     pybind11::module
     pinocchio::pinocchio
     Eigen3::Eigen
-    $ENV{HOME}/.local/lib/libhpipm.a
-    $ENV{HOME}/.local/lib/libblasfeo.a
+    ${hpipm_LIBRARIES}
+    ${blasfeo_LIBRARIES}
 )
 
 set_target_properties(wm PROPERTIES 
@@ -96,8 +98,8 @@ find_package(mujoco CONFIG REQUIRED)
 
 message(STATUS "MuJoCo found located at: ${mujoco_DIR}")
 
-set(LOCAL_LIB_DIR "/home/ubuntu/.local/lib")
-set(LOCAL_INC_DIR "/home/ubuntu/.local/include")
+set(LOCAL_LIB_DIR "${LOCAL_DEP_DIR}/lib")
+set(LOCAL_INC_DIR "${LOCAL_DEP_DIR}/include")
 
 include_directories(BEFORE "${LOCAL_INC_DIR}")
 include_directories(BEFORE "${CMAKE_CURRENT_SOURCE_DIR}/include")

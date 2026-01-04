@@ -104,21 +104,7 @@ while True:
             result_update = walking_manager.update(robot_state)
             torque = result_update.cmd
             mpc_solution = result_update.solution
-            print("MPC solution com:")
-            print(mpc_solution.com)
-            print("MPC solution pc:")
-            print(mpc_solution.pc)
-            print("------")
-            print(mpc_solution.com.pos)
-            print(mpc_solution.com.vel)
-            print(mpc_solution.com.acc)
-            print("------")
-            print(mpc_solution.pc.pos)
-            print(mpc_solution.pc.vel)
-            print(mpc_solution.pc.acc)
-
-            if frame_idx >= 2:
-                exit(0)
+            
             #for ( key, val) in torque:
             #    print(f"{key}: {val}")
         
