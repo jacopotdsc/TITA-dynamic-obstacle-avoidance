@@ -45,6 +45,13 @@ _STR_TRAIN = "train"
 _STR_TEST = "test"
 _STR_SAC = "sac"
 _STR_PPO = "ppo"
+LOG_ARRAY = []
+BEST_LAST_EPOCH = -1
+
+def log_and_print(*args):
+        message = " ".join(map(str, args))
+        print(message)
+        LOG_ARRAY.append(message)
 
 def parser_args():
     parser = argparse.ArgumentParser()
@@ -76,20 +83,31 @@ def get_git_root():
     except git.InvalidGitRepositoryError:
         return None
     
+def test_fn(num_epoch, step_idx):
+    global BEST_LAST_EPOCH
+    BEST_LAST_EPOCH = num_epoch
+
 def save_best(algorithm, alg_type, actor_policy, actor_path, critic_policy, critic_path):
-    os.makedirs(os.path.dirname(actor_path), exist_ok=True)
-    torch.save(actor_policy.state_dict(), actor_path)
+    global BEST_LAST_EPOCH
+    if BEST_LAST_EPOCH <= 0:
+        return
+    
+    dir_save_best = os.path.join(os.path.dirname(actor_path), "best_epoch_" + str(BEST_LAST_EPOCH))
+    os.makedirs(dir_save_best, exist_ok=True)
+
+    actor_best_path = os.path.join(dir_save_best, os.path.basename(actor_path))
+    critic_best_path = os.path.join(dir_save_best, os.path.basename(critic_path))
+    torch.save(actor_policy.state_dict(), actor_best_path)
     #print("\nSaved best actor policy")
 
     if alg_type == _STR_PPO:
-        print("qui")
-        torch.save(algorithm.policy.critic.state_dict(), critic_path)
+        torch.save(algorithm.policy.critic.state_dict(), critic_best_path)
         #print("Saved best critic policy")
     elif alg_type == _STR_SAC:
-        torch.save(critic_policy[0].state_dict(), critic_path.replace(".pt", "_1.pt"))
+        torch.save(critic_policy[0].state_dict(), critic_best_path.replace(".pt", "_1.pt"))
         #print("Saved best critic1 policy")
 
-        torch.save(critic_policy[1].state_dict(), critic_path.replace(".pt", "_2.pt"))
+        torch.save(critic_policy[1].state_dict(), critic_best_path.replace(".pt", "_2.pt"))
         #print("Saved best critic2 policy")
     else:
         raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
@@ -232,10 +250,10 @@ def main():
     action_shape = space_info.action_info.action_shape
     max_action = space_info.action_info.max_action
 
-    print(f"Enviroment: {task}")
-    print(f"Observation space: {state_shape}")
-    print(f"Action space: {action_shape}")
-    print(f"Action size: {max_action}")
+    log_and_print(f"Enviroment: {task}")
+    log_and_print(f"Observation space: {state_shape}")
+    log_and_print(f"Action space: {action_shape}")
+    log_and_print(f"Action size: {max_action}")
 
     # ----- Choose algorithm -----
     net = Net(
@@ -396,7 +414,7 @@ def main():
 
         return  
     elif script_task == _STR_TRAIN:
-        print(f"\nStarting training enviroment {task}")
+        log_and_print(f"\nStarting training enviroment {task}")
     else:
         raise ValueError("Either --train or --test must be specified.")
 
@@ -406,17 +424,17 @@ def main():
             total_size=1000*num_training_envs,
             buffer_num=num_training_envs,
         )
-        print("\nPPO Buffer parameters:")
-        print(f"\t Total size: {buffer.maxsize:_}")
-        print(f"\t Buffer num: {buffer.buffer_num}")
+        log_and_print("\nPPO Buffer parameters:")
+        log_and_print(f"\t Total size: {buffer.maxsize:_}")
+        log_and_print(f"\t Buffer num: {buffer.buffer_num}")
     elif alg_type == _STR_SAC:
         buffer = VectorReplayBuffer(
             total_size=1000*1000*num_training_envs,
             buffer_num=num_training_envs,
         )
-        print("\nSAC Buffer parameters:")
-        print(f"\t Total size: {buffer.maxsize:_}")
-        print(f"\t Buffer num: {buffer.buffer_num}")
+        log_and_print("\nSAC Buffer parameters:")
+        log_and_print(f"\t Total size: {buffer.maxsize:_}")
+        log_and_print(f"\t Buffer num: {buffer.buffer_num}")
     else:
         raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
     
@@ -434,18 +452,10 @@ def main():
     )
     
     # ----- Setup logger using LoggerFactoryDefault -----
-    logger_factory = LoggerFactoryDefault()
-    logger_factory.logger_type = "tensorboard"
-    logger = logger_factory.create_logger(
-        log_dir=logdir,
-        experiment_name= alg_type + "_".join(map(str, hidden_sizes)),
-        run_id=task + "_" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    )
-
-    hsize_str = "_".join(map(str, hidden_sizes))
-    timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-    actor_path = os.path.join(logdir,"weights", f"actor_state_dict_{hsize_str}_{alg_type}_{timestamp}.pt")
-    critic_path = os.path.join(logdir, "weights", f"critic_state_dict_{hsize_str}_{alg_type}_{timestamp}.pt")
+    timestamp = datetime.datetime.now().strftime('day_%Y_%m_%d_time_%H_%M_%S')
+    run_dir_name = f"{alg_type}_{timestamp}"
+    actor_path = os.path.join(logdir,"weights", run_dir_name,  f"actor_state_dict_.pt")
+    critic_path = os.path.join(logdir, "weights", run_dir_name, f"critic_state_dict.pt")
     
     checkpath_root = os.path.join(get_git_root(), "TITA_MJ", "log", "weights_saved")
     checkpath_path_actor = "stand_up_randomize_reset.pt"
@@ -453,7 +463,15 @@ def main():
     if os.path.exists(checkpath_actor):
         actor.load_state_dict(torch.load(checkpath_actor, map_location=device))
     else:
-        print(f"Actor file not found: {checkpath_actor}\n -> Continuing training from scratch.")
+        log_and_print(f"Actor file not found: {checkpath_actor}\n -> Continuing training from scratch.")
+
+    logger_factory = LoggerFactoryDefault()
+    logger_factory.logger_type = "tensorboard"
+    logger = logger_factory.create_logger(
+        log_dir=os.path.join(logdir, "weights", run_dir_name),
+        experiment_name= alg_type + "_".join(map(str, hidden_sizes)),
+        run_id=task + "_" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    )
 
     # ----- Create trainer and run training ----- 
     if alg_type == _STR_PPO:
@@ -461,6 +479,7 @@ def main():
                 training_collector=train_collector, 
                 test_collector=test_collector,  
                 logger=logger,
+                test_fn=test_fn,
                 save_best_fn=partial(save_best, alg_type=alg_type, actor_policy=actor, actor_path=actor_path, critic_policy=critic, critic_path=critic_path),
                 test_in_training=False,
 
@@ -486,27 +505,28 @@ def main():
                 test_step_num_episodes=num_test_envs,
             )
         
-        print("\nPPO Training parameters:")
-        print("\t Num train/test envs: ", num_training_envs, "/", num_test_envs)
-        print("\t learning rate:", lr)
-        print("\t hidden sizes:", hidden_sizes)
-        print("\t Max epochs:", trainer_type.max_epochs)
-        print("\t Batch size:", trainer_type.batch_size)
-        print("\t Epoch num steps:", trainer_type.epoch_num_steps)
-        print("\t Collection step num env steps:", trainer_type.collection_step_num_env_steps)
-        print("\t Update step num repetitions:", trainer_type.update_step_num_repetitions)
-        print("\t Test step num episodes:", trainer_type.test_step_num_episodes, "\n")
+        log_and_print("\nPPO Training parameters:")
+        log_and_print("\t Num train/test envs: ", num_training_envs, "/", num_test_envs)
+        log_and_print("\t learning rate:", lr)
+        log_and_print("\t hidden sizes:", hidden_sizes)
+        log_and_print("\t Max epochs:", trainer_type.max_epochs)
+        log_and_print("\t Batch size:", trainer_type.batch_size)
+        log_and_print("\t Epoch num steps:", trainer_type.epoch_num_steps)
+        log_and_print("\t Collection step num env steps:", trainer_type.collection_step_num_env_steps)
+        log_and_print("\t Update step num repetitions:", trainer_type.update_step_num_repetitions)
+        log_and_print("\t Test step num episodes:", trainer_type.test_step_num_episodes, "\n")
     elif alg_type == _STR_SAC: 
         trainer_type = OffPolicyTrainerParams(
                 training_collector=train_collector, 
                 test_collector=test_collector,  
                 logger=logger,
+                test_fn=test_fn,
                 save_best_fn=partial(save_best, alg_type=alg_type, actor_policy=actor, actor_path=actor_path, critic_policy=[critic1, critic2], critic_path=critic_path),
                 
                 test_in_training=False,
 
                 # Know parameters 
-                max_epochs=10,   
+                max_epochs=15,    
                 batch_size=256,
 
                 # Total number of training steps to take per epoch
@@ -525,16 +545,16 @@ def main():
                 test_step_num_episodes=num_test_envs,
             )
         
-        print("\nSAC Trainer parameters:")
-        print("\t Num train/test envs", num_training_envs, "/", num_test_envs)
-        print("\t learning rate:", lr)
-        print("\t hidden sizes:", hidden_sizes)
-        print("\t Max epochs:", trainer_type.max_epochs)
-        print("\t Batch size:", trainer_type.batch_size)
-        print("\t Epoch num steps:", trainer_type.epoch_num_steps)
-        print("\t Collection step num env steps:", trainer_type.collection_step_num_env_steps)
-        print("\t Update step num gradient steps per sample:", trainer_type.update_step_num_gradient_steps_per_sample)
-        print("\t Test step num episodes:", trainer_type.test_step_num_episodes, "\n")
+        log_and_print("\nSAC Trainer parameters:")
+        log_and_print("\t Num train/test envs", num_training_envs, "/", num_test_envs)
+        log_and_print("\t learning rate:", lr)
+        log_and_print("\t hidden sizes:", hidden_sizes)
+        log_and_print("\t Max epochs:", trainer_type.max_epochs)
+        log_and_print("\t Batch size:", trainer_type.batch_size)
+        log_and_print("\t Epoch num steps:", trainer_type.epoch_num_steps)
+        log_and_print("\t Collection step num env steps:", trainer_type.collection_step_num_env_steps)
+        log_and_print("\t Update step num gradient steps per sample:", trainer_type.update_step_num_gradient_steps_per_sample)
+        log_and_print("\t Test step num episodes:", trainer_type.test_step_num_episodes, "\n")
     else:
         raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
 
@@ -545,29 +565,50 @@ def main():
     except KeyboardInterrupt:
         pass
 
-    print("\nTraining completed!")
-    print(f"Logs saved to {logdir}")
+    log_and_print("\nTraining completed!")
+    log_and_print(f"Logs saved to {logdir}")
 
     # ----- Save model weights -----
-    print(f"Saving weights in {logdir}")
+    log_and_print(f"Saving weights in {logdir}")
     try:
-        os.makedirs(logdir, exist_ok=True)
-        torch.save(actor.state_dict(), actor_path.replace(".pt", "_final.pt"))
-        print(f"Saved actor weights to {actor_path}")
+        actor_base_dir = os.path.dirname(actor_path)
+        actor_file_name = os.path.basename(actor_path)
+        final_actor_path = os.path.join(actor_base_dir, "final", f"final_{actor_file_name}")
+        os.makedirs(os.path.dirname(final_actor_path), exist_ok=True)
 
+        torch.save(actor.state_dict(), final_actor_path)
+        log_and_print(f"Saved actor weights to {final_actor_path}")
         if alg_type == _STR_PPO:
-            torch.save(critic.state_dict(), critic_path.replace(".pt", "_final.pt"))
-            print(f"Saved critic weights to {critic_path}")
+            critical_base_dir = os.path.dirname(critic_path)
+            critical_file_name = os.path.basename(critic_path)
+            final_critic_path = os.path.join(critical_base_dir, "final", f"final_{critical_file_name}")
+            
+            torch.save(critic.state_dict(), final_critic_path)
+            log_and_print(f"Saved critic weights to {final_critic_path}")
         elif alg_type == _STR_SAC:
-            torch.save(critic1.state_dict(), critic_path.replace(".pt", "_1_final.pt"))
-            print(f"Saved critic1 weights to {critic_path.replace('.pt', '_1_final.pt')}")
+            critic1_base_dir = os.path.dirname(critic_path)
+            critic1_file_name = os.path.basename(critic_path)
+            final_critic1_path = os.path.join(critic1_base_dir, "final", f"final_{critic1_file_name.replace('.pt', '_1.pt')}")
+            torch.save(critic1.state_dict(), final_critic1_path)
+            log_and_print(f"Saved critic1 weights to {final_critic1_path}")
 
-            torch.save(critic2.state_dict(), critic_path.replace(".pt", "_2_final.pt"))
-            print(f"Saved critic2 weights to {critic_path.replace('.pt', '_2_final.pt')}")
+            critic2_base_dir = os.path.dirname(critic_path)
+            critic2_file_name = os.path.basename(critic_path)
+            final_critic2_path = os.path.join(critic2_base_dir, "final", f"final_{critic2_file_name.replace('.pt', '_2.pt')}")
+            torch.save(critic2.state_dict(), final_critic2_path)
+            log_and_print(f"Saved critic2 weights to {final_critic2_path}")
         else:
             raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
+        
+        
     except Exception as e:
-        print("Could not save model weights:", e)
+        log_and_print("Could not save model weights:", e)
+    finally:
+        info_file_path = os.path.join(actor_base_dir, "experiment_info", "experiment_info.txt")
+        os.makedirs(os.path.dirname(info_file_path), exist_ok=True)
+        with open(info_file_path, "w") as f:
+            f.write("\n".join(LOG_ARRAY))
+        print(f"\n\tExperiment info saved to {info_file_path}")
 
 if __name__ == "__main__":
     main()
