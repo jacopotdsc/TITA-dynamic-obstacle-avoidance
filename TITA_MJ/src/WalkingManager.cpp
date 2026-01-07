@@ -7,7 +7,7 @@ bool WalkingManager::init(const labrob::RobotState& initial_robot_state,
                      std::map<std::string, double> &armatures) {
     
     // Read URDF from file:
-    std::string robot_description_filename = "../tita_description/tita.urdf";
+    std::string robot_description_filename = "/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/tita_description/tita.urdf";
 
     // Build Pinocchio model and data from URDF:
     pinocchio::Model full_robot_model;
@@ -270,7 +270,7 @@ void WalkingManager::update(
     double x_curr = p_CoM(0);
     double step_x = 0.4; 
     double tresh = 0.01;
-    double x_goal = 0.4;
+    double x_goal = position_desired(0);
     double step_z = -0.01; 
     double h_goal = 0.25;
      for (int i = 0; i < 200+1; ++i)
@@ -295,7 +295,7 @@ void WalkingManager::update(
         if (std::abs(h_goal - h_pred) > tresh && (h_goal - h_pred) < 0){
             pcom_ref(2,i) = h_pred;
         }else{
-            pcom_ref(2,i) = h_goal;
+            pcom_ref(2,i) = position_desired(2);
         }
         // pcom_ref(2,i) = 0.4;
 

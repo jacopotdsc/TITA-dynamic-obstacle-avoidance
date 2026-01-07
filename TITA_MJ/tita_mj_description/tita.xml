@@ -1,10 +1,10 @@
 <mujoco model="tita">
-  <compiler angle="radian" meshdir="/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/tita_mj_description"autolimits="true"/>
+  <compiler angle="radian" meshdir="/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/tita_mj_description" autolimits="true"/>
 
   <default>
     <default class="robot">
       <!--geom condim="1" contype="0" conaffinity="1"/-->
-      <joint armature="0.001" damping="0.0" limited="true" solreflimit="0.02 1"/>
+      <joint armature="0.000" damping="0.0" limited="true" solreflimit="0.02 1"/>
 
       <default class="motor_1">
         <joint range="-0.785398 0.785398" />
@@ -19,7 +19,7 @@
         <motor ctrllimited="true" ctrlrange="-100 100" forcerange="-100 100"/>
       </default>
       <default class="motor_4">
-        <joint range="-3 3" />
+        <joint limited="false"/>
         <motor ctrllimited="true" ctrlrange="-100 100" forcerange="-100 100"/>
       </default>
       <default class="visual">
