@@ -140,7 +140,7 @@ def test_enviroment(
     os.makedirs("videos", exist_ok=True)
     video_folder = os.path.join("videos", f"{task_name}_{timestamp}")
     
-    if render_mode == "rgb_array":
+    if render_mode == "rgb_array" :
         env = RecordVideo(
             env, 
             video_folder=video_folder,
@@ -152,15 +152,20 @@ def test_enviroment(
     try:
         obs, info = env.reset()
         total_reward = 0
+        n_frame = 0
         
         while True:
             # 1. Inferenza
             batch = Batch(obs=np.array([obs]), info={})
             with torch.no_grad():
                 result = policy(batch)
-            action = result.act[0]
+            action = result.act[0]            
             if isinstance(action, torch.Tensor):
                 action = action.cpu().numpy()
+
+            
+            if n_frame % 100 == 0:
+                print("Frame:", n_frame, "Action:", action, ", Total Reward:", total_reward)
 
             # 2. Step Ambiente
             obs, reward, terminated, truncated, info = env.step(action)
@@ -180,7 +185,8 @@ def test_enviroment(
                 # Aspetta 1ms e controlla se premi 'q' per uscire
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
-
+            
+            n_frame += 1
             if terminated or truncated:
                 print(f"Episode terminated. Reward: {total_reward:.2f}")
                 break
@@ -227,7 +233,7 @@ def main():
     hidden_sizes = [256, 256, 256]
     num_training_envs = 4
     num_test_envs = 4
-    num_view_test_env = 16
+    num_view_test_env = 1
 
     if task == "Tita-v0":
         import sys
@@ -395,8 +401,9 @@ def main():
         print(f"\nStarting testing enviroment: {task}")
 
         policy.eval()
-        root = os.path.join(get_git_root(), "TITA_MJ", "log", "weights_saved")
-        path_actor = "stand_up_randomize_reset.pt"   
+        root = os.path.join(get_git_root(), "TITA_MJ", "log", "sac_logs", "saved_weights")
+        exp_name = "sac_day_2026_01_04_time_16_56_05"
+        path_actor = os.path.join(exp_name, "final", "final_actor_state_dict.pt") 
         actor_path = os.path.join(root, path_actor)
 
         print(f"Loading Actor weights from: {actor_path}")
@@ -454,7 +461,7 @@ def main():
     # ----- Setup logger using LoggerFactoryDefault -----
     timestamp = datetime.datetime.now().strftime('day_%Y_%m_%d_time_%H_%M_%S')
     run_dir_name = f"{alg_type}_{timestamp}"
-    actor_path = os.path.join(logdir,"weights", run_dir_name,  f"actor_state_dict_.pt")
+    actor_path = os.path.join(logdir,"weights", run_dir_name,  f"actor_state_dict.pt")
     critic_path = os.path.join(logdir, "weights", run_dir_name, f"critic_state_dict.pt")
     
     checkpath_root = os.path.join(get_git_root(), "TITA_MJ", "log", "weights_saved")
@@ -548,6 +555,7 @@ def main():
         log_and_print("\nSAC Trainer parameters:")
         log_and_print("\t Num train/test envs", num_training_envs, "/", num_test_envs)
         log_and_print("\t learning rate:", lr)
+        
         log_and_print("\t hidden sizes:", hidden_sizes)
         log_and_print("\t Max epochs:", trainer_type.max_epochs)
         log_and_print("\t Batch size:", trainer_type.batch_size)

@@ -1,18 +1,19 @@
 #include <WalkingManager.hpp>
 
+
 namespace labrob {
 
 bool WalkingManager::init(const labrob::RobotState& initial_robot_state,
                      std::map<std::string, double> &armatures) {
     
     // Read URDF from file:
-    std::string robot_description_urdf = "/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/tita_description/tita.urdf";
+    std::string robot_description_filename = "../tita_description/tita.urdf";
 
     // Build Pinocchio model and data from URDF:
     pinocchio::Model full_robot_model;
     pinocchio::JointModelFreeFlyer root_joint;
     pinocchio::urdf::buildModel(
-        robot_description_urdf,
+        robot_description_filename,
         root_joint,
         full_robot_model
     );
@@ -152,6 +153,7 @@ bool WalkingManager::init(const labrob::RobotState& initial_robot_state,
 
 void WalkingManager::update(
     const labrob::RobotState& robot_state,
+    Eigen::Vector3d& position_desired,
     labrob::JointCommand& joint_command,
     labrob::SolutionMPC& solution
     ) {
@@ -268,34 +270,34 @@ void WalkingManager::update(
     double x_curr = p_CoM(0);
     double step_x = 0.4; 
     double tresh = 0.01;
-    double x_goal = 0.0;
+    double x_goal = 0.4;
     double step_z = -0.01; 
     double h_goal = 0.25;
      for (int i = 0; i < 200+1; ++i)
     {
         int step_index = floor(i / 100);
 
-        //double x_pred = x_curr + step_x * step_index;
-        //if ((std::abs(x_goal - x_pred) > tresh) && (x_pred < x_goal)){
-        //    pc_ref(0,i) = x_pred;
-        //}else{
-        //    pc_ref(0,i) = x_goal;
-        //}
+        double x_pred = x_curr + step_x * step_index;
+        if ((std::abs(x_goal - x_pred) > tresh) && (x_pred < x_goal)){
+            pc_ref(0,i) = x_pred;
+        }else{
+            pc_ref(0,i) = x_goal;
+        }
 
-        pc_ref(0,i) = 0.0;
+        // pc_ref(0,i) = 0.0;
         pc_ref(1,i) = 0.0;
         
         pcom_ref(0,i) = 0.0;
         pcom_ref(1,i) = 0.0;
 
     
-        //double h_pred = h_curr + step_z * step_index;
-        //if (std::abs(h_goal - h_pred) > tresh && (h_goal - h_pred) < 0){
-        //    pcom_ref(2,i) = h_pred;
-        //}else{
-        //    pcom_ref(2,i) = h_goal;
-        //}
-        pcom_ref(2,i) = 0.4;
+        double h_pred = h_curr + step_z * step_index;
+        if (std::abs(h_goal - h_pred) > tresh && (h_goal - h_pred) < 0){
+            pcom_ref(2,i) = h_pred;
+        }else{
+            pcom_ref(2,i) = h_goal;
+        }
+        // pcom_ref(2,i) = 0.4;
 
     }
     

@@ -17,7 +17,7 @@ description = "Pixi environment for building the TITA MuJoCo project"
 backend = { name = "pixi-build-cmake", version = "==0.3.5" }
 
 [package.build.config]
-extra-args = ["-DBUILD_PYTHON_BINDINGS=ON"]
+extra-args = ["-DBUILD_PYTHON_BINDINGS=OFF"]
 
 [package.build-dependencies]
 cmake = "3.27.*"
