@@ -3,6 +3,8 @@ import sys
 import pandas as pd
 import git
 import matplotlib.pyplot as plt
+from scipy.spatial.transform import Rotation
+import numpy as np
 
 def get_git_root():
     """
@@ -20,6 +22,7 @@ def plot_total_reward(csv_path, plots_dir=None):
     episode_starts = df.index[df['frame'] == 0].tolist()
     episode_starts.append(len(df))  
     total_rewards = []
+    rewards_per_frame = []
 
     for i in range(len(episode_starts)-1):
         start_idx = episode_starts[i]
@@ -27,12 +30,32 @@ def plot_total_reward(csv_path, plots_dir=None):
         ep_reward = df['reward'].iloc[start_idx:end_idx].sum()
         total_rewards.append(ep_reward)
 
-    plt.figure(figsize=(10, 5))
-    plt.plot(range(1, len(total_rewards)+1), total_rewards, marker='o')
-    plt.xlabel("Episode")
-    plt.ylabel("Total Reward")
-    plt.title("Total Reward per Episode")
-    plt.grid(True)
+    last_episode_start = episode_starts[-2] # Penultimo elemento della lista è l'inizio dell'ultimo ep
+    last_episode_df = df.iloc[last_episode_start:]
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
+
+    # --- GRAFICO 1: Reward totale (X = Episodi) ---
+    episodes = range(1, len(total_rewards) + 1)
+    ax1.plot(episodes, total_rewards, marker='o', color='tab:blue', label='Tot. Reward')
+    ax1.set_title("Cumulative Reward per episodio")
+    ax1.set_xlabel("Episode") 
+    ax1.set_ylabel("Total reward")
+    ax1.grid(True, alpha=0.3)
+    ax1.legend()
+
+    # --- GRAFICO 2: Reward istantanea (X = Frame) ---
+    # Usiamo il conteggio dei frame interno all'episodio
+    ax2.plot(last_episode_df['frame'], last_episode_df['reward'], color='tab:red', label='Frame Reward')
+    ax2.set_title(f"Reward per frame of last episode (episode {len(total_rewards)})")
+    ax2.set_xlabel("Number of frame")
+    ax2.set_ylabel("Reward")
+    ax2.grid(True, alpha=0.3)
+    ax2.legend()
+
+    plt.tight_layout()
+
+    plt.tight_layout()
 
     if plots_dir:
         os.makedirs(plots_dir, exist_ok=True)
@@ -69,19 +92,32 @@ def plot_orientation(csv_path, plots_dir=None):
     episode_starts = df.index[df['frame'] == 0].tolist()
     episode_starts.append(len(df))
     ori_means = {col: [] for col in ori_cols}
+    euler_means = {'roll': [], 'pitch': [], 'yaw': []}
 
     for i in range(len(episode_starts)-1):
         start_idx = episode_starts[i]
         end_idx = episode_starts[i+1]
         ep_df = df.iloc[start_idx:end_idx]
-        for col in ori_cols:
-            ori_means[col].append(ep_df[col].mean())
-
+        quat_data = ep_df[['ori_w', 'ori_x', 'ori_y', 'ori_z']].values
+        rot = Rotation.from_quat(quat_data)
+        rot_euler = rot.as_euler('xyz', degrees=False)
+        means = rot_euler.mean(axis=0)
+        euler_means['roll'].append(means[0])
+        euler_means['pitch'].append(means[1])
+        euler_means['yaw'].append(means[2])
+        
     plt.figure(figsize=(10,5))
-    for col in ori_cols:
-        plt.plot(range(1,len(episode_starts)), ori_means[col], marker='o', label=col)
+    for label, values in euler_means.items():
+        # Converte in array numpy per manipolazione veloce
+        val_array = np.array(values)
+        
+        val_array = np.where(val_array >= np.pi/2, val_array - np.pi, val_array)
+        val_array = np.where(val_array <= -np.pi/2, val_array + np.pi, val_array)
+        plt.plot(range(1,len(euler_means['roll'])+1), val_array, marker='o', label=label)
+    
+    plt.ylim(-np.pi/2, np.pi/2)
     plt.xlabel("Episode")
-    plt.ylabel("Orientation")
+    plt.ylabel("Radians")
     plt.title("Average Orientation per Episode")
     plt.legend()
     plt.grid(True)
@@ -107,7 +143,7 @@ def plot_total_torque(csv_path, plots_dir=None):
     plt.figure(figsize=(10,5))
     plt.plot(range(1,len(total_torques)+1), total_torques, marker='o')
     plt.xlabel("Episode")
-    plt.ylabel("Total Torque")
+    plt.ylabel("Total Torque N/m")
     plt.title("Total Joint Torque per Episode")
     plt.grid(True)
 
@@ -134,7 +170,7 @@ def plot_joint_torque_last_episode(csv_path, plots_dir=None):
     for col, legend in zip(torque_cols[:4], legend_left):
         axes[0].plot(ep_df['frame'], ep_df[col], label=legend)
     axes[0].set_ylabel("Torque")
-    axes[0].set_title("Left Leg Joint Torques (Last Episode)")
+    axes[0].set_title(f"Left Leg Joint Torques (Last Episode {len(episode_starts)})")
     axes[0].legend()
     axes[0].grid(True)
 
@@ -143,7 +179,7 @@ def plot_joint_torque_last_episode(csv_path, plots_dir=None):
         axes[1].plot(ep_df['frame'], ep_df[col], label=legend)
     axes[1].set_xlabel("Frame")
     axes[1].set_ylabel("Torque")
-    axes[1].set_title("Right Leg Joint Torques (Last Episode)")
+    axes[1].set_title(f"Right Leg Joint Torques (Last Episode {len(episode_starts)})")
     axes[1].legend()
     axes[1].grid(True)
 
@@ -171,7 +207,7 @@ def plot_total_prev_action(csv_path, plots_dir=None):
     plt.plot(range(1,len(total_actions)+1), total_actions, marker='o')
     plt.xlabel("Episode")
     plt.ylabel("Total Previous Action")
-    plt.title("Total Previous Action per Episode")
+    plt.title("Total Previous Action per Episode N/m")
     plt.grid(True)
 
     if plots_dir:
