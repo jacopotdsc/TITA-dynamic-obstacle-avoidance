@@ -118,7 +118,7 @@ def plot_total_torque(csv_path, plots_dir=None):
 
 def plot_joint_torque_last_episode(csv_path, plots_dir=None):
     df = pd.read_csv(csv_path)
-    torque_cols = [f'joint_torque_{i}' for i in range(1, 9)]
+    torque_cols = [f'action_{i}' for i in range(1, 9)]
     
     joint_names = ["ankle_pitch", "ankle_roll", "knee", "wheel"]
     legend_left = ["left_" + name for name in joint_names]

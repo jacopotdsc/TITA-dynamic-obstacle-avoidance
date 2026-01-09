@@ -5,9 +5,11 @@ Demonstrates procedural API usage for training on Pendulum-v1.
 """
 
 import os
+import sys
 import subprocess
 import datetime
 import argparse
+import re
 import gymnasium as gym
 import numpy as np
 import torch
@@ -16,6 +18,7 @@ import cv2
 import git
 import time
 import pandas as pd
+import matplotlib.pyplot as plt
 from functools import partial
 from gymnasium.wrappers import RecordVideo
 from torch.distributions import Distribution, Independent, Normal
@@ -51,8 +54,55 @@ LOG_ARRAY = []
 BEST_LAST_EPOCH = -1
 N_FRAME_STACK = -1
 DIR_EXPERIMENT_INFO = "experiment_info"
+MAIN_DIR = ""
 
 global dir_experiment
+
+class LoggerTee(object):
+    def __init__(self, filename):
+        self.line_buffer = ""
+        self.last_written_line = ""
+        self.terminal = sys.stdout
+        self.ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        self.log = open(filename, "a", encoding="utf-8")
+
+    def write(self, message):
+        self.terminal.write(message)
+        
+        if not hasattr(self, 'line_buffer'):
+            return
+
+        for char in message:
+            if char == '\r':
+                self.line_buffer = ""
+            elif char == '\n':
+                clean_line = self.ansi_escape.sub('', self.line_buffer).strip()
+                # Verifica se la riga pulita è diversa dall'ultima scritta
+                if clean_line and clean_line != self.last_written_line:
+                    is_partial_tqdm = clean_line.endswith('it/s]')
+                    is_complete_tqdm = 'update_step' in clean_line or 'env_step' in clean_line
+                    is_reward_line = 'test_reward' in clean_line or 'Initial test' in clean_line
+
+                    if not is_partial_tqdm or is_complete_tqdm or is_reward_line:
+                        self.log.write(clean_line + '\n')
+                        self.log.flush()
+                        self.last_written_line = clean_line
+                
+                self.line_buffer = ""
+            else:
+                self.line_buffer += char
+
+    def flush(self):
+        self.terminal.flush()
+        self.log.flush()
+
+    def isatty(self):
+        return self.terminal.isatty()
+
+def setup_auto_logging(log_path):
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+    sys.stdout = LoggerTee(log_path)
+    sys.stderr = LoggerTee(log_path)
 
 def log_and_print(*args):
         message = " ".join(map(str, args))
@@ -132,34 +182,44 @@ def test_fn(num_epoch, step_idx):
 
     for ep_len in res.lens:
         ep_obs = buf.obs[start:start+ep_len]
+        ep_act = buf.act[start:start+ep_len]
         ep_rews = buf.rew[start:start+ep_len]
-        for i, o in enumerate(ep_obs):
+        for i in range(ep_len):
+            o = ep_obs[i]
+            a = ep_act[i]
+
             if N_FRAME_STACK > 1:
                 index_right_observation = int(o.shape[0]/N_FRAME_STACK)*(N_FRAME_STACK-1)
                 o_last = o[index_right_observation:] 
             else:
                 o_last = o
-            row = [i, ep_len, mean_len, ep_rews[i]] + list(o_last)
+            row = [num_epoch, i, ep_len, mean_len, ep_rews[i]] + list(o_last) + list(a)
             csv_data.append(row)
         start += ep_len
 
-    # Headers aggiornati
-    headers = ['frame', 'episode_length', 'mean_length', 'reward'] + [
-        'robot_height', 
-        'ori_x', 'ori_y', 'ori_z', 'ori_w', 
-        'grav_x', 'grav_y', 'grav_z', 
-        'lin_vel_x', 'lin_vel_y', 'lin_vel_z',
-        'ang_vel_x', 'ang_vel_y', 'ang_vel_z',
+    obs_headers = [
+        # Robot state
+        'robot_height', 'ori_x', 'ori_y', 'ori_z', 'ori_w', 'grav_x', 'grav_y', 'grav_z', 
+        'lin_vel_x', 'lin_vel_y', 'lin_vel_z', 'ang_vel_x', 'ang_vel_y', 'ang_vel_z',
+
+        # Joint positions and velocities
         'joint_angle_1', 'joint_angle_2', 'joint_angle_3', 'joint_angle_4', 
         'joint_angle_5', 'joint_angle_6', 'joint_angle_7', 'joint_angle_8',
         'joint_vel_1', 'joint_vel_2', 'joint_vel_3', 'joint_vel_4', 
         'joint_vel_5', 'joint_vel_6', 'joint_vel_7', 'joint_vel_8',
+
+        # Normalized wbc output
         'joint_torque_1', 'joint_torque_2', 'joint_torque_3', 'joint_torque_4', 
         'joint_torque_5', 'joint_torque_6', 'joint_torque_7', 'joint_torque_8',
+
+        # Previous actions of neural network and user commands
         'prev_action_1', 'prev_action_2', 'prev_action_3', 'prev_action_4', 
         'prev_action_5', 'prev_action_6', 'prev_action_7', 'prev_action_8',
         'user_cmd_vx', 'user_cmd_vy', 'user_cmd_omega'
     ]
+    
+    act_headers = [f'action_{i}' for i in range(1, 9)]
+    headers = ['epoch','frame', 'episode_length', 'mean_length', 'reward'] + obs_headers + act_headers
 
     global dir_experiment
     csv_path = os.path.join(dir_experiment, DIR_EXPERIMENT_INFO, "observations.csv")
@@ -203,6 +263,7 @@ def test_enviroment(
         policy: nn.Module,
         render_mode: str = "human",
         num_test_envs: int = 16,
+        save_dir: str = None,
     ):
 
     test_envs = SubprocVectorEnv([lambda: create_wrapped_env(task_name) for _ in range(num_test_envs)], )
@@ -239,20 +300,25 @@ def test_enviroment(
         obs, info = env.reset()
         total_reward = 0
         n_frame = 0
+        history_action = []
+        terminated = False
+        truncated = False
         
-        while True:
+        while True and (not terminated) and (not truncated):
             batch = Batch(obs=np.array([obs]), info={})
             with torch.no_grad():
                 result = policy(batch)
             action = result.act[0]            
             if isinstance(action, torch.Tensor):
                 action = action.cpu().numpy()
-
-            if n_frame % 100 == 0:
-                print("Frame:", n_frame, "Action:", action, ", Total Reward:", total_reward)
+            history_action.append(action)
 
             obs, reward, terminated, truncated, info = env.step(action)
             total_reward += reward
+
+
+            if n_frame == 0 or (n_frame+1) % 100 == 0:
+                print("Frame:", n_frame, "Action:", action, ", Total Reward:", total_reward)
 
             frame = env.render()
             
@@ -267,6 +333,36 @@ def test_enviroment(
             n_frame += 1
             if terminated or truncated:
                 print(f"Episode terminated. Reward: {total_reward:.2f}")
+                actions_array = np.array(history_action) # Shape: (N_frames, 8)
+                frames = np.arange(len(actions_array))
+                
+                joint_names = ["ankle_pitch", "ankle_roll", "knee", "wheel"]
+                legend_left = ["left_" + name for name in joint_names]
+                legend_right = ["right_" + name for name in joint_names]
+
+                fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+
+                for i in range(4):
+                    axes[0].plot(frames, actions_array[:, i], label=legend_left[i])
+                axes[0].set_ylabel("Action/Torque")
+                axes[0].set_title("Left Leg Joint Actions")
+                axes[0].legend(loc='upper right')
+                axes[0].grid(True)
+
+                for i in range(4):
+                    axes[1].plot(frames, actions_array[:, i+4], label=legend_right[i])
+                axes[1].set_xlabel("Frame")
+                axes[1].set_ylabel("Action/Torque")
+                axes[1].set_title("Right Leg Joint Actions")
+                axes[1].legend(loc='upper right')
+                axes[1].grid(True)
+
+                plt.tight_layout()
+                plt.savefig(os.path.join(save_dir, "torque_in_render_test.png"))
+                print(f"Saved torque_in_render_test.png in {save_dir}")
+                
+                #plt.show()
+
                 break
                 
     except KeyboardInterrupt:
@@ -532,6 +628,7 @@ def main():
             policy=policy,
             render_mode=render_mode,
             num_test_envs=num_view_test_env,
+            save_dir=os.path.join(root, exp_name, DIR_EXPERIMENT_INFO, "plots")
         )
 
         return  
@@ -676,6 +773,7 @@ def main():
                 test_collector=test_collector,  
                 logger=logger,
                 test_fn=test_fn,
+                stop_fn=lambda mean_rewards: mean_rewards >= 2970.0,
                 save_best_fn=partial(save_best, alg_type=alg_type, actor_policy=actor, actor_path=actor_path, critic_policy=[critic1, critic2], critic_path=critic_path),
                 
                 test_in_training=False,
@@ -714,6 +812,9 @@ def main():
     else:
         raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
 
+    actor_base_dir = os.path.dirname(actor_path)
+    setup_auto_logging(os.path.join(actor_base_dir, DIR_EXPERIMENT_INFO, "training_log.txt"))
+
     try:
         result_policy = algo.run_training(
             trainer_type
@@ -727,7 +828,6 @@ def main():
     # ----- Save model weights -----
     log_and_print(f"Saving weights in {logdir}")
     try:
-        actor_base_dir = os.path.dirname(actor_path)
         actor_file_name = os.path.basename(actor_path)
         final_actor_path = os.path.join(actor_base_dir, "final", f"final_{actor_file_name}")
         os.makedirs(os.path.dirname(final_actor_path), exist_ok=True)
