@@ -5,6 +5,7 @@ Demonstrates procedural API usage for training on Pendulum-v1.
 """
 
 import os
+import subprocess
 import datetime
 import argparse
 import gymnasium as gym
@@ -14,6 +15,7 @@ from torch import nn
 import cv2
 import git
 import time
+import pandas as pd
 from functools import partial
 from gymnasium.wrappers import RecordVideo
 from torch.distributions import Distribution, Independent, Normal
@@ -47,6 +49,10 @@ _STR_SAC = "sac"
 _STR_PPO = "ppo"
 LOG_ARRAY = []
 BEST_LAST_EPOCH = -1
+N_FRAME_STACK = -1
+DIR_EXPERIMENT_INFO = "experiment_info"
+
+global dir_experiment
 
 def log_and_print(*args):
         message = " ".join(map(str, args))
@@ -64,17 +70,44 @@ def parser_args():
     
     group.add_argument("--test", 
                         nargs='*',   
-                        choices=[_STR_SAC, _STR_PPO, 'human', 'rgb', 'rgb_array'],
-                        help="Start testing. Options: 'human' or 'rgb' (default: human)")
+                        help="Start testing. Usage: --test [alg] [exp_name] [render_mode]")
+
+    group.add_argument("--log",
+                        nargs='?', 
+                        const='yes',      
+                        choices=["yes", "no"],
+                        help="Start logging. Options: 'ppo' or 'sac' (default: sac)"
+                       )
     
     args = parser.parse_args()
 
-    script_task = _STR_TEST if args.test is not None else _STR_TRAIN
-    alg_type = args.train if args.train else ( _STR_PPO if _STR_PPO in args.test else _STR_SAC )
-    render_mode = ("rgb_array" if ("rgb" or 'rgb_array' ) in args.test else "human") if args.test is not None else None
+    script_task = _STR_TRAIN
+    alg_type = _STR_SAC
+    render_mode = "human"
+    test_exp_name = None
+    make_log = False
+
+    if args.train:
+        script_task = _STR_TRAIN
+        alg_type = args.train.lower()
+    
+    if args.test is not None:
+        script_task = _STR_TEST
+        test_args = [item.lower() for item in args.test]
+        
+        for item in test_args:
+            if item in [_STR_SAC, _STR_PPO]:
+                alg_type = item
+            elif item in ['human', 'rgb', 'rgb_array']:
+                render_mode = "rgb_array" if item in ['rgb', 'rgb_array'] else "human"
+            else:
+                test_exp_name = item
+
+    if args.log:
+        make_log = True if args.log.lower() == "yes" else False
 
     print(f"Script started with\n\ttask: {script_task},\n\talgorithm: {alg_type},\n\trender mode: {render_mode}\n\tpid: {os.getpid()}\n")
-    return script_task, alg_type, render_mode
+    return script_task, alg_type, render_mode, make_log, test_exp_name
 
 def get_git_root():
     try:
@@ -86,6 +119,59 @@ def get_git_root():
 def test_fn(num_epoch, step_idx):
     global BEST_LAST_EPOCH
     BEST_LAST_EPOCH = num_epoch
+
+    global N_FRAME_STACK
+
+    test_collector.reset()
+    res = test_collector.collect(n_episode=1, render=0)
+    mean_len = np.mean(res.lens)
+
+    buf = test_collector.buffer  
+    start = 0
+    csv_data = []
+
+    for ep_len in res.lens:
+        ep_obs = buf.obs[start:start+ep_len]
+        ep_rews = buf.rew[start:start+ep_len]
+        for i, o in enumerate(ep_obs):
+            if N_FRAME_STACK > 1:
+                index_right_observation = int(o.shape[0]/N_FRAME_STACK)*(N_FRAME_STACK-1)
+                o_last = o[index_right_observation:] 
+            else:
+                o_last = o
+            row = [i, ep_len, mean_len, ep_rews[i]] + list(o_last)
+            csv_data.append(row)
+        start += ep_len
+
+    # Headers aggiornati
+    headers = ['frame', 'episode_length', 'mean_length', 'reward'] + [
+        'robot_height', 
+        'ori_x', 'ori_y', 'ori_z', 'ori_w', 
+        'grav_x', 'grav_y', 'grav_z', 
+        'lin_vel_x', 'lin_vel_y', 'lin_vel_z',
+        'ang_vel_x', 'ang_vel_y', 'ang_vel_z',
+        'joint_angle_1', 'joint_angle_2', 'joint_angle_3', 'joint_angle_4', 
+        'joint_angle_5', 'joint_angle_6', 'joint_angle_7', 'joint_angle_8',
+        'joint_vel_1', 'joint_vel_2', 'joint_vel_3', 'joint_vel_4', 
+        'joint_vel_5', 'joint_vel_6', 'joint_vel_7', 'joint_vel_8',
+        'joint_torque_1', 'joint_torque_2', 'joint_torque_3', 'joint_torque_4', 
+        'joint_torque_5', 'joint_torque_6', 'joint_torque_7', 'joint_torque_8',
+        'prev_action_1', 'prev_action_2', 'prev_action_3', 'prev_action_4', 
+        'prev_action_5', 'prev_action_6', 'prev_action_7', 'prev_action_8',
+        'user_cmd_vx', 'user_cmd_vy', 'user_cmd_omega'
+    ]
+
+    global dir_experiment
+    csv_path = os.path.join(dir_experiment, DIR_EXPERIMENT_INFO, "observations.csv")
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+
+    if os.path.exists(csv_path):
+        df_existing = pd.read_csv(csv_path)
+        df = pd.concat([df_existing, pd.DataFrame(csv_data, columns=headers)], ignore_index=True)
+    else:
+        df = pd.DataFrame(csv_data, columns=headers)
+
+    df.to_csv(csv_path, index=False)
 
 def save_best(algorithm, alg_type, actor_policy, actor_path, critic_policy, critic_path):
     global BEST_LAST_EPOCH
@@ -133,7 +219,7 @@ def test_enviroment(
     print("Finished testing in vectorized envs. Showing in viewer\n")
 
     # --- Manual rendering ---
-    env = gym.make(task_name, render_mode=render_mode)
+    env = create_wrapped_env(task_name, render_mode=render_mode)
 
     # ----- Video recording setup -----
     timestamp = time.strftime("%Y%m%d-%H%M%S")
@@ -155,7 +241,6 @@ def test_enviroment(
         n_frame = 0
         
         while True:
-            # 1. Inferenza
             batch = Batch(obs=np.array([obs]), info={})
             with torch.no_grad():
                 result = policy(batch)
@@ -163,26 +248,19 @@ def test_enviroment(
             if isinstance(action, torch.Tensor):
                 action = action.cpu().numpy()
 
-            
             if n_frame % 100 == 0:
                 print("Frame:", n_frame, "Action:", action, ", Total Reward:", total_reward)
 
-            # 2. Step Ambiente
             obs, reward, terminated, truncated, info = env.step(action)
             total_reward += reward
 
-            # 3. VISUALIZZAZIONE MANUALE E REGISTRAZIONE
-            # env.render() restituisce l'array RGB perché mode="rgb_array"
             frame = env.render()
             
             if frame is not None and render_mode == "rgb_array":
-                # OpenCV usa BGR invece di RGB, convertiamo per vedere i colori giusti
                 frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 
-                # Mostra la finestra
                 cv2.imshow("Agent Preview (Press 'q' to quit)", frame_bgr)
                 
-                # Aspetta 1ms e controlla se premi 'q' per uscire
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
             
@@ -200,14 +278,47 @@ def test_enviroment(
         if render_mode == "rgb_array":
             print(f"Videos saved in: {video_folder}")
 
+def print_net_info(name, net, state_shape, action_shape=None):
+    if action_shape is not None:
+        input_dim = state_shape
+        output_dim = action_shape[0]
+    else:
+        input_dim = state_shape
+        output_dim = 1
+    print(f"\nNetwork {name} info:")
+    print(f"\tinput Size: {input_dim}, output Size: {output_dim}")
+
+def log_enviroment_config(task, env_single: gym.Env):
+
+    config = env_single.unwrapped.get_config()
+    space_info = SpaceInfo.from_env(env_single)
+    state_shape = space_info.observation_info.obs_shape[0]
+    action_shape = space_info.action_info.action_shape
+    max_action = space_info.action_info.max_action
+    frame_stack = config.frame_stack
+
+    log_and_print(f"Enviroment: {task}")
+    log_and_print(f"Observation space: {int(state_shape/frame_stack)} x {frame_stack} (stacked frames)")
+    log_and_print(f"Action space: {action_shape}")
+    log_and_print(f"Action size: {max_action}\n")
+
+    log_and_print(f"\tAction Scale: {config.action_scale}")
+    log_and_print(f"\tAction Repeat: {config.action_repeat}")
+    reward_scales = config.reward_config.scales
+    for reward_name, scale in reward_scales.items():
+        if scale != 0:
+            log_and_print(f"\t{reward_name}: {scale}")
+
 def dist_fn(loc_scale: tuple[torch.Tensor, torch.Tensor]) -> Distribution:
     loc, scale = loc_scale
     return Independent(Normal(loc, scale), 1)
 
-def create_wrapped_env(task: str) -> gym.Env:
-    env = gym.make(task)
+def create_wrapped_env(task: str, render_mode=None) -> gym.Env:
+    env = gym.make(task, render_mode=render_mode)
     #env = gym.wrappers.NormalizeObservation(env)  
     #env = gym.wrappers.TransformObservation(env, lambda obs: np.clip(obs, -10, 10), env.observation_space)
+    env = gym.wrappers.FrameStackObservation(env, stack_size=env.unwrapped.get_config().frame_stack)
+    env = gym.wrappers.FlattenObservation(env)
     return env
 
 def init_layer_orthogonal(m):
@@ -223,7 +334,7 @@ def init_last_layer(m):
 def main():
 
     # ----- Parse arguments -----
-    script_task, alg_type, render_mode = parser_args()
+    script_task, alg_type, render_mode, make_log, test_exp_name = parser_args()
     
     # ----- Configuration -----
     logdir = os.path.join(get_git_root(), "TITA_MJ", "log", f"{alg_type}_logs")
@@ -231,8 +342,8 @@ def main():
     task = "Tita-v0" #"Pendulum-v1"
     lr = 0.0000001
     hidden_sizes = [256, 256, 256]
-    num_training_envs = 4
-    num_test_envs = 4
+    num_training_envs = 8
+    num_test_envs = 1
     num_view_test_env = 1
 
     if task == "Tita-v0":
@@ -256,10 +367,10 @@ def main():
     action_shape = space_info.action_info.action_shape
     max_action = space_info.action_info.max_action
 
-    log_and_print(f"Enviroment: {task}")
-    log_and_print(f"Observation space: {state_shape}")
-    log_and_print(f"Action space: {action_shape}")
-    log_and_print(f"Action size: {max_action}")
+    global N_FRAME_STACK
+    N_FRAME_STACK = env_single.unwrapped.get_config().frame_stack
+
+    log_enviroment_config(task, env_single)
 
     # ----- Choose algorithm -----
     net = Net(
@@ -275,11 +386,12 @@ def main():
         unbounded=False, # if true apply tanh to output, else max_action = 1.0
         conditioned_sigma=False, # if true, sigma is output of a simple network, else is a parameter
     )
-    actor.apply(init_layer_orthogonal)
+    #actor.apply(init_layer_orthogonal)
     actor.mu.apply(init_last_layer)
     with torch.no_grad():
         torch.nn.init.constant_(actor.sigma_param, -3.0)
     actor = actor.to(device)
+    print_net_info("Actor", actor, state_shape, action_shape)
 
     if alg_type == _STR_PPO:
         critic = ContinuousCritic(
@@ -293,6 +405,7 @@ def main():
             hidden_sizes=hidden_sizes,
         )
         critic = critic.to(device)
+        print_net_info("Critic", critic, state_shape)
 
         policy = ProbabilisticActorPolicy(
             actor=actor,
@@ -329,6 +442,7 @@ def main():
         #critic1.apply(init_layer_orthogonal)
         #critic1.mu.apply(init_last_layer)
         critic1 = critic1.to(device)
+        print_net_info("Critic1", critic1, state_shape)
 
         critic2 = ContinuousCritic(
             preprocess_net=Net(
@@ -343,6 +457,7 @@ def main():
         #critic2.apply(init_layer_orthogonal)
         #critic2.mu.apply(init_last_layer)
         critic2 = critic2.to(device)
+        print_net_info("Critic2", critic2, state_shape)
 
         policy = SACPolicy(
             actor=actor,
@@ -401,8 +516,8 @@ def main():
         print(f"\nStarting testing enviroment: {task}")
 
         policy.eval()
-        root = os.path.join(get_git_root(), "TITA_MJ", "log", "sac_logs", "saved_weights")
-        exp_name = "sac_day_2026_01_04_time_16_56_05"
+        root = os.path.join(get_git_root(), "TITA_MJ", "log", f"{alg_type}_logs", "saved_weights")
+        exp_name = test_exp_name
         path_actor = os.path.join(exp_name, "final", "final_actor_state_dict.pt") 
         actor_path = os.path.join(root, path_actor)
 
@@ -430,20 +545,30 @@ def main():
         buffer = VectorReplayBuffer(
             total_size=1000*num_training_envs,
             buffer_num=num_training_envs,
+            stack_num=1#env_single.unwrapped.get_config().frame_stack,
         )
         log_and_print("\nPPO Buffer parameters:")
         log_and_print(f"\t Total size: {buffer.maxsize:_}")
         log_and_print(f"\t Buffer num: {buffer.buffer_num}")
+        log_and_print(f"\t Stack num: {buffer.stack_num}")
     elif alg_type == _STR_SAC:
         buffer = VectorReplayBuffer(
-            total_size=1000*1000*num_training_envs,
+            total_size=1000*num_training_envs,
             buffer_num=num_training_envs,
+            stack_num=1 #env_single.unwrapped.get_config().frame_stack,
         )
         log_and_print("\nSAC Buffer parameters:")
         log_and_print(f"\t Total size: {buffer.maxsize:_}")
         log_and_print(f"\t Buffer num: {buffer.buffer_num}")
+        log_and_print(f"\t Stack num: {buffer.stack_num}")
     else:
         raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
+    
+    test_buffer = VectorReplayBuffer(
+        total_size=20000, 
+        buffer_num=len(test_envs), 
+        stack_num=1#env_single.unwrapped.get_config().frame_stack,
+    )
     
     # Create collectors (Collector works with DummyVectorEnv)
     train_collector = Collector(
@@ -452,17 +577,40 @@ def main():
         buffer,
         exploration_noise=False,
     )
+
+    global test_collector
     test_collector = Collector(
         policy,
         test_envs,
+        test_buffer,
         exploration_noise=False,
     )
-    
+
+    # ----- Initial data collection -----
+    train_collector.reset()
+    test_collector.reset()
+
+    train_collector.collect(n_step=100*num_training_envs)
+    test_collector.collect(n_step=100*num_test_envs)
+    train_batch, _ = train_collector.buffer.sample(1)
+    log_and_print(f"Train Buffer - Batch Observation Shape: {train_batch.obs.shape}")
+    log_and_print(f"Train Buffer - Single Sample Shape: {train_batch.obs[0].shape}")
+
+    test_batch, _ = test_collector.buffer.sample(1)
+    log_and_print(f"Test Buffer - Batch Observation Shape: {test_batch.obs.shape}")
+    log_and_print(f"Test Buffer - Single Sample Shape: {test_batch.obs[0].shape}")
+
+    train_collector.reset()
+    test_collector.reset()
+
     # ----- Setup logger using LoggerFactoryDefault -----
     timestamp = datetime.datetime.now().strftime('day_%Y_%m_%d_time_%H_%M_%S')
     run_dir_name = f"{alg_type}_{timestamp}"
     actor_path = os.path.join(logdir,"weights", run_dir_name,  f"actor_state_dict.pt")
     critic_path = os.path.join(logdir, "weights", run_dir_name, f"critic_state_dict.pt")
+
+    global dir_experiment
+    dir_experiment = os.path.join(logdir, "weights", run_dir_name)
     
     checkpath_root = os.path.join(get_git_root(), "TITA_MJ", "log", "weights_saved")
     checkpath_path_actor = "stand_up_randomize_reset.pt"
@@ -534,7 +682,7 @@ def main():
 
                 # Know parameters 
                 max_epochs=15,    
-                batch_size=256,
+                batch_size=512,
 
                 # Total number of training steps to take per epoch
                 epoch_num_steps=10*num_training_envs, 
@@ -560,7 +708,7 @@ def main():
         log_and_print("\t Max epochs:", trainer_type.max_epochs)
         log_and_print("\t Batch size:", trainer_type.batch_size)
         log_and_print("\t Epoch num steps:", trainer_type.epoch_num_steps)
-        log_and_print("\t Collection step num env steps:", trainer_type.collection_step_num_env_steps)
+        log_and_print("\t Collection step num env steps:", trainer_type.collection_step_num_env_steps, ", roullout: ", trainer_type.collection_step_num_env_steps/num_training_envs)
         log_and_print("\t Update step num gradient steps per sample:", trainer_type.update_step_num_gradient_steps_per_sample)
         log_and_print("\t Test step num episodes:", trainer_type.test_step_num_episodes, "\n")
     else:
@@ -612,11 +760,17 @@ def main():
     except Exception as e:
         log_and_print("Could not save model weights:", e)
     finally:
-        info_file_path = os.path.join(actor_base_dir, "experiment_info", "experiment_info.txt")
+        info_file_path = os.path.join(actor_base_dir, DIR_EXPERIMENT_INFO, "experiment_info.txt")
         os.makedirs(os.path.dirname(info_file_path), exist_ok=True)
         with open(info_file_path, "w") as f:
             f.write("\n".join(LOG_ARRAY))
         print(f"\n\tExperiment info saved to {info_file_path}")
+
+        try:
+            script_path = os.path.join(get_git_root(), "TITA_MJ", "tesi", "test_python", "plot.py")
+            subprocess.run(["python3", script_path, run_dir_name], check=True)
+        except subprocess.CalledProcessError as e:
+            print("\n\tError on executing plot.py:", e)
 
 if __name__ == "__main__":
     main()

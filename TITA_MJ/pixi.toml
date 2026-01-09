@@ -17,7 +17,7 @@ description = "Pixi environment for building the TITA MuJoCo project"
 backend = { name = "pixi-build-cmake", version = "==0.3.5" }
 
 [package.build.config]
-extra-args = ["-DBUILD_PYTHON_BINDINGS=OFF"]
+extra-args = ["-DBUILD_PYTHON_BINDINGS=ON"]
 
 [package.build-dependencies]
 cmake = "3.27.*"
@@ -70,7 +70,6 @@ description = """Install MuJoCo python bindings via pip (optional). Ensure MuJoC
 binaries are available under $HOME/mujoco or follow mujoco docs."""
 
 [tasks]
-cpp = "cd exec && ./main; cd .."
-policy = "cd tesi/test_python && python3 test_policy.py; cd ../.."
-vm_view = "cd tesi/test_python && python3  wm_viewer.py; cd ../.."
-view = "cd tesi/test_python && python3 viewer.py; cd ../.."
+c = "./exec/main"
+w = "python3 tesi/test_python/wm_viewer.py"
+v = "python3 tesi/test_python/viewer.py"

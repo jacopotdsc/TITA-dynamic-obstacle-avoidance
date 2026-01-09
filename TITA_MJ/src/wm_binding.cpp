@@ -178,27 +178,6 @@ PYBIND11_MODULE(wm, m) {
             return ss.str();
         });
 
-    py::class_<Eigen::Vector3d>(m, "Vector3d")
-        .def(py::init<>())
-        .def(py::init<double, double, double>())
-        .def_property("x", 
-            [](Eigen::Vector3d &v) { return v.x(); }, // Getter
-            [](Eigen::Vector3d &v, double val) { v.x() = val; } // Setter
-        )
-        .def_property("y", 
-            [](Eigen::Vector3d &v) { return v.y(); },
-            [](Eigen::Vector3d &v, double val) { v.y() = val; }
-        )
-        .def_property("z", 
-            [](Eigen::Vector3d &v) { return v.z(); },
-            [](Eigen::Vector3d &v, double val) { v.z() = val; }
-        )
-        .def("__repr__", [](const Eigen::Vector3d &v) {
-            std::stringstream ss;
-            ss << "Vector3d[" << v.x() << ", " << v.y() << ", " << v.z() << "]";
-            return ss.str();
-        });
-
     py::class_<WalkingManagerResult>(m, "WalkingManagerResult")
         .def_readwrite("cmd", &WalkingManagerResult::cmd)
         .def_readwrite("solution", &WalkingManagerResult::solution);

@@ -141,7 +141,7 @@ int main() {
     // Walking manager
     labrob::JointCommand joint_command;
     labrob::SolutionMPC solution;
-    Eigen::Vector3d position_desired = {1.0, 0.0, 0.25};
+    Eigen::Vector3d position_desired = {0.0, 0.0, 0.40};
     walking_manager.update(robot_state, position_desired, joint_command, solution);
 
     // apply a disturbance

@@ -3,8 +3,6 @@ MUJOCO_LOG.TXT
 __pycache__/
 compiled/
 exec/
-TITA_MJ/weights/*
-!**/saved_weights/*
 events.out*
 *mp4
 */tita_rl

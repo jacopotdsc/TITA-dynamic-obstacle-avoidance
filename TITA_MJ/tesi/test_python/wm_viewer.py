@@ -1,6 +1,7 @@
 import mujoco
 import mujoco.viewer
 import time
+import numpy as np
 
 import sys
 ctrl_path = "/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/compiled/"
@@ -101,8 +102,10 @@ while True:
             
             robot_state = wm.robot_state_from_mujoco(model, data)
             #print(robot_state)
-            result_update = walking_manager.update(robot_state)
+            result_update = walking_manager.update(robot_state, np.array([0.0, 0.0, 0.40]))
             torque = result_update.cmd
+            if frame_idx == 0 or frame_idx % 100 == 0:
+                print(torque)
             mpc_solution = result_update.solution
             
             #for ( key, val) in torque:

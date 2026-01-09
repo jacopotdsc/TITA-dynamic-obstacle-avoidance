@@ -270,34 +270,34 @@ void WalkingManager::update(
     double x_curr = p_CoM(0);
     double step_x = 0.4; 
     double tresh = 0.01;
-    double x_goal = position_desired(0);
+    double x_goal = 0.0;
     double step_z = -0.01; 
-    double h_goal = 0.25;
+    double h_goal = position_desired(2);
      for (int i = 0; i < 200+1; ++i)
     {
         int step_index = floor(i / 100);
 
-        double x_pred = x_curr + step_x * step_index;
-        if ((std::abs(x_goal - x_pred) > tresh) && (x_pred < x_goal)){
-            pc_ref(0,i) = x_pred;
-        }else{
-            pc_ref(0,i) = x_goal;
-        }
+        //double x_pred = x_curr + step_x * step_index;
+        //if ((std::abs(x_goal - x_pred) > tresh) && (x_pred < x_goal)){
+        //    pc_ref(0,i) = x_pred;
+        //}else{
+        //    pc_ref(0,i) = x_goal;
+        //}
 
-        // pc_ref(0,i) = 0.0;
+        pc_ref(0,i) = 0.0;
         pc_ref(1,i) = 0.0;
         
         pcom_ref(0,i) = 0.0;
         pcom_ref(1,i) = 0.0;
 
     
-        double h_pred = h_curr + step_z * step_index;
-        if (std::abs(h_goal - h_pred) > tresh && (h_goal - h_pred) < 0){
-            pcom_ref(2,i) = h_pred;
-        }else{
-            pcom_ref(2,i) = position_desired(2);
-        }
-        // pcom_ref(2,i) = 0.4;
+        //double h_pred = h_curr + step_z * step_index;
+        //if (std::abs(h_goal - h_pred) > tresh && (h_goal - h_pred) < 0){
+        //    pcom_ref(2,i) = h_pred;
+        //}else{
+        //    pcom_ref(2,i) = h_goal;
+        //}
+        pcom_ref(2,i) = h_goal;
 
     }
     

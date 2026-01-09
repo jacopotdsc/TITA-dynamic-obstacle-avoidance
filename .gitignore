@@ -3,3 +3,8 @@
 **/.DS_Store
 **/.vscode
 dependencies/
+TITA_MJ/log/
+!TITA_MJ/log/*/saved_weights/**
+TITA_MJ/videos/
+TITA_MJ/MUJOCO_LOG.TXT
+testi/other/tita_rl

@@ -1,0 +1,9 @@
+Fare in task stand-up
+- plottare tutto quanto, obs e tutto quello che si può
+- usare transformer: https://hybrid-robotics.berkeley.edu/publications/ScienceRobotics2024_Learning_Humanoid_Locomotion.pdf
+- applicare perturbazioni al robot
+
+Buongiorno, a causa di impegni personali di questo periodo, 
+mercoledì e giovedì sono un problema per me e non riesco a dare 
+conferma in anticipo. Potrò far sapere Martedì
+
