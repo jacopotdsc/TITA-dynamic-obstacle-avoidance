@@ -199,7 +199,7 @@ def test_fn(num_epoch, step_idx):
 
     obs_headers = [
         # Robot state
-        'robot_height', 'ori_x', 'ori_y', 'ori_z', 'ori_w', 'grav_x', 'grav_y', 'grav_z', 
+        'robot_height', 'ori_w', 'ori_x', 'ori_y', 'ori_z', 'grav_x', 'grav_y', 'grav_z', 
         'lin_vel_x', 'lin_vel_y', 'lin_vel_z', 'ang_vel_x', 'ang_vel_y', 'ang_vel_z',
 
         # Joint positions and velocities
@@ -320,9 +320,10 @@ def test_enviroment(
             if n_frame == 0 or (n_frame+1) % 100 == 0:
                 print("Frame:", n_frame, "Action:", action, ", Total Reward:", total_reward)
 
-            frame = env.render()
+            if render_mode is not None:
+                frame = env.render()
             
-            if frame is not None and render_mode == "rgb_array":
+            if render_mode is not None and frame is not None and render_mode == "rgb_array":
                 frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 
                 cv2.imshow("Agent Preview (Press 'q' to quit)", frame_bgr)
@@ -369,7 +370,7 @@ def test_enviroment(
         pass
     finally:
         env.close()
-        cv2.destroyAllWindows() # Chiude la finestra OpenCV
+        cv2.destroyAllWindows() 
 
         if render_mode == "rgb_array":
             print(f"Videos saved in: {video_folder}")
@@ -418,6 +419,16 @@ def create_wrapped_env(task: str, render_mode=None) -> gym.Env:
     return env
 
 def init_layer_orthogonal(m):
+    '''
+    Docstring for init_layer_orthogonal
+    
+    Initialize the weights of a linear layer using orthogonal initialization.
+    Given a tensor w, it will be initialized in a way that w @ w.T = I  ( or w.T @ w = I).
+    Property of orthogonal matrix is that |Wx| = |x|, so it preserves the norm of the input
+    as matrix rotation does.
+    It is used to aboid the vanishing/exploding gradient problem.
+    '''
+
     if isinstance(m, torch.nn.Linear):
         torch.nn.init.orthogonal_(m.weight, gain=1.0)
         torch.nn.init.constant_(m.bias, 0.0)
@@ -438,7 +449,7 @@ def main():
     task = "Tita-v0" #"Pendulum-v1"
     lr = 0.0000001
     hidden_sizes = [256, 256, 256]
-    num_training_envs = 8
+    num_training_envs = 1
     num_test_envs = 1
     num_view_test_env = 1
 
@@ -779,7 +790,7 @@ def main():
                 test_in_training=False,
 
                 # Know parameters 
-                max_epochs=15,    
+                max_epochs=4,    
                 batch_size=512,
 
                 # Total number of training steps to take per epoch
@@ -871,6 +882,17 @@ def main():
             subprocess.run(["python3", script_path, run_dir_name], check=True)
         except subprocess.CalledProcessError as e:
             print("\n\tError on executing plot.py:", e)
+
+        try:
+            test_enviroment(
+                task_name=task,
+                policy=policy,
+                render_mode=None,
+                num_test_envs=num_view_test_env,
+                save_dir=os.path.join(actor_base_dir, DIR_EXPERIMENT_INFO, "plots")
+            )
+        except Exception as e:
+            print("\n\tError on testing enviroment after training:", e)
 
 if __name__ == "__main__":
     main()

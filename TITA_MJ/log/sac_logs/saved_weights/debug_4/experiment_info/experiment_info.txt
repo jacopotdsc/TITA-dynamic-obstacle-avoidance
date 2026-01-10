@@ -1,0 +1,44 @@
+Enviroment: Tita-v0
+Observation space: 49 x 1 (stacked frames)
+Action space: (8,)
+Action size: 100.0
+
+	Action Scale: 100.0
+	Action Repeat: 1
+	cost_action_nn: -0.1
+	cost_action_rate: -1.0
+	reward_height: 1.0
+	reward_is_alive: 1.0
+	reward_orientation: 1.0
+
+Starting training enviroment Tita-v0
+
+SAC Buffer parameters:
+	 Total size: 8_000
+	 Buffer num: 8
+	 Stack num: 1
+Train Buffer - Batch Observation Shape: (1, 49)
+Train Buffer - Single Sample Shape: (49,)
+Test Buffer - Batch Observation Shape: (1, 49)
+Test Buffer - Single Sample Shape: (49,)
+Actor file not found: /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/weights_saved/stand_up_randomize_reset.pt
+ -> Continuing training from scratch.
+
+SAC Trainer parameters:
+	 Num train/test envs 8 / 1
+	 learning rate: 1e-07
+	 hidden sizes: [256, 256, 256]
+	 Max epochs: 15
+	 Batch size: 512
+	 Epoch num steps: 80
+	 Collection step num env steps: 160 , roullout:  20.0
+	 Update step num gradient steps per sample: 10
+	 Test step num episodes: 1 
+
+
+Training completed!
+Logs saved to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs
+Saving weights in /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs
+Saved actor weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_01_09_time_16_50_11/final/final_actor_state_dict.pt
+Saved critic1 weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_01_09_time_16_50_11/final/final_critic_state_dict_1.pt
+Saved critic2 weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_01_09_time_16_50_11/final/final_critic_state_dict_2.pt

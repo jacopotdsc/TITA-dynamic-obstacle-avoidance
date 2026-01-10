@@ -129,6 +129,8 @@ int main() {
     }
 
   // Simulation loop:
+
+  std::cout << "Starting height: " << mj_data_ptr->qpos[2] << std::endl;
   while (!mujoco_ui.windowShouldClose()) {
 
   auto start_time = std::chrono::high_resolution_clock::now();
@@ -136,12 +138,14 @@ int main() {
   mjtNum simstart = mj_data_ptr->time;
   while( mj_data_ptr->time - simstart < 1.0/framerate ) { // non serve
 
+    std::cout << "height: " << mj_data_ptr->qpos[2] << std::endl;
+
     labrob::RobotState robot_state = labrob::robot_state_from_mujoco(mj_model_ptr, mj_data_ptr);
     
     // Walking manager
     labrob::JointCommand joint_command;
     labrob::SolutionMPC solution;
-    Eigen::Vector3d position_desired = {0.0, 0.0, 0.40};
+    Eigen::Vector3d position_desired = {0.0, 0.0, 0.35};
     walking_manager.update(robot_state, position_desired, joint_command, solution);
 
     // apply a disturbance

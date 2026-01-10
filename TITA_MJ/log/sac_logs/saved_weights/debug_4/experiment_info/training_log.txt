@@ -1,0 +1,35 @@
+Initial test step: test_reward: 2009.343104 ± 0.000000, best_reward: 2009.343104 ± 0.000000 in #0
+Epoch #1: 160it [00:29,  5.34it/s, env_episode=0, env_step=160, n_ep=0, n_st=160, update_step=1]
+Epoch #1: 160it [00:29,  5.34it/s, env_episode=0, env_step=160, n_ep=0, n_st=160, update_step=1]
+Epoch #1: test_reward: 2191.853085 ± 0.000000, best_reward: 2191.853085 ± 0.000000 in #1
+Epoch #2: 160it [00:29,  5.37it/s, env_episode=0, env_step=320, n_ep=0, n_st=160, update_step=2]
+Epoch #2: 160it [00:29,  5.37it/s, env_episode=0, env_step=320, n_ep=0, n_st=160, update_step=2]
+Epoch #2: test_reward: 2762.257326 ± 0.000000, best_reward: 2762.257326 ± 0.000000 in #2
+Epoch #3: 160it [00:30,  5.31it/s, env_episode=0, env_step=480, n_ep=0, n_st=160, update_step=3]
+Epoch #3: 160it [00:30,  5.31it/s, env_episode=0, env_step=480, n_ep=0, n_st=160, update_step=3]
+Epoch #3: test_reward: 2847.175308 ± 0.000000, best_reward: 2847.175308 ± 0.000000 in #3
+Epoch #4: 160it [00:30,  5.28it/s, env_episode=0, env_step=640, n_ep=0, n_st=160, update_step=4]
+Epoch #4: 160it [00:30,  5.28it/s, env_episode=0, env_step=640, n_ep=0, n_st=160, update_step=4]
+Epoch #4: test_reward: 2881.742135 ± 0.000000, best_reward: 2881.742135 ± 0.000000 in #4
+Epoch #5: 160it [00:30,  5.25it/s, env_episode=0, env_step=800, n_ep=0, n_st=160, update_step=5]
+Epoch #5: 160it [00:30,  5.25it/s, env_episode=0, env_step=800, n_ep=0, n_st=160, update_step=5]
+Epoch #5: test_reward: 2847.964875 ± 0.000000, best_reward: 2881.742135 ± 0.000000 in #4
+Epoch #6: 160it [00:30,  5.26it/s, env_episode=0, env_step=960, n_ep=0, n_st=160, update_step=6]
+Epoch #6: 160it [00:30,  5.26it/s, env_episode=0, env_step=960, n_ep=0, n_st=160, update_step=6]
+Epoch #6: test_reward: 2861.459820 ± 0.000000, best_reward: 2881.742135 ± 0.000000 in #4
+Epoch #7: 160it [00:30,  5.26it/s, env_episode=0, env_step=1120, n_ep=0, n_st=160, update_step=7]
+Epoch #7: 160it [00:30,  5.26it/s, env_episode=0, env_step=1120, n_ep=0, n_st=160, update_step=7]
+Epoch #7: test_reward: 2910.229148 ± 0.000000, best_reward: 2910.229148 ± 0.000000 in #7
+Epoch #8: 160it [00:30,  5.25it/s, env_episode=0, env_step=1280, n_ep=0, n_st=160, update_step=8]
+Epoch #8: 160it [00:30,  5.25it/s, env_episode=0, env_step=1280, n_ep=0, n_st=160, update_step=8]
+Epoch #8: test_reward: 2954.972853 ± 0.000000, best_reward: 2954.972853 ± 0.000000 in #8
+Epoch #9: 160it [00:30,  5.23it/s, env_episode=0, env_step=1440, n_ep=0, n_st=160, update_step=9]
+Epoch #9: 160it [00:30,  5.23it/s, env_episode=0, env_step=1440, n_ep=0, n_st=160, update_step=9]
+Epoch #9: test_reward: 2991.752138 ± 0.000000, best_reward: 2991.752138 ± 0.000000 in #9
+Training completed!
+Logs saved to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs
+Saving weights in /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs
+Saved actor weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_01_09_time_16_50_11/final/final_actor_state_dict.pt
+Saved critic1 weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_01_09_time_16_50_11/final/final_critic_state_dict_1.pt
+Saved critic2 weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_01_09_time_16_50_11/final/final_critic_state_dict_2.pt
+Experiment info saved to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_01_09_time_16_50_11/experiment_info/experiment_info.txt

@@ -5,7 +5,15 @@ import git
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation
 import numpy as np
+import gymnasium as gym
 
+gym.register(
+    id="Tita-v0",
+    entry_point="gymnasium.envs.mujoco.tita_env:TitaEnv",
+    max_episode_steps=1000,
+)
+
+env = gym.make("Tita-v0", render_mode=None)
 def get_git_root():
     """
     Ritorna la root della repository git corrente.
@@ -59,10 +67,12 @@ def plot_total_reward(csv_path, plots_dir=None):
 
     if plots_dir:
         os.makedirs(plots_dir, exist_ok=True)
-        plt.savefig(os.path.join(plots_dir, "total_reward.png"))
-        print(f"Saved total_reward.png in {plots_dir}")
+        name = "total_and_last_reward.png"
+        saved = os.path.join(plots_dir, name)
+        plt.savefig(saved)
+        print(f"Saved {saved}")
 
-def plot_robot_height(csv_path, plots_dir=None):
+def plot_average_height(csv_path, plots_dir=None):
     df = pd.read_csv(csv_path)
     episode_starts = df.index[df['frame'] == 0].tolist()
     episode_starts.append(len(df))
@@ -75,23 +85,28 @@ def plot_robot_height(csv_path, plots_dir=None):
         heights.append(ep_df['robot_height'].mean())
 
     plt.figure(figsize=(10,5))
-    plt.plot(range(1,len(heights)+1), heights, marker='o')
+    plt.plot(range(1,len(heights)+1), heights, marker='o', label="average_height")
+
+    plt.axhline(y=env.unwrapped.get_config().reward_config.base_height_target, color='r', linestyle='--', label='height_desired')
+
     plt.xlabel("Episode")
-    plt.ylabel("Robot Height")
+    plt.ylabel("Average Robot Height")
     plt.title("Average Robot Height per Episode")
     plt.grid(True)
+    plt.legend()
 
     if plots_dir:
         os.makedirs(plots_dir, exist_ok=True)
-        plt.savefig(os.path.join(plots_dir, "robot_height.png"))
-        print(f"Saved robot_height.png in {plots_dir}")
+        name = "average_height_per_episode.png"
+        saved = os.path.join(plots_dir, name)
+        plt.savefig(saved)
+        print(f"Saved {saved}")
 
-def plot_orientation(csv_path, plots_dir=None):
+def plot_average_orientation(csv_path, plots_dir=None):
     df = pd.read_csv(csv_path)
     ori_cols = ['ori_x','ori_y','ori_z','ori_w']
     episode_starts = df.index[df['frame'] == 0].tolist()
     episode_starts.append(len(df))
-    ori_means = {col: [] for col in ori_cols}
     euler_means = {'roll': [], 'pitch': [], 'yaw': []}
 
     for i in range(len(episode_starts)-1):
@@ -108,14 +123,13 @@ def plot_orientation(csv_path, plots_dir=None):
         
     plt.figure(figsize=(10,5))
     for label, values in euler_means.items():
-        # Converte in array numpy per manipolazione veloce
         val_array = np.array(values)
         
         val_array = np.where(val_array >= np.pi/2, val_array - np.pi, val_array)
         val_array = np.where(val_array <= -np.pi/2, val_array + np.pi, val_array)
         plt.plot(range(1,len(euler_means['roll'])+1), val_array, marker='o', label=label)
     
-    plt.ylim(-np.pi/2, np.pi/2)
+    plt.ylim(-np.pi/2 + 0.1, np.pi/2 - 0.1)
     plt.xlabel("Episode")
     plt.ylabel("Radians")
     plt.title("Average Orientation per Episode")
@@ -124,8 +138,10 @@ def plot_orientation(csv_path, plots_dir=None):
 
     if plots_dir:
         os.makedirs(plots_dir, exist_ok=True)
-        plt.savefig(os.path.join(plots_dir, "orientation.png"))
-        print(f"Saved orientation.png in {plots_dir}")
+        name = "average_orientation_per_episode.png"
+        saved = os.path.join(plots_dir, name)
+        plt.savefig(saved)
+        print(f"Saved {saved}")
 
 def plot_total_torque(csv_path, plots_dir=None):
     df = pd.read_csv(csv_path)
@@ -149,10 +165,12 @@ def plot_total_torque(csv_path, plots_dir=None):
 
     if plots_dir:
         os.makedirs(plots_dir, exist_ok=True)
-        plt.savefig(os.path.join(plots_dir, "total_torque.png"))
-        print(f"Saved total_torque.png in {plots_dir}")
+        name = "total_torque.png"
+        saved = os.path.join(plots_dir, name)
+        plt.savefig(saved)
+        print(f"Saved {saved}")
 
-def plot_joint_torque_last_episode(csv_path, plots_dir=None):
+def plot_last_episode_joint_torque(csv_path, plots_dir=None):
     df = pd.read_csv(csv_path)
     torque_cols = [f'action_{i}' for i in range(1, 9)]
     
@@ -187,8 +205,10 @@ def plot_joint_torque_last_episode(csv_path, plots_dir=None):
 
     if plots_dir:
         os.makedirs(plots_dir, exist_ok=True)
-        plt.savefig(os.path.join(plots_dir, "joint_torque_last_episode.png"))
-        print(f"Saved joint_torque_last_episode.png in {plots_dir}")
+        name = "last_episode_joint_torque.png"
+        saved = os.path.join(plots_dir, name)
+        plt.savefig(saved)
+        print(f"Saved {saved}")
 
 def plot_total_prev_action(csv_path, plots_dir=None):
     df = pd.read_csv(csv_path)
@@ -206,15 +226,77 @@ def plot_total_prev_action(csv_path, plots_dir=None):
     plt.figure(figsize=(10,5))
     plt.plot(range(1,len(total_actions)+1), total_actions, marker='o')
     plt.xlabel("Episode")
-    plt.ylabel("Total Previous Action")
-    plt.title("Total Previous Action per Episode N/m")
+    plt.ylabel("Total Previous Action N/m")
+    plt.title("Total Previous Action per Episode")
     plt.grid(True)
 
     if plots_dir:
         os.makedirs(plots_dir, exist_ok=True)
-        plt.savefig(os.path.join(plots_dir, "total_prev_action.png"))
-        print(f"Saved total_prev_action.png in {plots_dir}")
+        name = "total_prev_action.png"
+        saved = os.path.join(plots_dir, name)
+        plt.savefig(saved)
+        print(f"Saved {saved}")
 
+def plot_last_episode_orientation(csv_path, plots_dir=None):
+    df = pd.read_csv(csv_path)
+    episode_starts = df.index[df['frame'] == 0].tolist()
+    start_idx = episode_starts[-1]
+    ep_df = df.iloc[start_idx:].copy()
+
+    quat_data = ep_df[['ori_w', 'ori_x', 'ori_y', 'ori_z']].values
+    rot = Rotation.from_quat(quat_data)
+    euler_angles = rot.as_euler('xyz', degrees=False)
+    
+    ep_df['roll'] = euler_angles[:, 0]
+    ep_df['pitch'] = euler_angles[:, 1]
+    ep_df['yaw'] = euler_angles[:, 2]
+
+    scaled_ori = ep_df[['roll', 'pitch', 'yaw']].copy()
+    for col in ['roll', 'pitch', 'yaw']:
+        val_array = scaled_ori[col].values
+        val_array = np.where(val_array >= np.pi/2, val_array - np.pi, val_array)
+        val_array = np.where(val_array <= -np.pi/2, val_array + np.pi, val_array)
+        scaled_ori[col] = val_array
+    
+    plt.figure(figsize=(10, 6))
+    plt.plot(ep_df['frame'], scaled_ori['roll'], label='Roll')
+    plt.plot(ep_df['frame'], scaled_ori['pitch'], label='Pitch')
+    plt.plot(ep_df['frame'], scaled_ori['yaw'], label='Yaw')
+    
+    plt.title(f"Orientation (Euler Angles) - Last Episode ({len(episode_starts)})")
+    plt.xlabel("Frame")
+    plt.ylabel("Radians")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+
+    if plots_dir:
+        os.makedirs(plots_dir, exist_ok=True)
+        name = "last_episode_orientation.png"
+        saved = os.path.join(plots_dir, name)
+        plt.savefig(saved)
+        print(f"Saved {saved}")
+
+def plot_last_episode_height(csv_path, plots_dir=None):
+    df = pd.read_csv(csv_path)
+    episode_starts = df.index[df['frame'] == 0].tolist()
+    start_idx = episode_starts[-1]
+    ep_df = df.iloc[start_idx:]
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(ep_df['frame'], ep_df['robot_height'], color='tab:green', label='Robot Height')
+    
+    plt.title(f"Robot Height - Last Episode ({len(episode_starts)})")
+    plt.xlabel("Frame")
+    plt.ylabel("Height (m)")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+
+    if plots_dir:
+        os.makedirs(plots_dir, exist_ok=True)
+        name = "last_episode_height.png"
+        saved = os.path.join(plots_dir, name)
+        plt.savefig(saved)
+        print(f"Saved {saved}")
 
 def main(exp_name = None):
     DIR_EXPERIMENT_INFO = "experiment_info"           
@@ -223,12 +305,11 @@ def main(exp_name = None):
     weights_dir = os.path.join(root, "TITA_MJ", "log", "sac_logs", "weights")
 
     if exp_name is None:
-
         print("Usage: python3 plot.py <experiment_name>")
         folders = [f for f in os.listdir(weights_dir) if os.path.isdir(os.path.join(weights_dir, f))]
         if not folders:
-            raise RuntimeError(f"Nessuna cartella trovata in {weights_dir}")
-        folders.sort()  # ordina alfabeticamente
+            raise RuntimeError(f"No folder find in {weights_dir}")
+        folders.sort()  
         exp_name = folders[-1]
         print(f"Using the latest experiment: {exp_name}")
 
@@ -240,14 +321,16 @@ def main(exp_name = None):
 
     plots_dir = os.path.join(os.path.dirname(csv_path), "plots")
     os.makedirs(plots_dir, exist_ok=True)
-    
+
     plot_total_reward(csv_path, plots_dir)
-    plot_robot_height(csv_path, plots_dir)
-    plot_orientation(csv_path, plots_dir)
+    plot_average_height(csv_path, plots_dir)
+    plot_average_orientation(csv_path, plots_dir)
     plot_total_torque(csv_path, plots_dir)
     plot_total_prev_action(csv_path, plots_dir)
-    plot_joint_torque_last_episode(csv_path, plots_dir)
 
+    plot_last_episode_joint_torque(csv_path, plots_dir)
+    plot_last_episode_orientation(csv_path, plots_dir)
+    plot_last_episode_height(csv_path, plots_dir)
 
 if __name__ == "__main__":
     exp_name = sys.argv[1] if len(sys.argv) >= 2 else None

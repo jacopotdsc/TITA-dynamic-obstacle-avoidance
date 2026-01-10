@@ -101,12 +101,12 @@ info = {
     "steps_since_last_pert": 0,
     "pert_steps": 0,
     "pert_mag": 1.0, #np.random.uniform(velocity_kick[0], velocity_kick[1]),
-    "pert_duration_seconds": np.random.uniform(kick_durations[0], kick_durations[1]),
+    "pert_duration_seconds": 0.1, #np.random.uniform(kick_durations[0], kick_durations[1]),
     "pert_dir": np.array([1, 0, 0]), # Direzione iniziale
 }
 # Calcolo steps
 info["steps_until_next_pert"] = int(np.random.uniform(kick_wait_times[0], kick_wait_times[1]) / dt)
-info["pert_duration"] = int(info["pert_duration_seconds"] / dt)
+info["pert_duration_steps"] = int(info["pert_duration_seconds"] / dt)
 
 # Mock di "self" per usare la tua funzione originale
 class Perturbator:
@@ -120,7 +120,6 @@ class Perturbator:
         self.viewer = viewer    
         self.current_force = np.array([0.0, 0.0, 1.0])
 
-
     def _maybe_apply_perturbation(self):
         def gen_dir() -> np.ndarray:
             angle = np.random.uniform(low=0.0, high=np.pi * 2)
@@ -129,31 +128,27 @@ class Perturbator:
 
         def apply_pert():
             t = self.info["pert_steps"] * self.dt
-            t = 1
             u_t = np.sin(np.pi * t / self.info["pert_duration_seconds"])
             # kg * m/s * 1/s = m/s^2 = kg * m/s^2 (N).
-            force = (
-                u_t  # (unitless)
-                * self._torso_mass  # kg
-                * self.info["pert_mag"]  # m/s
-                / self.info["pert_duration_seconds"]  # 1/s
-            )
+            max_force = 170.0
+            force = max_force * u_t
 
             # Lateral force vector, total latera magnitude:
             #   150 N: gentle push
-            #   200 N: soft and noticeable
-            #   300 N: noticeable, 
+            #   190 N: noticeable
+            #   200 N: hard, bring to NaN
+            # Front-back force vector, total longitudinal magnitude:
+            #   200 N: gentle push, FEASIBLE
             # Top-down force vector, total vertical magnitude:
             #   10000 N: light 
             #   11000 N: gentle
             #   15000 N: noticeable 
             #   20000 N: moderate
             #   50000 N: pretty strong
-            force = 11000.0
-            print(self.info["pert_dir"], force)
+            #print(self.info["pert_dir"], force)
             self.data.xfrc_applied[self._torso_body_id, :3] = force * self.info["pert_dir"]
 
-            if self.info["pert_steps"] >= self.info["pert_duration"]:
+            if self.info["pert_steps"] >= self.info["pert_duration_steps"]:
                 self.info["steps_since_last_pert"]  = 0
 
             self.info["pert_steps"] += 1
@@ -176,19 +171,6 @@ class Perturbator:
 
 perturbator = Perturbator(model, data, info, dt, torso_body_id, torso_mass, viewer)
 
-def draw_perturbation_arrow(viewer, perturbator):
-    if viewer is not None and viewer.is_running:
-        f_norm = np.linalg.norm(perturbator.current_force)
-        if f_norm > 0.0:
-            pos = perturbator.data.xpos[perturbator._torso_body_id]
-            viewer.add_marker(
-                pos=pos,
-                mat=np.eye(3).flatten(),
-                type=mujoco.mjtGeom.mjGEOM_ARROW,
-                size=[0.02, 0.02, f_norm * 0.02],
-                rgba=[1, 0, 0, 0.8],
-                label="KICK"
-            )
 # --------------------------------
 while True:
     time.sleep(0.0)
@@ -202,7 +184,7 @@ while True:
             #if frame_idx % 100 == 0: 
             #    print(f"RTF: {sim_diff / real_diff:.2f}x")
 
-            perturbator._maybe_apply_perturbation()
+            #perturbator._maybe_apply_perturbation()
                 
             start_real = time.time()
             start_sim = data.time
