@@ -247,7 +247,7 @@ def save_best(algorithm, alg_type, actor_policy, actor_path, critic_policy, crit
     #print("\nSaved best actor policy")
 
     if alg_type == _STR_PPO:
-        torch.save(algorithm.policy.critic.state_dict(), critic_best_path)
+        torch.save(critic_policy.state_dict(), critic_best_path)
         #print("Saved best critic policy")
     elif alg_type == _STR_SAC:
         torch.save(critic_policy[0].state_dict(), critic_best_path.replace(".pt", "_1.pt"))
@@ -301,13 +301,23 @@ def test_enviroment(
         total_reward = 0
         n_frame = 0
         history_action = []
+        history_reward_info = []
         terminated = False
         truncated = False
+
+        start_time_inference = []
+        end_time_inference = []
         
         while True and (not terminated) and (not truncated):
             batch = Batch(obs=np.array([obs]), info={})
             with torch.no_grad():
+                    
+                start_time_inference.append(time.time())
                 result = policy(batch)
+                end_time_inference.append(time.time())
+                if n_frame == 0:  
+                    inference_time = end_time_inference[0] - start_time_inference[0]
+                
             action = result.act[0]            
             if isinstance(action, torch.Tensor):
                 action = action.cpu().numpy()
@@ -315,6 +325,7 @@ def test_enviroment(
 
             obs, reward, terminated, truncated, info = env.step(action)
             total_reward += reward
+            history_reward_info.append(info)
 
 
             if n_frame == 0 or (n_frame+1) % 100 == 0:
@@ -334,6 +345,12 @@ def test_enviroment(
             n_frame += 1
             if terminated or truncated:
                 print(f"Episode terminated. Reward: {total_reward:.2f}")
+                print(f"Inference time: {1000*inference_time:.6f} ms first step")
+
+                mean_inference_time = 1000 * np.mean([end - start for start, end in zip(start_time_inference, end_time_inference)])
+                std_inference_time = 1000 * np.std([end - start for start, end in zip(start_time_inference, end_time_inference)])
+                print(f"inference time: {mean_inference_time:.6f} ± {std_inference_time:.6f} ms")
+        
                 actions_array = np.array(history_action) # Shape: (N_frames, 8)
                 frames = np.arange(len(actions_array))
                 
@@ -341,27 +358,61 @@ def test_enviroment(
                 legend_left = ["left_" + name for name in joint_names]
                 legend_right = ["right_" + name for name in joint_names]
 
-                fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+                def plot_actions():
+                    fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
 
-                for i in range(4):
-                    axes[0].plot(frames, actions_array[:, i], label=legend_left[i])
-                axes[0].set_ylabel("Action/Torque")
-                axes[0].set_title("Left Leg Joint Actions")
-                axes[0].legend(loc='upper right')
-                axes[0].grid(True)
+                    for i in range(4):
+                        axes[0].plot(frames, actions_array[:, i], label=legend_left[i])
+                    axes[0].set_ylabel("Action/Torque")
+                    axes[0].set_title("Left Leg Joint Actions")
+                    axes[0].legend(loc='upper right')
+                    axes[0].grid(True)
 
-                for i in range(4):
-                    axes[1].plot(frames, actions_array[:, i+4], label=legend_right[i])
-                axes[1].set_xlabel("Frame")
-                axes[1].set_ylabel("Action/Torque")
-                axes[1].set_title("Right Leg Joint Actions")
-                axes[1].legend(loc='upper right')
-                axes[1].grid(True)
+                    for i in range(4):
+                        axes[1].plot(frames, actions_array[:, i+4], label=legend_right[i])
+                    axes[1].set_xlabel("Frame")
+                    axes[1].set_ylabel("Action/Torque")
+                    axes[1].set_title("Right Leg Joint Actions")
+                    axes[1].legend(loc='upper right')
+                    axes[1].grid(True)
 
-                plt.tight_layout()
-                plt.savefig(os.path.join(save_dir, "torque_in_render_test.png"))
-                print(f"Saved torque_in_render_test.png in {save_dir}")
+                    plt.tight_layout()
+                    os.makedirs(save_dir, exist_ok=True)
+                    plt.savefig(os.path.join(save_dir, "torque_in_render_test.png"))
+                    print(f"Saved torque_in_render_test.png in {save_dir}")
                 
+                def plot_reward_info():
+                    reward_info_keys = list(history_reward_info[0].keys())
+                    reward_info_keys = [key for key in reward_info_keys if env.unwrapped.get_config().reward_config.scales.get(key) != 0] 
+                    n_keys = len(reward_info_keys)
+                    
+                    mid = (n_keys + 1) // 2
+                    fig, axes = plt.subplots(2, 1, figsize=(12, 10), sharex=True)
+
+                    for idx, key in enumerate(reward_info_keys):
+                        ax = axes[0] if idx < mid else axes[1]
+                        
+                        reward_values = [info[key] for info in history_reward_info]
+                        ax.plot(frames, reward_values, label=key)
+                    axes[0].set_title("Reward Info")
+                    axes[0].set_ylabel("Value")
+                    axes[0].legend(loc='upper right', ncol=2) #
+                    axes[0].grid(True)
+
+                    # Configurazioni per il grafico inferiore
+                    axes[1].set_title("Reward Info")
+                    axes[1].set_ylabel("Value")
+                    axes[1].set_xlabel("Frame")
+                    axes[1].legend(loc='upper right', ncol=2)
+                    axes[1].grid(True)
+
+                    plt.tight_layout()
+                    os.makedirs(save_dir, exist_ok=True)
+                    plt.savefig(os.path.join(save_dir, "reward_info_in_render_test.png"))
+                    print(f"Saved reward_info_in_render_test.png in {save_dir}")
+                plot_actions()
+                plot_reward_info()
+
                 #plt.show()
 
                 break
@@ -411,7 +462,7 @@ def dist_fn(loc_scale: tuple[torch.Tensor, torch.Tensor]) -> Distribution:
     return Independent(Normal(loc, scale), 1)
 
 def create_wrapped_env(task: str, render_mode=None) -> gym.Env:
-    env = gym.make(task, render_mode=render_mode)
+    env = gym.make(task, render_mode=render_mode, width=1000, height=600)
     #env = gym.wrappers.NormalizeObservation(env)  
     #env = gym.wrappers.TransformObservation(env, lambda obs: np.clip(obs, -10, 10), env.observation_space)
     env = gym.wrappers.FrameStackObservation(env, stack_size=env.unwrapped.get_config().frame_stack)
@@ -449,7 +500,7 @@ def main():
     task = "Tita-v0" #"Pendulum-v1"
     lr = 0.0000001
     hidden_sizes = [256, 256, 256]
-    num_training_envs = 1
+    num_training_envs = 8
     num_test_envs = 1
     num_view_test_env = 1
 
@@ -743,6 +794,7 @@ def main():
                 test_collector=test_collector,  
                 logger=logger,
                 test_fn=test_fn,
+                stop_fn=lambda mean_rewards: mean_rewards >= 2950.0,
                 save_best_fn=partial(save_best, alg_type=alg_type, actor_policy=actor, actor_path=actor_path, critic_policy=critic, critic_path=critic_path),
                 test_in_training=False,
 
@@ -817,7 +869,10 @@ def main():
         log_and_print("\t Max epochs:", trainer_type.max_epochs)
         log_and_print("\t Batch size:", trainer_type.batch_size)
         log_and_print("\t Epoch num steps:", trainer_type.epoch_num_steps)
-        log_and_print("\t Collection step num env steps:", trainer_type.collection_step_num_env_steps, ", roullout: ", trainer_type.collection_step_num_env_steps/num_training_envs)
+        if trainer_type.collection_step_num_env_steps is not None:
+            log_and_print("\t Collection step num env steps:", trainer_type.collection_step_num_env_steps, ", roullout: ", trainer_type.collection_step_num_env_steps/num_training_envs)
+        else:
+            log_and_print("\t Collection step num episodes:", trainer_type.collection_step_num_episodes, ", episode per enviroment: ", trainer_type.collection_step_num_episodes/num_training_envs)
         log_and_print("\t Update step num gradient steps per sample:", trainer_type.update_step_num_gradient_steps_per_sample)
         log_and_print("\t Test step num episodes:", trainer_type.test_step_num_episodes, "\n")
     else:
