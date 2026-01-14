@@ -74,23 +74,27 @@ class LoggerTee(object):
 
         for char in message:
             if char == '\r':
+                self._process_line(self.line_buffer)
                 self.line_buffer = ""
             elif char == '\n':
-                clean_line = self.ansi_escape.sub('', self.line_buffer).strip()
-                # Verifica se la riga pulita è diversa dall'ultima scritta
-                if clean_line and clean_line != self.last_written_line:
-                    is_partial_tqdm = clean_line.endswith('it/s]')
-                    is_complete_tqdm = 'update_step' in clean_line or 'env_step' in clean_line
-                    is_reward_line = 'test_reward' in clean_line or 'Initial test' in clean_line
-
-                    if not is_partial_tqdm or is_complete_tqdm or is_reward_line:
-                        self.log.write(clean_line + '\n')
-                        self.log.flush()
-                        self.last_written_line = clean_line
-                
+                self._process_line(self.line_buffer)
                 self.line_buffer = ""
             else:
                 self.line_buffer += char
+
+    def _process_line(self, line):
+        clean_line = self.ansi_escape.sub('', line).strip()
+        
+        if not clean_line:
+            return
+
+        is_reward_line = 'test_reward' in clean_line or 'best_reward' in clean_line
+        
+        is_finished_epoch = '100%' in clean_line and '8000/8000' in clean_line # Adatta il numero totale se varia
+
+        if is_reward_line or is_finished_epoch:
+            self.log.write(clean_line + '\n')
+            self.log.flush()
 
     def flush(self):
         self.terminal.flush()
@@ -300,13 +304,16 @@ def test_enviroment(
         obs, info = env.reset()
         total_reward = 0
         n_frame = 0
-        history_action = []
-        history_reward_info = []
         terminated = False
         truncated = False
 
+        history_action = []
+        history_reward_info = []
+        history_com = []
         start_time_inference = []
         end_time_inference = []
+
+        history_com.append(env.unwrapped.data.subtree_com[0, :].copy())
         
         while True and (not terminated) and (not truncated):
             batch = Batch(obs=np.array([obs]), info={})
@@ -317,19 +324,23 @@ def test_enviroment(
                 end_time_inference.append(time.time())
                 if n_frame == 0:  
                     inference_time = end_time_inference[0] - start_time_inference[0]
-                
+            
             action = result.act[0]            
             if isinstance(action, torch.Tensor):
                 action = action.cpu().numpy()
-            history_action.append(action)
+
+            scaled_action = action * env.unwrapped.get_config().action_scale
+            history_action.append(scaled_action)
 
             obs, reward, terminated, truncated, info = env.step(action)
             total_reward += reward
             history_reward_info.append(info)
 
+            history_com.append(env.unwrapped.data.subtree_com[0, :].copy())
+
 
             if n_frame == 0 or (n_frame+1) % 100 == 0:
-                print("Frame:", n_frame, "Action:", action, ", Total Reward:", total_reward)
+                print("Frame:", n_frame, "Action:", scaled_action, ", Total Reward:", total_reward)
 
             if render_mode is not None:
                 frame = env.render()
@@ -378,9 +389,13 @@ def test_enviroment(
 
                     plt.tight_layout()
                     os.makedirs(save_dir, exist_ok=True)
-                    plt.savefig(os.path.join(save_dir, "torque_in_render_test.png"))
-                    print(f"Saved torque_in_render_test.png in {save_dir}")
-                
+                    
+                    name = "render_test_nn_torque.png"
+                    saved = os.path.join(save_dir, name)
+                    plt.savefig(saved)
+                    print(f"Saved {saved}")
+                    plt.savefig(saved)
+
                 def plot_reward_info():
                     reward_info_keys = list(history_reward_info[0].keys())
                     reward_info_keys = [key for key in reward_info_keys if env.unwrapped.get_config().reward_config.scales.get(key) != 0] 
@@ -408,12 +423,36 @@ def test_enviroment(
 
                     plt.tight_layout()
                     os.makedirs(save_dir, exist_ok=True)
-                    plt.savefig(os.path.join(save_dir, "reward_info_in_render_test.png"))
-                    print(f"Saved reward_info_in_render_test.png in {save_dir}")
+                    name = "render_test_reward_info.png"
+                    saved = os.path.join(save_dir, name)
+                    plt.savefig(saved)
+                    print(f"Saved {saved}")
+                    plt.savefig(saved)
+
+                def plot_com():
+                    com_data = np.array(history_com)
+
+                    plt.figure(figsize=(10, 6))
+
+                    plt.plot(com_data[:, 0], label='CoM X', color='tab:red', linewidth=1.5)
+                    plt.plot(com_data[:, 1], label='CoM Y', color='tab:green', linewidth=1.5)
+                    plt.plot(com_data[:, 2], label='CoM Z', color='tab:blue', linewidth=1.5)
+
+                    plt.title('CoM trajectory')
+                    plt.xlabel('Step')
+                    plt.ylabel('Position [m]')
+                    plt.legend()  
+                    plt.grid(True, linestyle='--', alpha=0.6)
+
+                    name = "render_test_com_trajectory.png"
+                    saved = os.path.join(save_dir, name)
+                    plt.savefig(saved)
+                    print(f"Saved {saved}")
+                    plt.savefig(saved)
+
                 plot_actions()
                 plot_reward_info()
-
-                #plt.show()
+                plot_com()
 
                 break
                 
@@ -486,8 +525,9 @@ def init_layer_orthogonal(m):
 
 def init_last_layer(m):
     if isinstance(m, torch.nn.Linear):
-        torch.nn.init.orthogonal_(m.weight, gain=0.01)
-        torch.nn.init.constant_(m.bias, 0.0)
+        with torch.no_grad():
+            m.weight.data.mul_(0.01)
+            m.bias.data.fill_(0.0)
 
 def main():
 
@@ -712,7 +752,7 @@ def main():
         log_and_print(f"\t Stack num: {buffer.stack_num}")
     elif alg_type == _STR_SAC:
         buffer = VectorReplayBuffer(
-            total_size=1000*num_training_envs,
+            total_size=3*1000*num_training_envs,
             buffer_num=num_training_envs,
             stack_num=1 #env_single.unwrapped.get_config().frame_stack,
         )
@@ -724,7 +764,7 @@ def main():
         raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
     
     test_buffer = VectorReplayBuffer(
-        total_size=20000, 
+        total_size=1000*num_test_envs, 
         buffer_num=len(test_envs), 
         stack_num=1#env_single.unwrapped.get_config().frame_stack,
     )
@@ -749,8 +789,8 @@ def main():
     train_collector.reset()
     test_collector.reset()
 
-    train_collector.collect(n_step=100*num_training_envs)
-    test_collector.collect(n_step=100*num_test_envs)
+    train_collector.collect(n_step=10*num_training_envs)
+    test_collector.collect(n_step=10*num_test_envs)
     train_batch, _ = train_collector.buffer.sample(1)
     log_and_print(f"Train Buffer - Batch Observation Shape: {train_batch.obs.shape}")
     log_and_print(f"Train Buffer - Single Sample Shape: {train_batch.obs[0].shape}")
@@ -836,25 +876,25 @@ def main():
                 test_collector=test_collector,  
                 logger=logger,
                 test_fn=test_fn,
-                stop_fn=lambda mean_rewards: mean_rewards >= 2970.0,
+                #stop_fn=lambda mean_rewards: mean_rewards >= 2970.0,
                 save_best_fn=partial(save_best, alg_type=alg_type, actor_policy=actor, actor_path=actor_path, critic_policy=[critic1, critic2], critic_path=critic_path),
                 
                 test_in_training=False,
 
                 # Know parameters 
-                max_epochs=4,    
+                max_epochs=15,    
                 batch_size=512,
 
                 # Total number of training steps to take per epoch
-                epoch_num_steps=10*num_training_envs, 
+                epoch_num_steps=1000*num_training_envs, 
 
                 # the number of environment steps/transitions to collect in each collection step before the
                 # network update within each training step.
-                collection_step_num_env_steps=20*num_training_envs,
+                collection_step_num_env_steps=100*num_training_envs,
                 #collection_step_num_episodes=1*num_training_envs 
                 
                 # The number of times data 
-                update_step_num_gradient_steps_per_sample=10,
+                update_step_num_gradient_steps_per_sample=30/(100*num_training_envs),
 
                 # Number of episodes to colleact in each test step
                 # i.e. number of run for evaluation
@@ -870,9 +910,9 @@ def main():
         log_and_print("\t Batch size:", trainer_type.batch_size)
         log_and_print("\t Epoch num steps:", trainer_type.epoch_num_steps)
         if trainer_type.collection_step_num_env_steps is not None:
-            log_and_print("\t Collection step num env steps:", trainer_type.collection_step_num_env_steps, ", roullout: ", trainer_type.collection_step_num_env_steps/num_training_envs)
+            log_and_print("\t Collection step num env steps:", trainer_type.collection_step_num_env_steps, ", roullout: ", trainer_type.collection_step_num_env_steps/(100*num_training_envs))
         else:
-            log_and_print("\t Collection step num episodes:", trainer_type.collection_step_num_episodes, ", episode per enviroment: ", trainer_type.collection_step_num_episodes/num_training_envs)
+            log_and_print("\t Collection step num episodes:", trainer_type.collection_step_num_episodes, ", episode per enviroment: ", trainer_type.collection_step_num_episodes/(100*num_training_envs))
         log_and_print("\t Update step num gradient steps per sample:", trainer_type.update_step_num_gradient_steps_per_sample)
         log_and_print("\t Test step num episodes:", trainer_type.test_step_num_episodes, "\n")
     else:

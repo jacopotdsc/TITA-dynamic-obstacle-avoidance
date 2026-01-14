@@ -44,7 +44,6 @@ def total_reward(csv_path, plots_dir=None):
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
 
-    # --- GRAFICO 1: Reward totale (X = Episodi) ---
     episodes = range(1, len(total_rewards) + 1)
     ax1.plot(episodes, total_rewards, marker='o', color='tab:blue', label='Tot. Reward')
     ax1.set_title("Cumulative Reward per episodio")
@@ -53,8 +52,6 @@ def total_reward(csv_path, plots_dir=None):
     ax1.grid(True, alpha=0.3)
     ax1.legend()
 
-    # --- GRAFICO 2: Reward istantanea (X = Frame) ---
-    # Usiamo il conteggio dei frame interno all'episodio
     ax2.plot(last_episode_df['frame'], last_episode_df['reward'], color='tab:red', label='Frame Reward')
     ax2.set_title(f"Reward per frame of last episode (episode {len(total_rewards)})")
     ax2.set_xlabel("Number of frame")
@@ -130,7 +127,7 @@ def average_orientation(csv_path, plots_dir=None):
     
     plt.ylim(-np.pi/2 - 0.1, np.pi/2 + 0.1)
 
-    name = "average_orientation_per_episode.png"
+    name = "average_orientation.png"
     plt.xlabel("Episode")
     plt.ylabel("Radians")
     plt.title(name.replace("_", " ").replace(".png", "").title())
@@ -188,7 +185,7 @@ def last_episode_joint_torque(csv_path, plots_dir=None):
 
     # Sopra: left joints
     for col, legend in zip(torque_cols[:4], legend_left):
-        axes[0].plot(ep_df['frame'], ep_df[col], label=legend)
+        axes[0].plot(ep_df['frame']*100, ep_df[col], label=legend)
     axes[0].set_ylabel("Torque")
     axes[0].set_title(f"Left Leg Joint Torques (Last Episode {len(episode_starts)})")
     axes[0].legend()
@@ -196,7 +193,7 @@ def last_episode_joint_torque(csv_path, plots_dir=None):
 
     # Sotto: right joints
     for col, legend in zip(torque_cols[4:], legend_right):
-        axes[1].plot(ep_df['frame'], ep_df[col], label=legend)
+        axes[1].plot(ep_df['frame']*100, ep_df[col], label=legend)
     axes[1].set_xlabel("Frame")
     axes[1].set_ylabel("Torque")
     axes[1].set_title(f"Right Leg Joint Torques (Last Episode {len(episode_starts)})")
@@ -334,9 +331,9 @@ def main(exp_name = None):
     total_torque(csv_path, plots_dir)
     total_prev_action(csv_path, plots_dir)
 
-    last_episode_joint_torque(csv_path, plots_dir)
-    last_episode_orientation(csv_path, plots_dir)
-    last_episode_height(csv_path, plots_dir)
+    #last_episode_joint_torque(csv_path, plots_dir)
+    #last_episode_orientation(csv_path, plots_dir)
+    #last_episode_height(csv_path, plots_dir)
 
 if __name__ == "__main__":
     exp_name = sys.argv[1] if len(sys.argv) >= 2 else None
