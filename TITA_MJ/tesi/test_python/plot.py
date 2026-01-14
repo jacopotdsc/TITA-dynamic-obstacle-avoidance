@@ -1,4 +1,5 @@
 import os
+import subprocess
 import sys
 import pandas as pd
 import git
@@ -24,7 +25,7 @@ def get_git_root():
     except git.InvalidGitRepositoryError:
         return None
 
-def plot_total_reward(csv_path, plots_dir=None):
+def total_reward(csv_path, plots_dir=None):
     df = pd.read_csv(csv_path)
 
     episode_starts = df.index[df['frame'] == 0].tolist()
@@ -63,8 +64,6 @@ def plot_total_reward(csv_path, plots_dir=None):
 
     plt.tight_layout()
 
-    plt.tight_layout()
-
     if plots_dir:
         os.makedirs(plots_dir, exist_ok=True)
         name = "total_and_last_reward.png"
@@ -72,7 +71,7 @@ def plot_total_reward(csv_path, plots_dir=None):
         plt.savefig(saved)
         print(f"Saved {saved}")
 
-def plot_average_height(csv_path, plots_dir=None):
+def average_height(csv_path, plots_dir=None):
     df = pd.read_csv(csv_path)
     episode_starts = df.index[df['frame'] == 0].tolist()
     episode_starts.append(len(df))
@@ -87,22 +86,22 @@ def plot_average_height(csv_path, plots_dir=None):
     plt.figure(figsize=(10,5))
     plt.plot(range(1,len(heights)+1), heights, marker='o', label="average_height")
 
-    plt.axhline(y=env.unwrapped.get_config().reward_config.base_height_target, color='r', linestyle='--', label='height_desired')
+    #plt.axhline(y=env.unwrapped.get_config().reward_config.base_height_target, color='r', linestyle='--', label='height_desired')
 
+    name = "average_height_floating_base.png"
     plt.xlabel("Episode")
-    plt.ylabel("Average Robot Height")
-    plt.title("Average Robot Height per Episode")
+    plt.ylabel("Average Height Floating Base (m)")
+    plt.title(name.replace("_", " ").replace(".png", "").title())
     plt.grid(True)
     plt.legend()
 
     if plots_dir:
         os.makedirs(plots_dir, exist_ok=True)
-        name = "average_height_per_episode.png"
         saved = os.path.join(plots_dir, name)
         plt.savefig(saved)
         print(f"Saved {saved}")
 
-def plot_average_orientation(csv_path, plots_dir=None):
+def average_orientation(csv_path, plots_dir=None):
     df = pd.read_csv(csv_path)
     ori_cols = ['ori_x','ori_y','ori_z','ori_w']
     episode_starts = df.index[df['frame'] == 0].tolist()
@@ -129,21 +128,22 @@ def plot_average_orientation(csv_path, plots_dir=None):
         val_array = np.where(val_array <= -np.pi/2, val_array + np.pi, val_array)
         plt.plot(range(1,len(euler_means['roll'])+1), val_array, marker='o', label=label)
     
-    plt.ylim(-np.pi/2 + 0.1, np.pi/2 - 0.1)
+    plt.ylim(-np.pi/2 - 0.1, np.pi/2 + 0.1)
+
+    name = "average_orientation_per_episode.png"
     plt.xlabel("Episode")
     plt.ylabel("Radians")
-    plt.title("Average Orientation per Episode")
+    plt.title(name.replace("_", " ").replace(".png", "").title())
     plt.legend()
     plt.grid(True)
 
     if plots_dir:
         os.makedirs(plots_dir, exist_ok=True)
-        name = "average_orientation_per_episode.png"
         saved = os.path.join(plots_dir, name)
         plt.savefig(saved)
         print(f"Saved {saved}")
 
-def plot_total_torque(csv_path, plots_dir=None):
+def total_torque(csv_path, plots_dir=None):
     df = pd.read_csv(csv_path)
     torque_cols = [f'joint_torque_{i}' for i in range(1,9)]
     episode_starts = df.index[df['frame'] == 0].tolist()
@@ -158,9 +158,11 @@ def plot_total_torque(csv_path, plots_dir=None):
 
     plt.figure(figsize=(10,5))
     plt.plot(range(1,len(total_torques)+1), total_torques, marker='o')
+
+    name = "total_torque.png"
     plt.xlabel("Episode")
     plt.ylabel("Total Torque N/m")
-    plt.title("Total Joint Torque per Episode")
+    plt.title(name.replace("_", " ").replace(".png", "").title())
     plt.grid(True)
 
     if plots_dir:
@@ -170,7 +172,7 @@ def plot_total_torque(csv_path, plots_dir=None):
         plt.savefig(saved)
         print(f"Saved {saved}")
 
-def plot_last_episode_joint_torque(csv_path, plots_dir=None):
+def last_episode_joint_torque(csv_path, plots_dir=None):
     df = pd.read_csv(csv_path)
     torque_cols = [f'action_{i}' for i in range(1, 9)]
     
@@ -210,7 +212,7 @@ def plot_last_episode_joint_torque(csv_path, plots_dir=None):
         plt.savefig(saved)
         print(f"Saved {saved}")
 
-def plot_total_prev_action(csv_path, plots_dir=None):
+def total_prev_action(csv_path, plots_dir=None):
     df = pd.read_csv(csv_path)
     action_cols = [f'prev_action_{i}' for i in range(1,9)]
     episode_starts = df.index[df['frame'] == 0].tolist()
@@ -225,19 +227,21 @@ def plot_total_prev_action(csv_path, plots_dir=None):
 
     plt.figure(figsize=(10,5))
     plt.plot(range(1,len(total_actions)+1), total_actions, marker='o')
+
+
+    name = "total_prev_action.png"
     plt.xlabel("Episode")
     plt.ylabel("Total Previous Action N/m")
-    plt.title("Total Previous Action per Episode")
+    plt.title(name.replace("_", " ").replace(".png", "").title())
     plt.grid(True)
 
     if plots_dir:
         os.makedirs(plots_dir, exist_ok=True)
-        name = "total_prev_action.png"
         saved = os.path.join(plots_dir, name)
         plt.savefig(saved)
         print(f"Saved {saved}")
 
-def plot_last_episode_orientation(csv_path, plots_dir=None):
+def last_episode_orientation(csv_path, plots_dir=None):
     df = pd.read_csv(csv_path)
     episode_starts = df.index[df['frame'] == 0].tolist()
     start_idx = episode_starts[-1]
@@ -263,7 +267,9 @@ def plot_last_episode_orientation(csv_path, plots_dir=None):
     plt.plot(ep_df['frame'], scaled_ori['pitch'], label='Pitch')
     plt.plot(ep_df['frame'], scaled_ori['yaw'], label='Yaw')
     
-    plt.title(f"Orientation (Euler Angles) - Last Episode ({len(episode_starts)})")
+
+    name = "last_episode_orientation.png"
+    plt.title(f"{name.replace('_', ' ').replace('.png', '').title()} ({len(episode_starts)})")
     plt.xlabel("Frame")
     plt.ylabel("Radians")
     plt.legend()
@@ -271,12 +277,11 @@ def plot_last_episode_orientation(csv_path, plots_dir=None):
 
     if plots_dir:
         os.makedirs(plots_dir, exist_ok=True)
-        name = "last_episode_orientation.png"
         saved = os.path.join(plots_dir, name)
         plt.savefig(saved)
         print(f"Saved {saved}")
 
-def plot_last_episode_height(csv_path, plots_dir=None):
+def last_episode_height(csv_path, plots_dir=None):
     df = pd.read_csv(csv_path)
     episode_starts = df.index[df['frame'] == 0].tolist()
     start_idx = episode_starts[-1]
@@ -285,15 +290,16 @@ def plot_last_episode_height(csv_path, plots_dir=None):
     plt.figure(figsize=(10, 5))
     plt.plot(ep_df['frame'], ep_df['robot_height'], color='tab:green', label='Robot Height')
     
-    plt.title(f"Robot Height - Last Episode ({len(episode_starts)})")
+    
+    name = "last_episode_com_height.png"
+    plt.title(f"{name.replace('_', ' ').replace('.png', '').title()} ({len(episode_starts)})")
     plt.xlabel("Frame")
-    plt.ylabel("Height (m)")
+    plt.ylabel("CoM Height (m)")
     plt.legend()
     plt.grid(True, alpha=0.3)
 
     if plots_dir:
         os.makedirs(plots_dir, exist_ok=True)
-        name = "last_episode_height.png"
         saved = os.path.join(plots_dir, name)
         plt.savefig(saved)
         print(f"Saved {saved}")
@@ -322,15 +328,15 @@ def main(exp_name = None):
     plots_dir = os.path.join(os.path.dirname(csv_path), "plots")
     os.makedirs(plots_dir, exist_ok=True)
 
-    plot_total_reward(csv_path, plots_dir)
-    plot_average_height(csv_path, plots_dir)
-    plot_average_orientation(csv_path, plots_dir)
-    plot_total_torque(csv_path, plots_dir)
-    plot_total_prev_action(csv_path, plots_dir)
+    total_reward(csv_path, plots_dir)
+    average_height(csv_path, plots_dir)
+    average_orientation(csv_path, plots_dir)
+    total_torque(csv_path, plots_dir)
+    total_prev_action(csv_path, plots_dir)
 
-    plot_last_episode_joint_torque(csv_path, plots_dir)
-    plot_last_episode_orientation(csv_path, plots_dir)
-    plot_last_episode_height(csv_path, plots_dir)
+    last_episode_joint_torque(csv_path, plots_dir)
+    last_episode_orientation(csv_path, plots_dir)
+    last_episode_height(csv_path, plots_dir)
 
 if __name__ == "__main__":
     exp_name = sys.argv[1] if len(sys.argv) >= 2 else None
