@@ -1,7 +1,9 @@
 #pragma once
 
 #include <DFIPActionModel.hpp>
+#include <UnicycleModel.hpp>
 #include <walkingPlanner.hpp>
+
 
 #include <iostream>
 #include <fstream>
@@ -27,7 +29,7 @@ class MPC {
   static constexpr int N_IN = 18; 
   static constexpr int NX = 13; 
   static constexpr int NU = 9;          
-  static constexpr int NH = 50;
+  static constexpr int NH = 400;
 
   public:
   MPC(){};
@@ -62,12 +64,14 @@ class MPC {
 private:
   const labrob::walkingPlanner* walkingPlanner_ptr_ = nullptr;
 
+  Eigen::Vector<double, labrob::MPC::NX> x_current;
+
   Eigen::Vector3d pos_com_, vel_com_, acc_com_, pos_pl_, vel_pl_, acc_pl_, pos_pr_, vel_pr_, acc_pr_;
   double theta_, omega_, alpha_;
 
   // VHIP parameters
   double grav = 9.81;                   // gravity
-  double Δ    = 0.01;                   // prediction step
+  double Δ    = 0.002;                   // prediction step
   double dt_  = 0.002;                  // control timestep
   double m    = 27.68978;
   double d    = 0.1;                    // unicycle offset

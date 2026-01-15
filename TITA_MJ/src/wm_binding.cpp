@@ -1,6 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/eigen.h>
+#include <mujoco/mujoco.h>
 
 #include "WalkingManager.hpp"
 #include "MPC.hpp"
@@ -39,6 +40,38 @@ uintptr_t get_mujoco_ptr(py::object obj) {
 
 PYBIND11_MODULE(wm, m) {
     m.doc() = "Python bindings for WalkingManager";
+
+     py::class_<RobotState>(m, "RobotState")
+        .def(py::init<>())
+        .def_readwrite("position", &RobotState::position)
+        .def_property("orientation",
+            [](const RobotState &r) { 
+                return r.orientation.coeffs(); 
+            },
+            [](RobotState &r, const Eigen::Vector4d &v) {
+                r.orientation.coeffs() = v;   
+            }
+        )
+        .def_readwrite("linear_velocity", &RobotState::linear_velocity)
+        .def_readwrite("angular_velocity", &RobotState::angular_velocity)
+        .def_readwrite("joint_state", &RobotState::joint_state)
+        .def_readwrite("total_force", &RobotState::total_force)
+        .def_readwrite("contact_points", &RobotState::contact_points)
+        .def_readwrite("contact_forces", &RobotState::contact_forces)
+        
+        .def("__repr__", [](const RobotState &r) {
+            std::stringstream ss;
+            ss << "  Pos: [" << r.position.transpose() << "]\n";
+            ss << "  Ori: [" << r.orientation.coeffs().transpose() << "]\n";
+            ss << "  LinVel: [" << r.linear_velocity.transpose() << "]\n";
+            ss << "  AngVel: [" << r.angular_velocity.transpose() << "]\n";
+            
+            //ss << "  Joints: " << r.joint_state.size() << " active\n";
+            ss << "  Contacts: " << r.contact_points.size() << " active\n";
+            ss << "  Total Force: [" << r.total_force.transpose() << "]";
+            
+            return ss.str();
+        });
 
     m.def("robot_state_from_mujoco", [](py::object model_obj, py::object data_obj) {
         uintptr_t model_ptr = get_mujoco_ptr(model_obj);
@@ -83,74 +116,59 @@ PYBIND11_MODULE(wm, m) {
             return ss.str();
         });
 
-    py::class_<RobotState>(m, "RobotState")
-        .def(py::init<>())
-        .def_readwrite("position", &RobotState::position)
-        .def_property("orientation",
-            [](const RobotState &r) { 
-                return r.orientation.coeffs(); 
-            },
-            [](RobotState &r, const Eigen::Vector4d &v) {
-                r.orientation.coeffs() = v;   
-            }
-        )
-        .def_readwrite("linear_velocity", &RobotState::linear_velocity)
-        .def_readwrite("angular_velocity", &RobotState::angular_velocity)
-        .def_readwrite("joint_state", &RobotState::joint_state)
-        .def_readwrite("total_force", &RobotState::total_force)
-        .def_readwrite("contact_points", &RobotState::contact_points)
-        .def_readwrite("contact_forces", &RobotState::contact_forces)
-        
-        .def("__repr__", [](const RobotState &r) {
-            std::stringstream ss;
-            ss << "  Pos: [" << r.position.transpose() << "]\n";
-            ss << "  Ori: [" << r.orientation.coeffs().transpose() << "]\n";
-            ss << "  LinVel: [" << r.linear_velocity.transpose() << "]\n";
-            ss << "  AngVel: [" << r.angular_velocity.transpose() << "]\n";
-            
-            //ss << "  Joints: " << r.joint_state.size() << " active\n";
-            ss << "  Contacts: " << r.contact_points.size() << " active\n";
-            ss << "  Total Force: [" << r.total_force.transpose() << "]";
-            
-            return ss.str();
-        });
-    
     py::class_<SolutionMPC::Com>(m, "Com")
         .def_readwrite("pos", &SolutionMPC::Com::pos)
         .def_readwrite("vel", &SolutionMPC::Com::vel)
         .def_readwrite("acc", &SolutionMPC::Com::acc)
-
         .def("__repr__", [](const SolutionMPC::Com &c) {
             std::stringstream ss;
-            ss << "  pos: [" << c.pos.transpose() << "]\n";
-            ss << "  vel: [" << c.vel.transpose() << "]\n";
-            ss << "  acc: [" << c.acc.transpose() << "]\n";
+            ss << "Com(pos=[" << c.pos.transpose() 
+            << "], vel=[" << c.vel.transpose() 
+            << "], acc=[" << c.acc.transpose() << "])";
             return ss.str();
         });
 
-    py::class_<SolutionMPC::Pc>(m, "Pc")
-        .def_readwrite("pos", &SolutionMPC::Pc::pos)
-        .def_readwrite("vel", &SolutionMPC::Pc::vel)
-        .def_readwrite("acc", &SolutionMPC::Pc::acc)
-
-        .def("__repr__", [](const SolutionMPC::Pc &p) {
+    py::class_<SolutionMPC::Pl>(m, "Pl")
+        .def_readwrite("pos", &SolutionMPC::Pl::pos)
+        .def_readwrite("vel", &SolutionMPC::Pl::vel)
+        .def_readwrite("acc", &SolutionMPC::Pl::acc)
+        .def("__repr__", [](const SolutionMPC::Pl &p) {
             std::stringstream ss;
-            ss << "  pos: [" << p.pos.transpose() << "]\n";
-            ss << "  vel: [" << p.vel.transpose() << "]\n";
-            ss << "  acc: [" << p.acc.transpose() << "]\n";
+            ss << "Pl(pos=[" << p.pos.transpose() 
+            << "], vel=[" << p.vel.transpose() 
+            << "], acc=[" << p.acc.transpose() << "])";
+            return ss.str();
+        });
+
+    py::class_<SolutionMPC::Pr>(m, "Pr")
+        .def_readwrite("pos", &SolutionMPC::Pr::pos)
+        .def_readwrite("vel", &SolutionMPC::Pr::vel)
+        .def_readwrite("acc", &SolutionMPC::Pr::acc)
+        .def("__repr__", [](const SolutionMPC::Pr &p) {
+            std::stringstream ss;
+            ss << "Pr(pos=[" << p.pos.transpose() 
+            << "], vel=[" << p.vel.transpose() 
+            << "], acc=[" << p.acc.transpose() << "])";
             return ss.str();
         });
 
     py::class_<SolutionMPC>(m, "SolutionMPC")
-        .def(py::init<>())
         .def_readwrite("com", &SolutionMPC::com)
-        .def_readwrite("pc", &SolutionMPC::pc)
-
-        .def("__repr__", [](const SolutionMPC &r) {
+        .def_readwrite("pl", &SolutionMPC::pl)
+        .def_readwrite("pr", &SolutionMPC::pr)
+        .def_readwrite("theta", &SolutionMPC::theta)
+        .def_readwrite("omega", &SolutionMPC::omega)
+        .def_readwrite("alpha", &SolutionMPC::alpha)
+        .def("__repr__", [](const SolutionMPC &s) {
             std::stringstream ss;
-            ss << py::repr(py::cast(r.com)).cast<std::string>() << "\n";
-            ss << py::repr(py::cast(r.pc)).cast<std::string>() << "\n";            
-            return ss.str();
+            ss << "SolutionMPC(\n"
+                << "  com=" << py::repr(py::cast(s.com)) << ",\n"
+                << "  pl=" << py::repr(py::cast(s.pl)) << ",\n"
+                << "  pr=" << py::repr(py::cast(s.pr)) << ",\n"
+                << "  theta=" << s.theta 
+                << ", omega=" << s.omega 
+                << ", alpha=" << s.alpha << ")";
+                return ss.str();
         });
 
     py::class_<JointCommand>(m, "JointCommand")
@@ -193,7 +211,7 @@ PYBIND11_MODULE(wm, m) {
             return wm.init(state, armatures_map);
         })
 
-        .def("update", [](WalkingManager &wm, const RobotState &state, Eigen::Vector3d &position_desired) {
+        .def("update", [](WalkingManager &wm, const RobotState &state, const Eigen::Vector3d position_desired) {
             JointCommand cmd;
             SolutionMPC solution;
             wm.update(state, position_desired, cmd, solution);

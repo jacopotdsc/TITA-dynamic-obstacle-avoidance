@@ -16,7 +16,8 @@ path3 = base_string + "tesi/tita/urdf/tita_description.urdf"
 path4 = base_string + "tesi/test_python/tita_converted.xml"
 path5 = "/home/ubuntu/miniconda3/envs/tianshou/lib/python3.12/site-packages/gymnasium/envs/mujoco/assets/tita_mjx.xml"
 path6 = "/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/tita_mj_description/tita.xml"
-path = path6
+path7 = "/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/tita_mj_description/tita_world.xml"
+path = path7
 
 model = mujoco.MjModel.from_xml_path(path)
 data = mujoco.MjData(model)
@@ -84,7 +85,7 @@ start_real = time.time()
 start_sim = data.time
 
 frame_idx = 0
-frame_th = 10
+frame_th = 0
 
 # ------------------------------
 dt = model.opt.timestep
@@ -191,7 +192,9 @@ while True:
             
             robot_state = wm.robot_state_from_mujoco(model, data)
             #print(robot_state)
-            result_update = walking_manager.update(robot_state, np.array([0.0, 0.0, 0.40]))
+            pos_des = np.array([0.0, 0.0, 0.4])
+            result_update = walking_manager.update(robot_state, pos_des)
+
             torque = result_update.cmd
             #if frame_idx == 0 or frame_idx % 100 == 0:
             #    print(torque)
@@ -215,6 +218,9 @@ while True:
                 data.ctrl = torque_sorted
 
             mujoco.mj_step(model, data)
+
+            #print(f"frame: {frame_idx}, com: {data.subtree_com[0, :]}, fb:{data.qpos[:3]}, \n{data.ctrl}, ")
+
             #draw_perturbation_arrow(viewer, perturbator)
             #print(f"prev: {[f'{x:.3f}' for x in body_coordinate]}, new: {[f'{x:.3f}' for x in body_coordinate_new]}")
             viewer.sync()

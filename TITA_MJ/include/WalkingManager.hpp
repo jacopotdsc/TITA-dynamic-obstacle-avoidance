@@ -17,7 +17,7 @@ class WalkingManager {
 
   void update(
       const labrob::RobotState& robot_state,
-      Eigen::Vector3d& position_desired,
+      const Eigen::Vector3d position_desired,
       labrob::JointCommand& joint_command,
       labrob::SolutionMPC& solution
   );
@@ -31,6 +31,8 @@ class WalkingManager {
   pinocchio::FrameIndex right_leg4_idx_;
   pinocchio::FrameIndex left_leg4_idx_;
 
+  double wheel_radius_;
+
   double controller_timestep_msec_;
 
   std::shared_ptr<labrob::WholeBodyController> whole_body_controller_ptr_;
@@ -41,9 +43,9 @@ private:
   double t_msec_ = 0;
 
 
+  labrob::walkingPlanner walkingPlanner_;
   labrob::MPC mpc_;
-  Eigen::Matrix<double, 2, 200+1> pc_ref;
-  Eigen::Matrix<double, 3, 200+1> pcom_ref;
+
 
   // Log files:
   // std::ofstream mpc_timings_log_file_;
