@@ -131,7 +131,7 @@ class Perturbator:
             t = self.info["pert_steps"] * self.dt
             u_t = np.sin(np.pi * t / self.info["pert_duration_seconds"])
             # kg * m/s * 1/s = m/s^2 = kg * m/s^2 (N).
-            max_force = 170.0
+            max_force = 1000.0
             force = max_force * u_t
 
             # Lateral force vector, total latera magnitude:
@@ -173,6 +173,7 @@ class Perturbator:
 perturbator = Perturbator(model, data, info, dt, torso_body_id, torso_mass, viewer)
 
 # --------------------------------
+np.set_printoptions(precision=3, suppress=True)
 while True:
     time.sleep(0.0)
     try:
@@ -185,7 +186,7 @@ while True:
             #if frame_idx % 100 == 0: 
             #    print(f"RTF: {sim_diff / real_diff:.2f}x")
 
-            #perturbator._maybe_apply_perturbation()
+            perturbator._maybe_apply_perturbation()
                 
             start_real = time.time()
             start_sim = data.time
@@ -215,14 +216,18 @@ while True:
 
             #print(torque_sorted)
             if frame_idx >= frame_th:
-                data.ctrl = torque_sorted
+                if not np.isnan(torque_sorted).any():
+                    data.ctrl[:] = torque_sorted
+                else:
+                    print(f"Warning: NaN nei torque, frame {frame_idx}, skipping assignment")
 
-            mujoco.mj_step(model, data)
-
-            #print(f"frame: {frame_idx}, com: {data.subtree_com[0, :]}, fb:{data.qpos[:3]}, \n{data.ctrl}, ")
-
+            #print("--------\nframe:", frame_idx)
+            #print("ctrl:", data.ctrl)
+            #print("torque:  ", torque_sorted)
+            #print("mpc_sol:", mpc_solution)
             #draw_perturbation_arrow(viewer, perturbator)
             #print(f"prev: {[f'{x:.3f}' for x in body_coordinate]}, new: {[f'{x:.3f}' for x in body_coordinate_new]}")
+            mujoco.mj_step(model, data)
             viewer.sync()
         else:
             break

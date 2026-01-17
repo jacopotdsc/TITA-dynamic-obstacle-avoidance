@@ -110,7 +110,8 @@ def average_orientation(csv_path, plots_dir=None):
         end_idx = episode_starts[i+1]
         ep_df = df.iloc[start_idx:end_idx]
         quat_data = ep_df[['ori_w', 'ori_x', 'ori_y', 'ori_z']].values
-        rot = Rotation.from_quat(quat_data)
+        quat_reordered = quat_data[:, [1, 2, 3, 0]]
+        rot = Rotation.from_quat(quat_reordered)
         rot_euler = rot.as_euler('xyz', degrees=False)
         means = rot_euler.mean(axis=0)
         euler_means['roll'].append(means[0])
@@ -121,8 +122,8 @@ def average_orientation(csv_path, plots_dir=None):
     for label, values in euler_means.items():
         val_array = np.array(values)
         
-        val_array = np.where(val_array >= np.pi/2, val_array - np.pi, val_array)
-        val_array = np.where(val_array <= -np.pi/2, val_array + np.pi, val_array)
+        val_array = np.where(val_array > np.pi/2, val_array - 2*np.pi, val_array)
+        val_array = np.where(val_array < -np.pi/2, val_array + 2*np.pi, val_array)
         plt.plot(range(1,len(euler_means['roll'])+1), val_array, marker='o', label=label)
     
     plt.ylim(-np.pi/2 - 0.1, np.pi/2 + 0.1)
@@ -301,6 +302,118 @@ def last_episode_height(csv_path, plots_dir=None):
         plt.savefig(saved)
         print(f"Saved {saved}")
 
+def last_episode_com(csv_path, plots_dir=None):
+    df = pd.read_csv(csv_path)
+    episode_starts = df.index[df['frame'] == 0].tolist()
+    start_idx = episode_starts[-1]
+    ep_df = df.iloc[start_idx:]
+
+    fig, axes = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
+    
+    # Sottografico 1: Posizione (X, Y, Z/Height)
+    axes[0].plot(ep_df['frame'], ep_df['robot_pos_x'], label='Pos X')
+    axes[0].plot(ep_df['frame'], ep_df['robot_pos_y'], label='Pos Y')
+    axes[0].plot(ep_df['frame'], ep_df['robot_height'], label='Pos Z (Height)')
+    axes[0].set_ylabel("Position (m)")
+    axes[0].set_title(f"CoM Position (Last Episode {len(episode_starts)})")
+    axes[0].legend()
+    axes[0].grid(True, alpha=0.3)
+
+    # Sottografico 2: Velocità (Vx, Vy, Vz)
+    axes[1].plot(ep_df['frame'], ep_df['robot_vel_x'], label='Vel X')
+    axes[1].plot(ep_df['frame'], ep_df['robot_vel_y'], label='Vel Y')
+    axes[1].plot(ep_df['frame'], ep_df['robot_vel_z'], label='Vel Z')
+    axes[1].set_ylabel("Velocity (m/s)")
+    axes[1].set_title("CoM Velocity")
+    axes[1].legend()
+    axes[1].grid(True, alpha=0.3)
+
+    # Sottografico 3: Accelerazione (Ax, Ay, Az)
+    axes[2].plot(ep_df['frame'], ep_df['robot_acc_x'], label='Acc X')
+    axes[2].plot(ep_df['frame'], ep_df['robot_acc_y'], label='Acc Y')
+    axes[2].plot(ep_df['frame'], ep_df['robot_acc_z'], label='Acc Z')
+    axes[2].set_xlabel("Frame")
+    axes[2].set_ylabel("Acceleration (m/s²)")
+    axes[2].set_title("CoM Acceleration")
+    axes[2].legend()
+    axes[2].grid(True, alpha=0.3)
+
+    plt.tight_layout()
+
+    if plots_dir:
+        os.makedirs(plots_dir, exist_ok=True)
+        name = "last_episode_com_dynamics.png"
+        saved = os.path.join(plots_dir, name)
+        plt.savefig(saved)
+        print(f"Saved {saved}")
+
+def last_episode_foot(csv_path, plots_dir=None):
+    df = pd.read_csv(csv_path)
+    episode_starts = df.index[df['frame'] == 0].tolist()
+    start_idx = episode_starts[-1]
+    ep_df = df.iloc[start_idx:]
+
+    # Creazione griglia 3 righe (Pos, Vel, Acc) x 2 colonne (Left, Right)
+    fig, axes = plt.subplots(3, 2, figsize=(16, 12), sharex=True)
+    
+    # --- Colonna Sinistra: Left Foot (pl, vl, al) ---
+    # Posizione
+    axes[0, 0].plot(ep_df['frame'], ep_df['foot_l_pos_x'], label='X')
+    axes[0, 0].plot(ep_df['frame'], ep_df['foot_l_pos_y'], label='Y')
+    axes[0, 0].plot(ep_df['frame'], ep_df['foot_l_pos_z'], label='Z')
+    axes[0, 0].set_title("Left Foot Position")
+    axes[0, 0].set_ylabel("Pos (m)")
+    axes[0, 0].legend(); axes[0, 0].grid(True, alpha=0.3)
+
+    # Velocità
+    axes[1, 0].plot(ep_df['frame'], ep_df['foot_l_vel_x'], label='Vx')
+    axes[1, 0].plot(ep_df['frame'], ep_df['foot_l_vel_y'], label='Vy')
+    axes[1, 0].plot(ep_df['frame'], ep_df['foot_l_vel_z'], label='Vz')
+    axes[1, 0].set_title("Left Foot Velocity")
+    axes[1, 0].set_ylabel("Vel (m/s)")
+    axes[1, 0].legend(); axes[1, 0].grid(True, alpha=0.3)
+
+    # Accelerazione
+    axes[2, 0].plot(ep_df['frame'], ep_df['foot_l_acc_x'], label='Ax')
+    axes[2, 0].plot(ep_df['frame'], ep_df['foot_l_acc_y'], label='Ay')
+    axes[2, 0].plot(ep_df['frame'], ep_df['foot_l_acc_z'], label='Az')
+    axes[2, 0].set_title("Left Foot Acceleration")
+    axes[2, 0].set_xlabel("Frame")
+    axes[2, 0].set_ylabel("Acc (m/s²)")
+    axes[2, 0].legend(); axes[2, 0].grid(True, alpha=0.3)
+
+    # --- Colonna Destra: Right Foot (pr, vr, ar) ---
+    # Posizione
+    axes[0, 1].plot(ep_df['frame'], ep_df['foot_r_pos_x'], label='X')
+    axes[0, 1].plot(ep_df['frame'], ep_df['foot_r_pos_y'], label='Y')
+    axes[0, 1].plot(ep_df['frame'], ep_df['foot_r_pos_z'], label='Z')
+    axes[0, 1].set_title("Right Foot Position")
+    axes[0, 1].legend(); axes[0, 1].grid(True, alpha=0.3)
+
+    # Velocità
+    axes[1, 1].plot(ep_df['frame'], ep_df['foot_r_vel_x'], label='Vx')
+    axes[1, 1].plot(ep_df['frame'], ep_df['foot_r_vel_y'], label='Vy')
+    axes[1, 1].plot(ep_df['frame'], ep_df['foot_r_vel_z'], label='Vz')
+    axes[1, 1].set_title("Right Foot Velocity")
+    axes[1, 1].legend(); axes[1, 1].grid(True, alpha=0.3)
+
+    # Accelerazione
+    axes[2, 1].plot(ep_df['frame'], ep_df['foot_r_acc_x'], label='Ax')
+    axes[2, 1].plot(ep_df['frame'], ep_df['foot_r_acc_y'], label='Ay')
+    axes[2, 1].plot(ep_df['frame'], ep_df['foot_r_acc_z'], label='Az')
+    axes[2, 1].set_title("Right Foot Acceleration")
+    axes[2, 1].set_xlabel("Frame")
+    axes[2, 1].legend(); axes[2, 1].grid(True, alpha=0.3)
+
+    plt.tight_layout()
+
+    if plots_dir:
+        os.makedirs(plots_dir, exist_ok=True)
+        name = "last_episode_feet_dynamics.png"
+        saved = os.path.join(plots_dir, name)
+        plt.savefig(saved)
+        print(f"Saved {saved}")
+
 def main(exp_name = None):
     DIR_EXPERIMENT_INFO = "experiment_info"           
 
@@ -325,15 +438,24 @@ def main(exp_name = None):
     plots_dir = os.path.join(os.path.dirname(csv_path), "plots")
     os.makedirs(plots_dir, exist_ok=True)
 
-    total_reward(csv_path, plots_dir)
-    average_height(csv_path, plots_dir)
-    average_orientation(csv_path, plots_dir)
-    total_torque(csv_path, plots_dir)
-    total_prev_action(csv_path, plots_dir)
+    plotting_tasks = [
+        (total_reward, (csv_path, plots_dir)),
+        (average_height, (csv_path, plots_dir)),
+        (average_orientation, (csv_path, plots_dir)),
+        #(total_torque, (csv_path, plots_dir)),
+        (total_prev_action, (csv_path, plots_dir)),
+        #(last_episode_joint_torque(csv_path, plots_dir))
+        #(last_episode_orientation(csv_path, plots_dir))
+        #(last_episode_height(csv_path, plots_dir))
+    ]
 
-    #last_episode_joint_torque(csv_path, plots_dir)
-    #last_episode_orientation(csv_path, plots_dir)
-    #last_episode_height(csv_path, plots_dir)
+    for func, args in plotting_tasks:
+        try:
+            func(*args)
+        except Exception as e:
+            print(f"ERROR in function {func.__name__}: {e}")
+            continue
+
 
 if __name__ == "__main__":
     exp_name = sys.argv[1] if len(sys.argv) >= 2 else None

@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from functools import partial
 from gymnasium.wrappers import RecordVideo
 from torch.distributions import Distribution, Independent, Normal
-
+from scipy.spatial.transform import Rotation
 
 from tianshou.algorithm import TD3
 from tianshou.algorithm.modelfree.ddpg import ContinuousDeterministicPolicy
@@ -212,14 +212,29 @@ def test_fn(num_epoch, step_idx):
         'joint_vel_1', 'joint_vel_2', 'joint_vel_3', 'joint_vel_4', 
         'joint_vel_5', 'joint_vel_6', 'joint_vel_7', 'joint_vel_8',
 
+        # MPC flattened solution
+        'mpc_sol_com_pos_x', 'mpc_sol_com_pos_y', 'mpc_sol_com_pos_z',
+        'mpc_sol_com_vel_x', 'mpc_sol_com_vel_y', 'mpc_sol_com_vel_z',
+        'mpc_sol_com_acc_x', 'mpc_sol_com_acc_y', 'mpc_sol_com_acc_z',
+        
+        'mpc_sol_pl_pos_x', 'mpc_sol_pl_pos_y', 'mpc_sol_pl_pos_z',
+        'mpc_sol_pl_vel_x', 'mpc_sol_pl_vel_y', 'mpc_sol_pl_vel_z',
+        'mpc_sol_pl_acc_x', 'mpc_sol_pl_acc_y', 'mpc_sol_pl_acc_z',
+        
+        'mpc_sol_pr_pos_x', 'mpc_sol_pr_pos_y', 'mpc_sol_pr_pos_z',
+        'mpc_sol_pr_vel_x', 'mpc_sol_pr_vel_y', 'mpc_sol_pr_vel_z',
+        'mpc_sol_pr_acc_x', 'mpc_sol_pr_acc_y', 'mpc_sol_pr_acc_z',
+
+        'mpc_sol_theta', 'mpc_sol_omega', 'mpc_sol_alpha',
+
         # Normalized wbc output
-        'joint_torque_1', 'joint_torque_2', 'joint_torque_3', 'joint_torque_4', 
-        'joint_torque_5', 'joint_torque_6', 'joint_torque_7', 'joint_torque_8',
+        #'joint_torque_1', 'joint_torque_2', 'joint_torque_3', 'joint_torque_4', 
+        #'joint_torque_5', 'joint_torque_6', 'joint_torque_7', 'joint_torque_8',
 
         # Previous actions of neural network and user commands
         'prev_action_1', 'prev_action_2', 'prev_action_3', 'prev_action_4', 
         'prev_action_5', 'prev_action_6', 'prev_action_7', 'prev_action_8',
-        'user_cmd_vx', 'user_cmd_vy', 'user_cmd_omega'
+        'user_cmd_vx', 'user_cmd_omega'
     ]
     
     act_headers = [f'action_{i}' for i in range(1, 9)]
@@ -267,8 +282,45 @@ def test_enviroment(
         policy: nn.Module,
         render_mode: str = "human",
         num_test_envs: int = 16,
-        save_dir: str = None,
+        save_plot_dir: str = None,
     ):
+
+    def get_obs_dict(obs):
+        BASE_STATE_START = 0
+        MPC_SOL_START    = 30
+        ACTION_CMD_START = 60
+
+        obs_dict = {
+            # --- Stato Base (0-29) ---
+            "com_height":          obs[BASE_STATE_START],                # 1
+            "orientation_quat":    obs[BASE_STATE_START+1:BASE_STATE_START+5],              # 4 (x, y, z, w)
+            "gravity_body_frame":  obs[BASE_STATE_START+5:BASE_STATE_START+8],              # 3
+            "base_lin_vel":        obs[BASE_STATE_START+8:BASE_STATE_START+11],             # 3
+            "base_lin_acc":        obs[BASE_STATE_START+11:BASE_STATE_START+14],            # 3
+            "joint_angles":        obs[BASE_STATE_START+14:BASE_STATE_START+22],            # 8
+            "joint_velocities":    obs[BASE_STATE_START+22:BASE_STATE_START+30],            # 8
+
+            # --- MPC Solution Targets (30-56) ---
+            "mpc_sol_com_pos":         obs[MPC_SOL_START:MPC_SOL_START+3],            # 3
+            "mpc_sol_com_vel":         obs[MPC_SOL_START+3:MPC_SOL_START+6],            # 3
+            "mpc_sol_com_acc":         obs[MPC_SOL_START+6:MPC_SOL_START+9],            # 3
+            "mpc_sol_pl_pos":          obs[MPC_SOL_START+9:MPC_SOL_START+12],            # 3
+            "mpc_sol_pl_vel":          obs[MPC_SOL_START+12:MPC_SOL_START+15],            # 3
+            "mpc_sol_pl_acc":          obs[MPC_SOL_START+15:MPC_SOL_START+18],            # 3
+            "mpc_sol_pr_pos":          obs[MPC_SOL_START+18:MPC_SOL_START+21],            # 3
+            "mpc_sol_pr_vel":          obs[MPC_SOL_START+21:MPC_SOL_START+24],            # 3
+            "mpc_sol_pr_acc":          obs[MPC_SOL_START+24:MPC_SOL_START+27],            # 3
+
+            # --- MPC Sol Angular (57-59) ---
+            "mpc_theta":           obs[MPC_SOL_START+27],               # 1
+            "mpc_omega":           obs[MPC_SOL_START+28],               # 1
+            "mpc_alpha":           obs[MPC_SOL_START+29],               # 1
+
+            # --- Azioni e Comandi (60+) ---
+            "last_nn_action":      obs[ACTION_CMD_START:ACTION_CMD_START+8],            # 8
+            "command":             obs[ACTION_CMD_START+8:]               # v_x, v_y, w_z (solitamente 3)
+        }
+        return obs_dict
 
     test_envs = SubprocVectorEnv([lambda: create_wrapped_env(task_name) for _ in range(num_test_envs)], )
     collector = Collector(policy, test_envs, exploration_noise=False)
@@ -307,13 +359,35 @@ def test_enviroment(
         terminated = False
         truncated = False
 
-        history_action = []
-        history_reward_info = []
-        history_com = []
+        logging = {key: [] for key in get_obs_dict(obs).keys()}
+        logging.update({
+            'action': [], 
+            'reward_info': [], 
+            'reward_per_frame': [],
+            'n_frame': [],
+            'perturb': [],
+            'tita_controller_output': [],
+
+            'gt_com_pos': [],
+            'gt_com_lin_vel': [],
+            'gt_com_lin_acc': [],
+
+            'gt_com_orientation': [],
+            'gt_com_ang_vel': [],
+            'gt_com_ang_acc': [],
+
+            'left_feet_pos': [],
+            'left_feet_vel': [],
+            'left_feet_acc': [],
+
+            'right_feet_pos': [],
+            'right_feet_vel': [],
+            'right_feet_acc': [],
+        })
+
+
         start_time_inference = []
         end_time_inference = []
-
-        history_com.append(env.unwrapped.data.subtree_com[0, :].copy())
         
         while True and (not terminated) and (not truncated):
             batch = Batch(obs=np.array([obs]), info={})
@@ -330,15 +404,58 @@ def test_enviroment(
                 action = action.cpu().numpy()
 
             scaled_action = action * env.unwrapped.get_config().action_scale
-            history_action.append(scaled_action)
-
-            obs, reward, terminated, truncated, info = env.step(action)
+            obs, reward, terminated, truncated, reward_info = env.step(action)
             total_reward += reward
-            history_reward_info.append(info)
 
-            history_com.append(env.unwrapped.data.subtree_com[0, :].copy())
+            # Logging
+            obs_dict = get_obs_dict(obs)
+            for key, value in obs_dict.items():
+                logging[key].append(value.copy() if isinstance(value, np.ndarray) else value)
 
 
+            env_info_dict = reward_info['info'] 
+            reward_info.pop('info', None)
+            reward_info.pop('n_frame', None)
+
+            logging['action'].append(scaled_action.copy())
+            logging['reward_per_frame'].append(reward)
+
+            gt_com_pos = env.unwrapped.data.subtree_com[0, :].copy()
+            gt_com_lin_vel = env.unwrapped.data.qvel[0:3].copy()
+            gt_com_lin_acc = env.unwrapped.data.qacc[0:3].copy()
+
+            q_mj = env.unwrapped.data.qpos[3:7].copy()  
+            q_scipy = [q_mj[1], q_mj[2], q_mj[3], q_mj[0]]
+            rot = Rotation.from_quat(q_scipy)
+            gt_com_orientation = rot.as_euler('xyz', degrees=False)
+            gt_com_ang_vel = env.unwrapped.data.qvel[3:6].copy()
+            gt_com_ang_acc = env.unwrapped.data.qacc[3:6].copy()
+
+            logging['gt_com_pos'].append(gt_com_pos)
+            logging['gt_com_lin_vel'].append(gt_com_lin_vel)
+            logging['gt_com_lin_acc'].append(gt_com_lin_acc)
+            logging['gt_com_orientation'].append(gt_com_orientation)
+            logging['gt_com_ang_vel'].append(gt_com_ang_vel)
+            logging['gt_com_ang_acc'].append(gt_com_ang_acc)
+
+            left_feet_pos, left_feet_vel, left_feet_acc = env.unwrapped.get_feet_site_state(env.unwrapped._left_feet_site_id)
+            right_feet_pos, right_feet_vel, right_feet_acc = env.unwrapped.get_feet_site_state(env.unwrapped._right_feet_site_id)
+
+            logging['left_feet_pos'].append(left_feet_pos)
+            logging['left_feet_vel'].append(left_feet_vel)
+            logging['left_feet_acc'].append(left_feet_acc)
+            logging['right_feet_pos'].append(right_feet_pos)
+            logging['right_feet_vel'].append(right_feet_vel)
+            logging['right_feet_acc'].append(right_feet_acc)
+
+            logging['n_frame'] = n_frame
+            logging['tita_controller_output'].append(env_info_dict['tita_controller_output'])
+            logging['perturb'].append(env_info_dict.get('perturb'))
+            reward_info.pop('info', None)
+            reward_info.pop('n_frame', None)
+            logging['reward_info'].append(reward_info.copy())
+
+            # Rendering and small loggin
             if n_frame == 0 or (n_frame+1) % 100 == 0:
                 print("Frame:", n_frame, "Action:", scaled_action, ", Total Reward:", total_reward)
 
@@ -354,6 +471,8 @@ def test_enviroment(
                     break
             
             n_frame += 1
+
+            # Plotting after episode ends
             if terminated or truncated:
                 print(f"Episode terminated. Reward: {total_reward:.2f}")
                 print(f"Inference time: {1000*inference_time:.6f} ms first step")
@@ -362,41 +481,91 @@ def test_enviroment(
                 std_inference_time = 1000 * np.std([end - start for start, end in zip(start_time_inference, end_time_inference)])
                 print(f"inference time: {mean_inference_time:.6f} ± {std_inference_time:.6f} ms")
         
-                actions_array = np.array(history_action) # Shape: (N_frames, 8)
-                frames = np.arange(len(actions_array))
+                frames = np.arange(len(np.array(logging['action'])))
                 
                 joint_names = ["ankle_pitch", "ankle_roll", "knee", "wheel"]
                 legend_left = ["left_" + name for name in joint_names]
                 legend_right = ["right_" + name for name in joint_names]
 
-                def plot_actions():
-                    fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+                def plot_torques():
+                    tita_controller_output = np.array(logging['tita_controller_output'])
+                    history_action = np.array(logging['action'])
 
-                    for i in range(4):
-                        axes[0].plot(frames, actions_array[:, i], label=legend_left[i])
-                    axes[0].set_ylabel("Action/Torque")
-                    axes[0].set_title("Left Leg Joint Actions")
-                    axes[0].legend(loc='upper right')
-                    axes[0].grid(True)
+                    frames = range(len(history_action))
+                    
+                    joint_names = ["ankle_pitch", "ankle_roll", "knee", "wheel"]
+                    legend_left = ["left_" + name for name in joint_names]
+                    legend_right = ["right_" + name for name in joint_names]
 
+                    # Griglia 2x2: Righe (Left/Right leg), Colonne (Controller/NN Action)
+                    fig, axes = plt.subplots(3, 2, figsize=(18, 10), sharex=True)
+
+                    # --- COLONNA 0: TITA CONTROLLER OUTPUT (Sinistra) ---
+                    # Gamba Sinistra
                     for i in range(4):
-                        axes[1].plot(frames, actions_array[:, i+4], label=legend_right[i])
-                    axes[1].set_xlabel("Frame")
-                    axes[1].set_ylabel("Action/Torque")
-                    axes[1].set_title("Right Leg Joint Actions")
-                    axes[1].legend(loc='upper right')
-                    axes[1].grid(True)
+                        axes[0, 0].plot(frames, tita_controller_output[:, i], label=legend_left[i])
+                    axes[0, 0].set_ylabel("Torque [N/m]")
+                    axes[0, 0].set_title("Controller Output (Left Leg)")
+                    axes[0, 0].legend(loc='upper right', fontsize='small')
+                    axes[0, 0].grid(True, alpha=0.3)
+
+                    # Gamba Destra
+                    for i in range(4):
+                        axes[1, 0].plot(frames, tita_controller_output[:, i+4], label=legend_right[i])
+                    axes[1, 0].set_xlabel("Frame")
+                    axes[1, 0].set_ylabel("Torque [N/m]")
+                    axes[1, 0].set_title("Controller Output (Right Leg)")
+                    axes[1, 0].legend(loc='upper right', fontsize='small')
+                    axes[1, 0].grid(True, alpha=0.3)
+
+                    total_ctrl_sum = np.sum(np.abs(tita_controller_output), axis=1)
+                    axes[2, 0].plot(frames, total_ctrl_sum, color='blue', linewidth=2, label='Total controller torque')
+                    axes[2, 0].set_title("Total Controller Effort")
+                    axes[2, 0].set_xlabel("Frame")
+                    axes[2, 0].set_ylabel("Total Torque")
+                    axes[2, 0].legend()
+                    axes[2, 0].grid(True, alpha=0.3)
+
+
+                    # --- COLONNA 1: NN HISTORY ACTION (Destra) ---
+                    # Gamba Sinistra
+                    for i in range(4):
+                        axes[0, 1].plot(frames, history_action[:, i], label=legend_left[i])
+                    axes[0, 1].set_ylabel("Action (scaled)")
+                    axes[0, 1].set_title("NN Action Output (Left Leg)")
+                    axes[0, 1].legend(loc='upper right', fontsize='small')
+                    axes[0, 1].grid(True, alpha=0.3)
+
+                    # Gamba Destra
+                    for i in range(4):
+                        axes[1, 1].plot(frames, history_action[:, i+4], label=legend_right[i])
+                    axes[1, 1].set_xlabel("Frame")
+                    axes[1, 1].set_ylabel("Action (scaled)")
+                    axes[1, 1].set_title("NN Action Output (Right Leg)")
+                    axes[1, 1].legend(loc='upper right', fontsize='small')
+                    axes[1, 1].grid(True, alpha=0.3)
+
+                    # RIGA 2: Somma Totale Action
+                    total_action_sum = np.sum(np.abs(history_action), axis=1)
+                    axes[2, 1].plot(frames, total_action_sum, color='blue', linewidth=2, label='Total NN action')
+                    axes[2, 1].set_title("Total NN Action Effort")
+                    axes[2, 1].set_xlabel("Frame")
+                    axes[2, 1].set_ylabel("Total Action")
+                    axes[2, 1].legend()
+                    axes[2, 1].grid(True, alpha=0.3)
 
                     plt.tight_layout()
-                    os.makedirs(save_dir, exist_ok=True)
                     
-                    name = "render_test_nn_torque.png"
+                    # save_dir deve essere definita globalmente o passata
+                    os.makedirs(save_dir, exist_ok=True)
+                    name = "render_test_actions_comparison.png"
                     saved = os.path.join(save_dir, name)
                     plt.savefig(saved)
                     print(f"Saved {saved}")
-                    plt.savefig(saved)
 
                 def plot_reward_info():
+                    history_reward_info = np.array(logging['reward_info'])
+
                     reward_info_keys = list(history_reward_info[0].keys())
                     reward_info_keys = [key for key in reward_info_keys if env.unwrapped.get_config().reward_config.scales.get(key) != 0] 
                     n_keys = len(reward_info_keys)
@@ -405,10 +574,11 @@ def test_enviroment(
                     fig, axes = plt.subplots(2, 1, figsize=(12, 10), sharex=True)
 
                     for idx, key in enumerate(reward_info_keys):
-                        ax = axes[0] if idx < mid else axes[1]
-                        
-                        reward_values = [info[key] for info in history_reward_info]
-                        ax.plot(frames, reward_values, label=key)
+                        if key != "cost_early_termination":
+                            ax = axes[0] if idx < mid else axes[1]
+                            
+                            reward_values = [info[key] for info in history_reward_info]
+                            ax.plot(frames, reward_values, label=key)
                     axes[0].set_title("Reward Info")
                     axes[0].set_ylabel("Value")
                     axes[0].legend(loc='upper right', ncol=2) #
@@ -430,29 +600,196 @@ def test_enviroment(
                     plt.savefig(saved)
 
                 def plot_com():
-                    com_data = np.array(history_com)
+                    
+                    history_gt_com_pos = np.array(logging['gt_com_pos'])
+                    history_gt_com_vel = np.array(logging['gt_com_lin_vel'])
+                    history_gt_com_acc = np.array(logging['gt_com_lin_acc'])
 
-                    plt.figure(figsize=(10, 6))
+                    history_gt_com_orientation = np.array(logging['gt_com_orientation'])
+                    history_gt_com_ang_vel = np.array(logging['gt_com_ang_vel'])
+                    history_gt_com_ang_acc = np.array(logging['gt_com_ang_acc'])
 
-                    plt.plot(com_data[:, 0], label='CoM X', color='tab:red', linewidth=1.5)
-                    plt.plot(com_data[:, 1], label='CoM Y', color='tab:green', linewidth=1.5)
-                    plt.plot(com_data[:, 2], label='CoM Z', color='tab:blue', linewidth=1.5)
+                    history_mpc_com_pos = np.array(logging['mpc_sol_com_pos'])
+                    history_mpc_com_vel = np.array(logging['mpc_sol_com_vel'])
+                    history_mpc_com_acc = np.array(logging['mpc_sol_com_acc'])
+                    
+                    frames = range(len(history_mpc_com_pos))
+                    fig, axes = plt.subplots(3, 2, figsize=(12, 12), sharex=True)
+                    
+                    # Colori e stili
+                    colors = ['tab:red', 'tab:green', 'tab:blue']
+                    labels_lin = ['X', 'Y', 'Z']
+                    labels_ang = ['Roll', 'Pitch', 'Yaw']
 
-                    plt.title('CoM trajectory')
-                    plt.xlabel('Step')
-                    plt.ylabel('Position [m]')
-                    plt.legend()  
-                    plt.grid(True, linestyle='--', alpha=0.6)
+                    # --- COLONNA 0: LINEARE (GT vs MPC) ---
+                    for i in range(3):
+                        # Position (Row 0), Velocity (Row 1), Acceleration (Row 2)
+                        data_gt = [history_gt_com_pos, history_gt_com_vel, history_gt_com_acc][i]
+                        data_mpc = [history_mpc_com_pos, history_mpc_com_vel, history_mpc_com_acc][i]
+                        titles = ["CoM Position [m]", "CoM Velocity [m/s]", "CoM Acceleration [m/s²]"]
+                        
+                        for j in range(3): # Plot assi X, Y, Z
+                            if i == 0:
+                                data_gt[:, j] = np.where(data_gt[:, j] > np.pi, data_gt[:, j] - 2*np.pi, data_gt[:, j])
+                                data_gt[:, j] = np.where(data_gt[:, j] < -np.pi, data_gt[:, j] + 2*np.pi, data_gt[:, j])
 
-                    name = "render_test_com_trajectory.png"
+                            axes[i, 0].plot(frames, data_gt[:, j], color=colors[j], label=f'GT {labels_lin[j]}')
+                            axes[i, 0].plot(frames, data_mpc[:, j], color=colors[j], linestyle='--', alpha=0.6, label=f'MPC {labels_lin[j]}')
+                        
+                        axes[i, 0].set_title(titles[i])
+                        axes[i, 0].legend(loc='upper right', ncol=2, fontsize='small')
+                        axes[i, 0].grid(True, alpha=0.3)
+
+                    # --- COLONNA 1: ANGOLARE (Solo GT) ---
+                    for i in range(3):
+                        data_ang = [history_gt_com_orientation, history_gt_com_ang_vel, history_gt_com_ang_acc][i]
+                        titles_ang = ["Orientation [rad]", "Angular Velocity [rad/s]", "Angular Acceleration [rad/s²]"]
+
+                        for j in range(3): # Plot Roll, Pitch, Yaw
+                            axes[i, 1].plot(frames, data_ang[:, j], color=colors[j], label=labels_ang[j])
+                        
+                        axes[i, 1].set_title(titles_ang[i])
+                        axes[i, 1].legend(loc='upper right', fontsize='small')
+                        axes[i, 1].grid(True, alpha=0.3)
+
+                    # Impostazioni finali
+                    axes[2, 0].set_xlabel("Frame")
+                    axes[2, 1].set_xlabel("Frame")
+                    
+                    plt.tight_layout()
+                    os.makedirs(save_dir, exist_ok=True)
+                    name = "render_test_com_dynamics.png"
                     saved = os.path.join(save_dir, name)
                     plt.savefig(saved)
                     print(f"Saved {saved}")
-                    plt.savefig(saved)
 
-                plot_actions()
-                plot_reward_info()
+                def plot_feet():
+                    
+                    history_mpc_sol_pl_pos = np.array(logging['mpc_sol_pl_pos'])
+                    history_mpc_sol_pl_vel = np.array(logging['mpc_sol_pl_vel'])
+                    history_mpc_sol_pl_acc = np.array(logging['mpc_sol_pl_acc'])
+                    history_mpc_sol_pr_pos = np.array(logging['mpc_sol_pr_pos'])
+                    history_mpc_sol_pr_vel = np.array(logging['mpc_sol_pr_vel'])
+                    history_mpc_sol_pr_acc = np.array(logging['mpc_sol_pr_acc'])
+
+                    history_left_feet_pos = np.array(logging['left_feet_pos'])
+                    history_left_feet_vel = np.array(logging['left_feet_vel'])
+                    history_left_feet_acc = np.array(logging['left_feet_acc'])
+                    history_right_feet_pos = np.array(logging['right_feet_pos'])
+                    history_right_feet_vel = np.array(logging['right_feet_vel'])
+                    history_right_feet_acc = np.array(logging['right_feet_acc'])
+
+                    frames = range(len(history_mpc_sol_pl_pos))
+                    # Creazione griglia: 3 righe (Pos, Vel, Acc) e 2 colonne (Left, Right)
+                    fig, axes = plt.subplots(3, 2, figsize=(16, 12), sharex=True)
+
+                    # --- COLONNA 0: LEFT FOOT (PL) ---
+                    # 1. Posizione PL_
+                    axes[0, 0].plot(frames, history_mpc_sol_pl_pos[:, 0], color='red', label='mpc_X')
+                    axes[0, 0].plot(frames, history_mpc_sol_pl_pos[:, 1], color='green', label='mpc_Y')
+                    axes[0, 0].plot(frames, history_mpc_sol_pl_pos[:, 2], color='blue', label='mpc_Z')
+                    axes[0, 0].plot(frames, history_left_feet_pos[:, 0], color='red', label='current_X', linestyle='--')
+                    axes[0, 0].plot(frames, history_left_feet_pos[:, 1], color='green', label='current_Y', linestyle='--')
+                    axes[0, 0].plot(frames, history_left_feet_pos[:, 2], color='blue', label='current_Z', linestyle='--')
+                    axes[0, 0].set_title("Left Foot Position")
+                    axes[0, 0].set_ylabel("Position [m]")
+                    axes[0, 0].legend(loc='upper right'); axes[0, 0].grid(True, alpha=0.3)
+
+                    # 2. Velocità PL
+                    axes[1, 0].plot(frames, history_mpc_sol_pl_vel[:, 0], color='red', label='mpc_Vx')
+                    axes[1, 0].plot(frames, history_mpc_sol_pl_vel[:, 1], color='green', label='mpc_Vy')
+                    axes[1, 0].plot(frames, history_mpc_sol_pl_vel[:, 2], color='blue', label='mpc_Vz')
+                    axes[1, 0].plot(frames, history_left_feet_vel[:, 0], color='red', label='current_Vx', linestyle='--')
+                    axes[1, 0].plot(frames, history_left_feet_vel[:, 1], color='green', label='current_Vy', linestyle='--')
+                    axes[1, 0].plot(frames, history_left_feet_vel[:, 2], color='blue', label='current_Vz', linestyle='--')
+                    axes[1, 0].set_title("Left Foot Velocity")
+                    axes[1, 0].set_ylabel("Velocity [m/s]")
+                    axes[1, 0].legend(loc='upper right'); axes[1, 0].grid(True, alpha=0.3)
+
+                    # 3. Accelerazione PL
+                    axes[2, 0].plot(frames, history_mpc_sol_pl_acc[:, 0], color='red', label='mpc_Ax')
+                    axes[2, 0].plot(frames, history_mpc_sol_pl_acc[:, 1], color='green', label='mpc_Ay')
+                    axes[2, 0].plot(frames, history_mpc_sol_pl_acc[:, 2], color='blue', label='mpc_Az')
+                    axes[2, 0].plot(frames, history_left_feet_acc[:, 0], color='red', label='current_Ax', linestyle='--')
+                    axes[2, 0].plot(frames, history_left_feet_acc[:, 1], color='green', label='current_Ay', linestyle='--')
+                    axes[2, 0].plot(frames, history_left_feet_acc[:, 2], color='blue', label='current_Az', linestyle='--')
+                    axes[2, 0].set_title("Left Foot Acceleration")
+                    axes[2, 0].set_xlabel("Frame")
+                    axes[2, 0].set_ylabel("Acc [m/s²]")
+                    axes[2, 0].legend(loc='upper right'); axes[2, 0].grid(True, alpha=0.3)
+
+                    # --- COLONNA 1: RIGHT FOOT (PR) ---
+                    # 1. Posizione PR
+                    axes[0, 1].plot(frames, history_mpc_sol_pr_pos[:, 0], color='orange', label='mpc_X', )
+                    axes[0, 1].plot(frames, history_mpc_sol_pr_pos[:, 1], color='purple', label='mpc_Y', )
+                    axes[0, 1].plot(frames, history_mpc_sol_pr_pos[:, 2], color='brown', label='mpc_Z', )
+                    axes[0, 1].plot(frames, history_right_feet_pos[:, 0], color='orange', label='current_X', linestyle='--')
+                    axes[0, 1].plot(frames, history_right_feet_pos[:, 1], color='purple', label='current_Y', linestyle='--')
+                    axes[0, 1].plot(frames, history_right_feet_pos[:, 2], color='brown', label='current_Z', linestyle='--')
+                    axes[0, 1].set_title("Right Foot Position")
+                    axes[0, 1].legend(loc='upper right'); axes[0, 1].grid(True, alpha=0.3)
+
+                    # 2. Velocità PR
+                    axes[1, 1].plot(frames, history_mpc_sol_pr_vel[:, 0], color='orange', label='mpc_Vx', )
+                    axes[1, 1].plot(frames, history_mpc_sol_pr_vel[:, 1], color='purple', label='mpc_Vy', )
+                    axes[1, 1].plot(frames, history_mpc_sol_pr_vel[:, 2], color='brown', label='mpc_Vz', )
+                    axes[1, 1].plot(frames, history_right_feet_vel[:, 0], color='orange', label='current_Vx', linestyle='--')
+                    axes[1, 1].plot(frames, history_right_feet_vel[:, 1], color='purple', label='current_Vy', linestyle='--')
+                    axes[1, 1].plot(frames, history_right_feet_vel[:, 2], color='brown', label='current_Vz', linestyle='--')
+                    axes[1, 1].set_title("Right Foot Velocity")
+                    axes[1, 1].legend(loc='upper right'); axes[1, 1].grid(True, alpha=0.3)
+
+                    # 3. Accelerazione PR
+                    axes[2, 1].plot(frames, history_mpc_sol_pr_acc[:, 0], color='orange', label='mpc_Ax', )
+                    axes[2, 1].plot(frames, history_mpc_sol_pr_acc[:, 1], color='purple', label='mpc_Ay', )
+                    axes[2, 1].plot(frames, history_mpc_sol_pr_acc[:, 2], color='brown', label='mpc_Az', )
+                    axes[2, 1].plot(frames, history_right_feet_acc[:, 0], color='orange', label='current_Ax', linestyle='--')
+                    axes[2, 1].plot(frames, history_right_feet_acc[:, 1], color='purple', label='current_Ay', linestyle='--')
+                    axes[2, 1].plot(frames, history_right_feet_acc[:, 2], color='brown', label='current_Az', linestyle='--')
+                    axes[2, 1].set_title("Right Foot (PR) Acceleration")
+                    axes[2, 1].set_xlabel("Frame")
+                    axes[2, 1].legend(loc='upper right'); axes[2, 1].grid(True, alpha=0.3)
+
+                    plt.tight_layout()
+                    os.makedirs(save_dir, exist_ok=True)
+                    name = "render_test_feet_dynamics_comparison.png"
+                    saved = os.path.join(save_dir, name)
+                    plt.savefig(saved)
+                    print(f"Saved {saved}")
+
+                def plot_perturbation():
+                    history_perturb = np.array(logging['perturb'])
+                    frames = range(len(history_perturb))
+
+                    plt.figure(figsize=(10, 6))
+                    
+                    # Plot delle 3 componenti (X, Y, Z)
+                    plt.plot(frames, history_perturb[:, 0], color='red', label='Perturb_X')
+                    plt.plot(frames, history_perturb[:, 1], color='green', label='Perturb_Y')
+                    plt.plot(frames, history_perturb[:, 2], color='blue', label='Perturb_Z')
+
+                    # Formattazione
+                    plt.title("External Perturbations Over Time")
+                    plt.xlabel("Frame")
+                    plt.ylabel("Force/Torque Value")
+                    plt.legend(loc='upper right')
+                    plt.grid(True, alpha=0.3)
+                    
+                    plt.tight_layout()
+                    
+                    # Salvataggio
+                    os.makedirs(save_dir, exist_ok=True)
+                    name = "perturbation_plot.png"
+                    saved = os.path.join(save_dir, name)
+                    plt.savefig(saved)
+                    print(f"Saved {saved}")
+                    
+                save_dir = os.path.join(save_plot_dir, "plots_test")
                 plot_com()
+                plot_feet()
+                plot_torques()
+                plot_reward_info()
+                plot_perturbation()
 
                 break
                 
@@ -714,8 +1051,18 @@ def main():
         print(f"\nStarting testing enviroment: {task}")
 
         policy.eval()
-        root = os.path.join(get_git_root(), "TITA_MJ", "log", f"{alg_type}_logs", "saved_weights")
-        exp_name = test_exp_name
+        root = os.path.join(get_git_root(), "TITA_MJ", "log", f"{alg_type}_logs")
+        if test_exp_name is not None:
+            exp_name = test_exp_name
+        else:
+            root =os.path.join(root, "weights")
+            folders = [f for f in os.listdir(root) if os.path.isdir(os.path.join(root, f))]
+            if not folders:
+                raise RuntimeError(f"No folder find in {root}")
+            folders.sort()  
+            exp_name = folders[-1]
+            print(f"Using the latest experiment: {exp_name}")
+
         path_actor = os.path.join(exp_name, "final", "final_actor_state_dict.pt") 
         actor_path = os.path.join(root, path_actor)
 
@@ -730,7 +1077,7 @@ def main():
             policy=policy,
             render_mode=render_mode,
             num_test_envs=num_view_test_env,
-            save_dir=os.path.join(root, exp_name, DIR_EXPERIMENT_INFO, "plots")
+            save_plot_dir=os.path.join(root, exp_name, DIR_EXPERIMENT_INFO, "plots")
         )
 
         return  
@@ -876,14 +1223,14 @@ def main():
                 test_collector=test_collector,  
                 logger=logger,
                 test_fn=test_fn,
-                #stop_fn=lambda mean_rewards: mean_rewards >= 2970.0,
+                #stop_fn=lambda mean_rewards: mean_rewards >= 2950.0,
                 save_best_fn=partial(save_best, alg_type=alg_type, actor_policy=actor, actor_path=actor_path, critic_policy=[critic1, critic2], critic_path=critic_path),
                 
                 test_in_training=False,
 
                 # Know parameters 
-                max_epochs=15,    
-                batch_size=512,
+                max_epochs=30,    
+                batch_size=1024,
 
                 # Total number of training steps to take per epoch
                 epoch_num_steps=1000*num_training_envs, 
@@ -894,7 +1241,7 @@ def main():
                 #collection_step_num_episodes=1*num_training_envs 
                 
                 # The number of times data 
-                update_step_num_gradient_steps_per_sample=30/(100*num_training_envs),
+                update_step_num_gradient_steps_per_sample=50/(100*num_training_envs),
 
                 # Number of episodes to colleact in each test step
                 # i.e. number of run for evaluation
@@ -913,7 +1260,7 @@ def main():
             log_and_print("\t Collection step num env steps:", trainer_type.collection_step_num_env_steps, ", roullout: ", trainer_type.collection_step_num_env_steps/(100*num_training_envs))
         else:
             log_and_print("\t Collection step num episodes:", trainer_type.collection_step_num_episodes, ", episode per enviroment: ", trainer_type.collection_step_num_episodes/(100*num_training_envs))
-        log_and_print("\t Update step num gradient steps per sample:", trainer_type.update_step_num_gradient_steps_per_sample)
+        log_and_print("\t Update step num gradient steps per sample:", trainer_type.update_step_num_gradient_steps_per_sample*(100*num_training_envs))
         log_and_print("\t Test step num episodes:", trainer_type.test_step_num_episodes, "\n")
     else:
         raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
@@ -921,12 +1268,16 @@ def main():
     actor_base_dir = os.path.dirname(actor_path)
     setup_auto_logging(os.path.join(actor_base_dir, DIR_EXPERIMENT_INFO, "training_log.txt"))
 
+    start_time = time.time()
     try:
         result_policy = algo.run_training(
             trainer_type
         )
     except KeyboardInterrupt:
         pass
+    end_time = time.time()
+    total_time = end_time - start_time
+    log_and_print(f"\nTotal training time: {total_time/60:.2f}m, {total_time%60:.2f}s")
 
     log_and_print("\nTraining completed!")
     log_and_print(f"Logs saved to {logdir}")
@@ -984,7 +1335,7 @@ def main():
                 policy=policy,
                 render_mode=None,
                 num_test_envs=num_view_test_env,
-                save_dir=os.path.join(actor_base_dir, DIR_EXPERIMENT_INFO, "plots")
+                save_plot_dir=os.path.join(actor_base_dir, DIR_EXPERIMENT_INFO, "plots")
             )
         except Exception as e:
             print("\n\tError on testing enviroment after training:", e)

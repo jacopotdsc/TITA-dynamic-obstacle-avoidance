@@ -19,7 +19,7 @@ class WalkingManager {
       const labrob::RobotState& robot_state,
       const Eigen::Vector3d position_desired,
       labrob::JointCommand& joint_command,
-      labrob::SolutionMPC& solution
+      labrob::SolutionMPC& sol
   );
 
   labrob::DesiredConfiguration des_configuration_;
