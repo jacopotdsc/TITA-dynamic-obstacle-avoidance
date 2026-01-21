@@ -23,6 +23,7 @@ from functools import partial
 from gymnasium.wrappers import RecordVideo
 from torch.distributions import Distribution, Independent, Normal
 from scipy.spatial.transform import Rotation
+from copy import deepcopy
 
 from tianshou.algorithm import TD3
 from tianshou.algorithm.modelfree.ddpg import ContinuousDeterministicPolicy
@@ -35,7 +36,7 @@ from tianshou.algorithm import PPO
 from tianshou.algorithm.modelfree.reinforce import ProbabilisticActorPolicy
 from tianshou.algorithm.modelfree.sac import SACPolicy
 from tianshou.algorithm.optim import AdamOptimizerFactory
-from tianshou.data import Collector, VectorReplayBuffer
+from tianshou.data import Collector, VectorReplayBuffer, PrioritizedVectorReplayBuffer
 from tianshou.env import SubprocVectorEnv
 from tianshou.highlevel.logger import LoggerFactoryDefault
 from tianshou.utils.statistics import RunningMeanStd
@@ -55,6 +56,7 @@ BEST_LAST_EPOCH = -1
 N_FRAME_STACK = -1
 DIR_EXPERIMENT_INFO = "experiment_info"
 MAIN_DIR = ""
+EPISODE_LENGTH = 1000
 
 global dir_experiment
 
@@ -170,7 +172,7 @@ def get_git_root():
     except git.InvalidGitRepositoryError:
         return None
     
-def test_fn(num_epoch, step_idx):
+def test_fn(num_epoch, step_idx, policy, task, num_view_test_env, save_plot_dir):
     global BEST_LAST_EPOCH
     BEST_LAST_EPOCH = num_epoch
 
@@ -252,6 +254,17 @@ def test_fn(num_epoch, step_idx):
 
     df.to_csv(csv_path, index=False)
 
+    if False and  num_epoch > 0 and num_epoch % 1 == 0:
+        test_enviroment(
+            task_name=task,
+            policy=policy,
+            render_mode=None,
+            num_test_envs=num_view_test_env,
+            save_plot_dir=save_plot_dir,
+            training_in_test=True,
+            num_epoch=num_epoch
+        )
+
 def save_best(algorithm, alg_type, actor_policy, actor_path, critic_policy, critic_path):
     global BEST_LAST_EPOCH
     if BEST_LAST_EPOCH <= 0:
@@ -283,6 +296,8 @@ def test_enviroment(
         render_mode: str = "human",
         num_test_envs: int = 16,
         save_plot_dir: str = None,
+        training_in_test: bool = False,
+        num_epoch: int = 0
     ):
 
     def get_obs_dict(obs):
@@ -322,18 +337,22 @@ def test_enviroment(
         }
         return obs_dict
 
-    test_envs = SubprocVectorEnv([lambda: create_wrapped_env(task_name) for _ in range(num_test_envs)], )
-    collector = Collector(policy, test_envs, exploration_noise=False)
-    collector.reset()
-    result = collector.collect(n_episode=num_test_envs, render=0)
- 
-    print(f"\nResults test environment {task_name} (x{num_test_envs}):")
-    print(f"Mean reward:     {result.returns_stat.mean:3f}")
-    print(f"Std deviation:   ±{result.returns_stat.std:3f}")
-    print(f"Min / Max:        {result.returns_stat.min:.3f} / {result.returns_stat.max:.3f}")
-    print(f"Mean length:        {np.mean(result.lens):.1f}")
-    print(f"Num episodes:       {len(result.returns)}\n")
-    print("Finished testing in vectorized envs. Showing in viewer\n")
+    if training_in_test == True:
+        policy.eval()
+
+    if training_in_test == False:
+        test_envs = SubprocVectorEnv([lambda: create_wrapped_env(task_name) for _ in range(num_test_envs)], )
+        collector = Collector(policy, test_envs, exploration_noise=False)
+        collector.reset()
+        result = collector.collect(n_episode=num_test_envs, render=0)
+
+        print(f"\nResults test environment {task_name} (x{num_test_envs}):")
+        print(f"Mean reward:     {result.returns_stat.mean:3f}")
+        print(f"Std deviation:   ±{result.returns_stat.std:3f}")
+        print(f"Min / Max:        {result.returns_stat.min:.3f} / {result.returns_stat.max:.3f}")
+        print(f"Mean length:        {np.mean(result.lens):.1f}")
+        print(f"Num episodes:       {len(result.returns)}\n")
+        print("Finished testing in vectorized envs. Showing in viewer\n")
 
     # --- Manual rendering ---
     env = create_wrapped_env(task_name, render_mode=render_mode)
@@ -785,6 +804,10 @@ def test_enviroment(
                     print(f"Saved {saved}")
                     
                 save_dir = os.path.join(save_plot_dir, "plots_test")
+                if training_in_test == True:
+                    subdir = os.path.join(save_plot_dir, "plots_train_in_test")
+                    os.makedirs(subdir, exist_ok=True)
+                    save_dir = os.path.join(subdir, f"test_epoch_{num_epoch}")
                 plot_com()
                 plot_feet()
                 plot_torques()
@@ -798,6 +821,9 @@ def test_enviroment(
     finally:
         env.close()
         cv2.destroyAllWindows() 
+
+        if training_in_test == True:
+            policy.train()
 
         if render_mode == "rgb_array":
             print(f"Videos saved in: {video_folder}")
@@ -875,9 +901,9 @@ def main():
     logdir = os.path.join(get_git_root(), "TITA_MJ", "log", f"{alg_type}_logs")
     device = "cuda"
     task = "Tita-v0" #"Pendulum-v1"
-    lr = 0.0000001
-    hidden_sizes = [256, 256, 256]
-    num_training_envs = 8
+    lr = 1e-5
+    hidden_sizes = [256, 128, 64]
+    num_training_envs = 4
     num_test_envs = 1
     num_view_test_env = 1
 
@@ -888,7 +914,7 @@ def main():
         gym.register(
             id="Tita-v0",
             entry_point="gymnasium.envs.mujoco.tita_env:TitaEnv",
-            max_episode_steps=1000,
+            max_episode_steps=EPISODE_LENGTH,
         )
     
     if script_task == _STR_TRAIN:
@@ -906,12 +932,13 @@ def main():
     N_FRAME_STACK = env_single.unwrapped.get_config().frame_stack
 
     log_enviroment_config(task, env_single)
+    activation_fn = nn.Softsign
 
     # ----- Choose algorithm -----
     net = Net(
         state_shape=state_shape,
         hidden_sizes=hidden_sizes,
-        activation=nn.Tanh,
+        activation=activation_fn,
     )
     
     actor = ContinuousActorProbabilistic(
@@ -922,9 +949,9 @@ def main():
         conditioned_sigma=False, # if true, sigma is output of a simple network, else is a parameter
     )
     #actor.apply(init_layer_orthogonal)
-    actor.mu.apply(init_last_layer)
-    with torch.no_grad():
-        torch.nn.init.constant_(actor.sigma_param, -3.0)
+    #actor.mu.apply(init_last_layer)
+    #with torch.no_grad():
+    #    torch.nn.init.constant_(actor.sigma_param, -3.0)
     actor = actor.to(device)
     print_net_info("Actor", actor, state_shape, action_shape)
 
@@ -935,7 +962,7 @@ def main():
                 action_shape=action_shape,
                 concat=False, # whether the input shape is concatenated by state_shape
                 hidden_sizes=hidden_sizes,
-                activation=nn.Tanh,
+                activation=activation_fn,
             ),
             hidden_sizes=hidden_sizes,
         )
@@ -970,7 +997,7 @@ def main():
                 action_shape=action_shape,
                 concat=True,
                 hidden_sizes=hidden_sizes,
-                activation=nn.Tanh,
+                activation=activation_fn,
             ),
             hidden_sizes=hidden_sizes,
         )
@@ -985,7 +1012,7 @@ def main():
                 action_shape=action_shape,
                 concat=True,
                 hidden_sizes=hidden_sizes,
-                activation=nn.Tanh,
+                activation=activation_fn,
             ),
             hidden_sizes=hidden_sizes,
         )
@@ -1012,7 +1039,7 @@ def main():
             tau=0.005,
             gamma=0.99,
             alpha=0.1,
-            n_step_return_horizon=2,
+            n_step_return_horizon=5,
         )
     else:
         raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
@@ -1089,7 +1116,7 @@ def main():
     # ------ Buffer -------
     if alg_type == _STR_PPO:
         buffer = VectorReplayBuffer(
-            total_size=1000*num_training_envs,
+            total_size=EPISODE_LENGTH*num_training_envs,
             buffer_num=num_training_envs,
             stack_num=1#env_single.unwrapped.get_config().frame_stack,
         )
@@ -1098,11 +1125,20 @@ def main():
         log_and_print(f"\t Buffer num: {buffer.buffer_num}")
         log_and_print(f"\t Stack num: {buffer.stack_num}")
     elif alg_type == _STR_SAC:
-        buffer = VectorReplayBuffer(
-            total_size=3*1000*num_training_envs,
+        buffer_old = VectorReplayBuffer(
+            total_size=5*EPISODE_LENGTH*num_training_envs,
             buffer_num=num_training_envs,
             stack_num=1 #env_single.unwrapped.get_config().frame_stack,
         )
+
+        buffer = PrioritizedVectorReplayBuffer(
+            total_size=5* EPISODE_LENGTH*num_training_envs,
+            buffer_num=num_training_envs,
+            alpha=0.6,
+            beta=0.4,
+            stack_num=1,  # env_single.unwrapped.get_config().frame_stack,
+        )
+
         log_and_print("\nSAC Buffer parameters:")
         log_and_print(f"\t Total size: {buffer.maxsize:_}")
         log_and_print(f"\t Buffer num: {buffer.buffer_num}")
@@ -1111,7 +1147,7 @@ def main():
         raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
     
     test_buffer = VectorReplayBuffer(
-        total_size=1000*num_test_envs, 
+        total_size=EPISODE_LENGTH*num_test_envs, 
         buffer_num=len(test_envs), 
         stack_num=1#env_single.unwrapped.get_config().frame_stack,
     )
@@ -1149,6 +1185,9 @@ def main():
     train_collector.reset()
     test_collector.reset()
 
+    train_collector.collect(n_step=2*1000*num_training_envs)
+    log_and_print(f"Train Buffer size after initial collection: {len(train_collector.buffer)}")
+
     # ----- Setup logger using LoggerFactoryDefault -----
     timestamp = datetime.datetime.now().strftime('day_%Y_%m_%d_time_%H_%M_%S')
     run_dir_name = f"{alg_type}_{timestamp}"
@@ -1181,7 +1220,7 @@ def main():
                 test_collector=test_collector,  
                 logger=logger,
                 test_fn=test_fn,
-                stop_fn=lambda mean_rewards: mean_rewards >= 2950.0,
+                #stop_fn=lambda mean_rewards: mean_rewards >= 2950.0,
                 save_best_fn=partial(save_best, alg_type=alg_type, actor_policy=actor, actor_path=actor_path, critic_policy=critic, critic_path=critic_path),
                 test_in_training=False,
 
@@ -1218,30 +1257,31 @@ def main():
         log_and_print("\t Update step num repetitions:", trainer_type.update_step_num_repetitions)
         log_and_print("\t Test step num episodes:", trainer_type.test_step_num_episodes, "\n")
     elif alg_type == _STR_SAC: 
+        rollout = 100
         trainer_type = OffPolicyTrainerParams(
                 training_collector=train_collector, 
                 test_collector=test_collector,  
                 logger=logger,
-                test_fn=test_fn,
+                #test_fn=test_fn,
+                test_fn=partial(test_fn, policy=deepcopy(actor), task=task, num_view_test_env=num_view_test_env, save_plot_dir=os.path.join(os.path.dirname(actor_path), DIR_EXPERIMENT_INFO, "plots") ),
                 #stop_fn=lambda mean_rewards: mean_rewards >= 2950.0,
                 save_best_fn=partial(save_best, alg_type=alg_type, actor_policy=actor, actor_path=actor_path, critic_policy=[critic1, critic2], critic_path=critic_path),
-                
                 test_in_training=False,
 
                 # Know parameters 
                 max_epochs=30,    
-                batch_size=1024,
+                batch_size=256,
 
                 # Total number of training steps to take per epoch
-                epoch_num_steps=1000*num_training_envs, 
+                epoch_num_steps=EPISODE_LENGTH*num_training_envs, 
 
                 # the number of environment steps/transitions to collect in each collection step before the
                 # network update within each training step.
-                collection_step_num_env_steps=100*num_training_envs,
+                collection_step_num_env_steps=rollout*num_training_envs,
                 #collection_step_num_episodes=1*num_training_envs 
                 
                 # The number of times data 
-                update_step_num_gradient_steps_per_sample=50/(100*num_training_envs),
+                update_step_num_gradient_steps_per_sample=10/(rollout*num_training_envs),
 
                 # Number of episodes to colleact in each test step
                 # i.e. number of run for evaluation
@@ -1257,9 +1297,9 @@ def main():
         log_and_print("\t Batch size:", trainer_type.batch_size)
         log_and_print("\t Epoch num steps:", trainer_type.epoch_num_steps)
         if trainer_type.collection_step_num_env_steps is not None:
-            log_and_print("\t Collection step num env steps:", trainer_type.collection_step_num_env_steps, ", roullout: ", trainer_type.collection_step_num_env_steps/(100*num_training_envs))
+            log_and_print("\t Collection step num env steps:", trainer_type.collection_step_num_env_steps, ", roullout: ", rollout)
         else:
-            log_and_print("\t Collection step num episodes:", trainer_type.collection_step_num_episodes, ", episode per enviroment: ", trainer_type.collection_step_num_episodes/(100*num_training_envs))
+            log_and_print("\t Collection step num episodes:", trainer_type.collection_step_num_episodes, ", episode per enviroment: ", trainer_type.collection_step_num_episodes/(rollout*num_training_envs))
         log_and_print("\t Update step num gradient steps per sample:", trainer_type.update_step_num_gradient_steps_per_sample*(100*num_training_envs))
         log_and_print("\t Test step num episodes:", trainer_type.test_step_num_episodes, "\n")
     else:
@@ -1277,7 +1317,8 @@ def main():
         pass
     end_time = time.time()
     total_time = end_time - start_time
-    log_and_print(f"\nTotal training time: {total_time/60:.2f}m, {total_time%60:.2f}s")
+    minutes, seconds = divmod(total_time, 60)
+    log_and_print(f"\nTotal training time: {int(minutes)}m, {seconds:.2f}s")
 
     log_and_print("\nTraining completed!")
     log_and_print(f"Logs saved to {logdir}")

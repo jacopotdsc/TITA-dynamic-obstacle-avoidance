@@ -1,0 +1,4 @@
+Initial test step: test_reward: -10.375625 ± 0.000000, best_reward: -10.375625 ± 0.000000 in #0
+Epoch #1: test_reward: -4.280672 ± 0.000000, best_reward: -4.280672 ± 0.000000 in #1
+Epoch #2: test_reward: 1.120622 ± 0.000000, best_reward: 1.120622 ± 0.000000 in #2
+Saved /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_01_21_time_10_09_56/experiment_info/plots/plots_test/render_test_reward_info.png
