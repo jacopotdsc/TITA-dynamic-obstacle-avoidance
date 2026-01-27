@@ -8,6 +8,7 @@
 #include "JointState.hpp"
 #include "RobotState.hpp"
 #include "JointCommand.hpp"
+#include "walkingPlanner.hpp"
 
 namespace py = pybind11;
 using namespace labrob;
@@ -159,12 +160,16 @@ PYBIND11_MODULE(wm, m) {
         .def_readwrite("theta", &SolutionMPC::theta)
         .def_readwrite("omega", &SolutionMPC::omega)
         .def_readwrite("alpha", &SolutionMPC::alpha)
+        .def_readwrite("contact_force_left", &SolutionMPC::contact_force_left)
+        .def_readwrite("contact_force_right", &SolutionMPC::contact_force_right)
         .def("__repr__", [](const SolutionMPC &s) {
             std::stringstream ss;
             ss << "SolutionMPC(\n"
                 << "  com=" << py::repr(py::cast(s.com)) << ",\n"
                 << "  pl=" << py::repr(py::cast(s.pl)) << ",\n"
                 << "  pr=" << py::repr(py::cast(s.pr)) << ",\n"
+                << "  contact_force_left=[" << s.contact_force_left.transpose() << "],\n"
+                << "  contact_force_right=[" << s.contact_force_right.transpose() << "],\n"
                 << "  theta=" << s.theta 
                 << ", omega=" << s.omega 
                 << ", alpha=" << s.alpha << ")";
@@ -200,6 +205,14 @@ PYBIND11_MODULE(wm, m) {
         .def_readwrite("cmd", &WalkingManagerResult::cmd)
         .def_readwrite("solution", &WalkingManagerResult::solution);
 
+    py::class_<walkingPlanner>(m, "WalkingPlanner")
+        .def(py::init<>())
+        .def("get_variables", &walkingPlanner::getVariables)
+        .def("get_xref_at_time_ms", &walkingPlanner::get_xref_at_time_ms)
+        .def("get_uref_at_time_ms", &walkingPlanner::get_uref_at_time_ms)
+        .def("get_x_ref", &labrob::walkingPlanner::get_x_ref)  
+        .def("get_u_ref", &labrob::walkingPlanner::get_u_ref); 
+    
     py::class_<WalkingManager>(m, "WalkingManager")
         .def(py::init<>())
         .def("init", [](WalkingManager &wm, const RobotState &state, py::dict &armatures) {
@@ -210,6 +223,10 @@ PYBIND11_MODULE(wm, m) {
             }
             return wm.init(state, armatures_map);
         })
+
+        .def("get_walking_planner",
+            py::overload_cast<>(&WalkingManager::get_walking_planner, py::const_),
+            py::return_value_policy::reference_internal)
 
         .def("update", [](WalkingManager &wm, const RobotState &state, const Eigen::Vector3d position_desired) {
             JointCommand cmd;
