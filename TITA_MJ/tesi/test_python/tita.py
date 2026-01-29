@@ -17,6 +17,7 @@ from torch import nn
 import cv2
 import git
 import time
+import copy
 import pandas as pd
 import matplotlib.pyplot as plt
 from functools import partial
@@ -56,10 +57,40 @@ BEST_LAST_EPOCH = -1
 N_FRAME_STACK = -1
 DIR_EXPERIMENT_INFO = "experiment_info"
 MAIN_DIR = ""
-EPISODE_LENGTH = 1000
+EPISODE_LENGTH = 1_000
 
 global dir_experiment
 
+global initial_time, ep_prev_time, current_time
+initial_time = datetime.datetime.now()
+ep_prev_time = initial_time
+
+'''
+# Reference: https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/sac.yml
+# Each configuration, refer to https://stable-baselines3.readthedocs.io/en/master/modules/sac.html#stable_baselines3.sac.SAC
+seed: 42
+n_timesteps: !!float 5e8
+policy: 'MlpPolicy'
+learning_rate: !!float 1e-4
+buffer_size: 1000000
+batch_size: 256
+ent_coef: 'auto_0.001'
+gamma: 0.98
+tau: !!float 5e-3
+train_freq: 10
+gradient_steps: -1
+learning_starts: 0
+n_steps: 3
+use_sde: True
+normalize_input: True
+normalize_value: True
+policy_kwargs: "dict(
+                  log_std_init=-1,
+                  activation_fn=nn.ELU,
+                  net_arch=[512,256,128], 
+                  clip_mean=1.0, 
+                )"
+'''
 class LoggerTee(object):
     def __init__(self, filename):
         self.line_buffer = ""
@@ -105,6 +136,12 @@ class LoggerTee(object):
     def isatty(self):
         return self.terminal.isatty()
 
+def format_td(td):
+    total_seconds = int(td.total_seconds())
+    h, rem = divmod(total_seconds, 3600)
+    m, s = divmod(rem, 60)
+    return f"{h:02d}:{m:02d}:{s:02d}"
+
 def setup_auto_logging(log_path):
     os.makedirs(os.path.dirname(log_path), exist_ok=True)
     sys.stdout = LoggerTee(log_path)
@@ -119,9 +156,7 @@ def parser_args():
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--train", 
-                        nargs='?', 
-                        const='sac',      
-                        choices=[_STR_PPO, _STR_SAC],
+                        nargs='*', 
                         help="Start training. Options: 'ppo' or 'sac' (default: sac)")
     
     group.add_argument("--test", 
@@ -139,13 +174,20 @@ def parser_args():
 
     script_task = _STR_TRAIN
     alg_type = _STR_SAC
+    resume = None
     render_mode = "human"
-    test_exp_name = None
+    name_weight_name = None
     make_log = False
 
     if args.train:
         script_task = _STR_TRAIN
-        alg_type = args.train.lower()
+        train_args = [item.lower() for item in args.train]
+
+        for item in args.train:
+            if item in [_STR_SAC, _STR_PPO]:
+                alg_type = item
+            else:
+                name_weight_name = item
     
     if args.test is not None:
         script_task = _STR_TEST
@@ -157,13 +199,13 @@ def parser_args():
             elif item in ['human', 'rgb', 'rgb_array']:
                 render_mode = "rgb_array" if item in ['rgb', 'rgb_array'] else "human"
             else:
-                test_exp_name = item
+                name_weight_name = item
 
     if args.log:
         make_log = True if args.log.lower() == "yes" else False
 
     print(f"Script started with\n\ttask: {script_task},\n\talgorithm: {alg_type},\n\trender mode: {render_mode}\n\tpid: {os.getpid()}\n")
-    return script_task, alg_type, render_mode, make_log, test_exp_name
+    return script_task, alg_type, render_mode, make_log, name_weight_name
 
 def get_git_root():
     try:
@@ -178,10 +220,25 @@ def test_fn(num_epoch, step_idx, policy, task, num_view_test_env, save_plot_dir)
 
     global N_FRAME_STACK
 
+    global initial_time, ep_prev_time, current_time
+    current_time = datetime.datetime.now()
+    epoch_elapsed = current_time - ep_prev_time
+    total_elapsed = current_time - initial_time
+
+    log_and_print(
+        f"Epoch: {num_epoch}, "
+        f"epoch elapsed time: {format_td(epoch_elapsed)}, "
+        f"time since start: {format_td(total_elapsed)}\n"
+    )
+
+    ep_prev_time = current_time
+    
+
+    policy.eval()
     test_collector.reset()
     res = test_collector.collect(n_episode=1, render=0)
     mean_len = np.mean(res.lens)
-
+    policy.train()
     buf = test_collector.buffer  
     start = 0
     csv_data = []
@@ -202,45 +259,38 @@ def test_fn(num_epoch, step_idx, policy, task, num_view_test_env, save_plot_dir)
             row = [num_epoch, i, ep_len, mean_len, ep_rews[i]] + list(o_last) + list(a)
             csv_data.append(row)
         start += ep_len
-
-    obs_headers = [
-        # Robot state
-        'robot_height', 'ori_w', 'ori_x', 'ori_y', 'ori_z', 'grav_x', 'grav_y', 'grav_z', 
-        'lin_vel_x', 'lin_vel_y', 'lin_vel_z', 'ang_vel_x', 'ang_vel_y', 'ang_vel_z',
-
-        # Joint positions and velocities
-        'joint_angle_1', 'joint_angle_2', 'joint_angle_3', 'joint_angle_4', 
-        'joint_angle_5', 'joint_angle_6', 'joint_angle_7', 'joint_angle_8',
-        'joint_vel_1', 'joint_vel_2', 'joint_vel_3', 'joint_vel_4', 
-        'joint_vel_5', 'joint_vel_6', 'joint_vel_7', 'joint_vel_8',
-
-        # MPC flattened solution
-        'mpc_sol_com_pos_x', 'mpc_sol_com_pos_y', 'mpc_sol_com_pos_z',
-        'mpc_sol_com_vel_x', 'mpc_sol_com_vel_y', 'mpc_sol_com_vel_z',
-        'mpc_sol_com_acc_x', 'mpc_sol_com_acc_y', 'mpc_sol_com_acc_z',
-        
-        'mpc_sol_pl_pos_x', 'mpc_sol_pl_pos_y', 'mpc_sol_pl_pos_z',
-        'mpc_sol_pl_vel_x', 'mpc_sol_pl_vel_y', 'mpc_sol_pl_vel_z',
-        'mpc_sol_pl_acc_x', 'mpc_sol_pl_acc_y', 'mpc_sol_pl_acc_z',
-        
-        'mpc_sol_pr_pos_x', 'mpc_sol_pr_pos_y', 'mpc_sol_pr_pos_z',
-        'mpc_sol_pr_vel_x', 'mpc_sol_pr_vel_y', 'mpc_sol_pr_vel_z',
-        'mpc_sol_pr_acc_x', 'mpc_sol_pr_acc_y', 'mpc_sol_pr_acc_z',
-
-        'mpc_sol_theta', 'mpc_sol_omega', 'mpc_sol_alpha',
-
-        # Normalized wbc output
-        #'joint_torque_1', 'joint_torque_2', 'joint_torque_3', 'joint_torque_4', 
-        #'joint_torque_5', 'joint_torque_6', 'joint_torque_7', 'joint_torque_8',
-
-        # Previous actions of neural network and user commands
-        'prev_action_1', 'prev_action_2', 'prev_action_3', 'prev_action_4', 
-        'prev_action_5', 'prev_action_6', 'prev_action_7', 'prev_action_8',
-        'user_cmd_vx', 'user_cmd_omega'
-    ]
     
+    global env_single
+
+    obs_dict_keys = env_single.unwrapped.get_obs_info()[0].keys()
+    obs_headers = []
+
+    for key in obs_dict_keys:
+        sample_val = np.asarray(env_single.unwrapped.obs_dict[key])
+        shape = sample_val.shape
+
+        # scalare -> una entry
+        if sample_val.ndim == 0 or (sample_val.ndim == 1 and shape[0] == 1):
+            obs_headers.append(key)
+
+        # vettore 3D -> _x _y _z
+        elif sample_val.ndim == 1 and shape[0] == 3:
+            obs_headers.extend([f"{key}_x", f"{key}_y", f"{key}_z"])
+
+        # vettore 1D generico -> _1 _2 ...
+        elif sample_val.ndim == 1:
+            obs_headers.extend([f"{key}_{i+1}" for i in range(shape[0])])
+
+        # matrice 2D -> flatten row-major: _1 _2 ...
+        elif sample_val.ndim == 2:
+            obs_headers.extend([f"{key}_{i+1}" for i in range(sample_val.size)])
+
+        else:
+            raise ValueError(f"Unsupported obs shape for key '{key}': {shape}")
+
+
     act_headers = [f'action_{i}' for i in range(1, 9)]
-    headers = ['epoch','frame', 'episode_length', 'mean_length', 'reward'] + obs_headers + act_headers
+    headers = ['epoch','frame', 'episode_length', 'mean_length', 'reward'] + list(obs_headers) + act_headers
 
     global dir_experiment
     csv_path = os.path.join(dir_experiment, DIR_EXPERIMENT_INFO, "observations.csv")
@@ -299,44 +349,7 @@ def test_enviroment(
         training_in_test: bool = False,
         num_epoch: int = 0
     ):
-
-    def get_obs_dict(obs):
-        BASE_STATE_START = 0
-        MPC_SOL_START    = 30
-        ACTION_CMD_START = 60
-
-        obs_dict = {
-            # --- Stato Base (0-29) ---
-            "com_height":          obs[BASE_STATE_START],                # 1
-            "orientation_quat":    obs[BASE_STATE_START+1:BASE_STATE_START+5],              # 4 (x, y, z, w)
-            "gravity_body_frame":  obs[BASE_STATE_START+5:BASE_STATE_START+8],              # 3
-            "base_lin_vel":        obs[BASE_STATE_START+8:BASE_STATE_START+11],             # 3
-            "base_lin_acc":        obs[BASE_STATE_START+11:BASE_STATE_START+14],            # 3
-            "joint_angles":        obs[BASE_STATE_START+14:BASE_STATE_START+22],            # 8
-            "joint_velocities":    obs[BASE_STATE_START+22:BASE_STATE_START+30],            # 8
-
-            # --- MPC Solution Targets (30-56) ---
-            "mpc_sol_com_pos":         obs[MPC_SOL_START:MPC_SOL_START+3],            # 3
-            "mpc_sol_com_vel":         obs[MPC_SOL_START+3:MPC_SOL_START+6],            # 3
-            "mpc_sol_com_acc":         obs[MPC_SOL_START+6:MPC_SOL_START+9],            # 3
-            "mpc_sol_pl_pos":          obs[MPC_SOL_START+9:MPC_SOL_START+12],            # 3
-            "mpc_sol_pl_vel":          obs[MPC_SOL_START+12:MPC_SOL_START+15],            # 3
-            "mpc_sol_pl_acc":          obs[MPC_SOL_START+15:MPC_SOL_START+18],            # 3
-            "mpc_sol_pr_pos":          obs[MPC_SOL_START+18:MPC_SOL_START+21],            # 3
-            "mpc_sol_pr_vel":          obs[MPC_SOL_START+21:MPC_SOL_START+24],            # 3
-            "mpc_sol_pr_acc":          obs[MPC_SOL_START+24:MPC_SOL_START+27],            # 3
-
-            # --- MPC Sol Angular (57-59) ---
-            "mpc_theta":           obs[MPC_SOL_START+27],               # 1
-            "mpc_omega":           obs[MPC_SOL_START+28],               # 1
-            "mpc_alpha":           obs[MPC_SOL_START+29],               # 1
-
-            # --- Azioni e Comandi (60+) ---
-            "last_nn_action":      obs[ACTION_CMD_START:ACTION_CMD_START+8],            # 8
-            "command":             obs[ACTION_CMD_START+8:]               # v_x, v_y, w_z (solitamente 3)
-        }
-        return obs_dict
-
+    
     if training_in_test == True:
         policy.eval()
 
@@ -372,13 +385,14 @@ def test_enviroment(
         print(f"Video recording enabled. File will be saved in: {video_folder}")
 
     try:
+        policy.eval()
         obs, info = env.reset()
         total_reward = 0
         n_frame = 0
         terminated = False
         truncated = False
 
-        logging = {key: [] for key in get_obs_dict(obs).keys()}
+        logging = {key: [] for key in env.unwrapped.get_obs_info()[0]}
         logging.update({
             'action': [], 
             'reward_info': [], 
@@ -408,6 +422,7 @@ def test_enviroment(
         start_time_inference = []
         end_time_inference = []
         
+        start_test_time = time.time()
         while True and (not terminated) and (not truncated):
             batch = Batch(obs=np.array([obs]), info={})
             with torch.no_grad():
@@ -427,11 +442,12 @@ def test_enviroment(
             total_reward += reward
 
             # Logging
-            obs_dict = get_obs_dict(obs)
+            reward_full = copy.deepcopy(reward_info)
+               
+            obs_dict, slices = env.unwrapped.get_obs_info()
             for key, value in obs_dict.items():
                 logging[key].append(value.copy() if isinstance(value, np.ndarray) else value)
-
-
+            
             env_info_dict = reward_info['info'] 
             reward_info.pop('info', None)
             reward_info.pop('n_frame', None)
@@ -474,9 +490,20 @@ def test_enviroment(
             reward_info.pop('n_frame', None)
             logging['reward_info'].append(reward_info.copy())
 
+            #print("-----------")
+            #line_counter = 0
+            #keys = list(reward_info.keys())
+            #print(f"Frame: {n_frame}")
+            #for i, k in enumerate(keys):
+            #    v = reward_info[k]
+            #    print(f"{k}: {v:.6f}")
+            #    line_counter += 1
+            #if line_counter != 0:
+            #    print()
+
             # Rendering and small loggin
-            if n_frame == 0 or (n_frame+1) % 100 == 0:
-                print("Frame:", n_frame, "Action:", scaled_action, ", Total Reward:", total_reward)
+            if n_frame == 0 or (n_frame+1) % 100 == 0 or terminated or truncated:
+                print("Frame:", n_frame, "Action:", scaled_action, ", reward: ", reward, "Total Reward:", total_reward)
 
             if render_mode is not None:
                 frame = env.render()
@@ -620,17 +647,18 @@ def test_enviroment(
 
                 def plot_com():
                     
-                    history_gt_com_pos = np.array(logging['gt_com_pos'])
-                    history_gt_com_vel = np.array(logging['gt_com_lin_vel'])
-                    history_gt_com_acc = np.array(logging['gt_com_lin_acc'])
+                    dead_value = -10
+                    history_gt_com_pos = np.array(logging['gt_com_pos']) if 'gt_com_pos' in logging else np.full((len(logging.get('mpc_sol_com_pos', [1])), 3), dead_value)
+                    history_gt_com_vel = np.array(logging['gt_com_lin_vel']) if 'gt_com_lin_vel' in logging else np.full((len(logging.get('mpc_sol_com_vel', [1])), 3), dead_value)
+                    history_gt_com_acc = np.array(logging['gt_com_lin_acc']) if 'gt_com_lin_acc' in logging else np.full((len(logging.get('mpc_sol_com_acc', [1])), 3), dead_value)
 
-                    history_gt_com_orientation = np.array(logging['gt_com_orientation'])
-                    history_gt_com_ang_vel = np.array(logging['gt_com_ang_vel'])
-                    history_gt_com_ang_acc = np.array(logging['gt_com_ang_acc'])
+                    history_gt_com_orientation = np.array(logging['gt_com_orientation']) if 'gt_com_orientation' in logging else np.full((len(history_gt_com_pos), 3), dead_value)
+                    history_gt_com_ang_vel = np.array(logging['gt_com_ang_vel']) if 'gt_com_ang_vel' in logging else np.full((len(history_gt_com_pos), 3), dead_value)
+                    history_gt_com_ang_acc = np.array(logging['gt_com_ang_acc']) if 'gt_com_ang_acc' in logging else np.full((len(history_gt_com_pos), 3), dead_value)
 
-                    history_mpc_com_pos = np.array(logging['mpc_sol_com_pos'])
-                    history_mpc_com_vel = np.array(logging['mpc_sol_com_vel'])
-                    history_mpc_com_acc = np.array(logging['mpc_sol_com_acc'])
+                    history_mpc_com_pos = np.array(logging['mpc_sol_com_pos']) if 'mpc_sol_com_pos' in logging else np.full((len(history_gt_com_pos), 3), dead_value)
+                    history_mpc_com_vel = np.array(logging['mpc_sol_com_vel']) if 'mpc_sol_com_vel' in logging else np.full((len(history_gt_com_pos), 3), dead_value)
+                    history_mpc_com_acc = np.array(logging['mpc_sol_com_acc']) if 'mpc_sol_com_acc' in logging else np.full((len(history_gt_com_pos), 3), dead_value)
                     
                     frames = range(len(history_mpc_com_pos))
                     fig, axes = plt.subplots(3, 2, figsize=(12, 12), sharex=True)
@@ -647,13 +675,17 @@ def test_enviroment(
                         data_mpc = [history_mpc_com_pos, history_mpc_com_vel, history_mpc_com_acc][i]
                         titles = ["CoM Position [m]", "CoM Velocity [m/s]", "CoM Acceleration [m/s²]"]
                         
+
                         for j in range(3): # Plot assi X, Y, Z
                             if i == 0:
                                 data_gt[:, j] = np.where(data_gt[:, j] > np.pi, data_gt[:, j] - 2*np.pi, data_gt[:, j])
                                 data_gt[:, j] = np.where(data_gt[:, j] < -np.pi, data_gt[:, j] + 2*np.pi, data_gt[:, j])
 
-                            axes[i, 0].plot(frames, data_gt[:, j], color=colors[j], label=f'GT {labels_lin[j]}')
-                            axes[i, 0].plot(frames, data_mpc[:, j], color=colors[j], linestyle='--', alpha=0.6, label=f'MPC {labels_lin[j]}')
+                            if not np.all(data_gt[:, j] == dead_value):
+                                axes[i, 0].plot(frames, data_gt[:, j], color=colors[j], label=f'GT {labels_lin[j]}')
+                            
+                            if not np.all(data_mpc[:, j] == dead_value):
+                                axes[i, 0].plot(frames, data_mpc[:, j], color=colors[j], linestyle='--', alpha=0.6, label=f'MPC {labels_lin[j]}')
                         
                         axes[i, 0].set_title(titles[i])
                         axes[i, 0].legend(loc='upper right', ncol=2, fontsize='small')
@@ -665,6 +697,8 @@ def test_enviroment(
                         titles_ang = ["Orientation [rad]", "Angular Velocity [rad/s]", "Angular Acceleration [rad/s²]"]
 
                         for j in range(3): # Plot Roll, Pitch, Yaw
+                            if np.all(data_ang[:, j] == dead_value):
+                                continue
                             axes[i, 1].plot(frames, data_ang[:, j], color=colors[j], label=labels_ang[j])
                         
                         axes[i, 1].set_title(titles_ang[i])
@@ -684,19 +718,19 @@ def test_enviroment(
 
                 def plot_feet():
                     
-                    history_mpc_sol_pl_pos = np.array(logging['mpc_sol_pl_pos'])
-                    history_mpc_sol_pl_vel = np.array(logging['mpc_sol_pl_vel'])
-                    history_mpc_sol_pl_acc = np.array(logging['mpc_sol_pl_acc'])
-                    history_mpc_sol_pr_pos = np.array(logging['mpc_sol_pr_pos'])
-                    history_mpc_sol_pr_vel = np.array(logging['mpc_sol_pr_vel'])
-                    history_mpc_sol_pr_acc = np.array(logging['mpc_sol_pr_acc'])
-
-                    history_left_feet_pos = np.array(logging['left_feet_pos'])
-                    history_left_feet_vel = np.array(logging['left_feet_vel'])
-                    history_left_feet_acc = np.array(logging['left_feet_acc'])
-                    history_right_feet_pos = np.array(logging['right_feet_pos'])
-                    history_right_feet_vel = np.array(logging['right_feet_vel'])
-                    history_right_feet_acc = np.array(logging['right_feet_acc'])
+                    dead_value = -10
+                    history_mpc_sol_pl_pos = np.array(logging['mpc_sol_pl_pos'] if 'mpc_sol_pl_pos' in logging else np.full((len(logging.get('mpc_sol_com_pos', [1])), 3), dead_value))
+                    history_mpc_sol_pl_vel = np.array(logging['mpc_sol_pl_vel'] if 'mpc_sol_pl_vel' in logging else np.full((len(logging.get('mpc_sol_com_pos', [1])), 3), dead_value))
+                    history_mpc_sol_pl_acc = np.array(logging['mpc_sol_pl_acc'] if 'mpc_sol_pl_acc' in logging else np.full((len(logging.get('mpc_sol_com_pos', [1])), 3), dead_value))
+                    history_mpc_sol_pr_pos = np.array(logging['mpc_sol_pr_pos'] if 'mpc_sol_pr_pos' in logging else np.full((len(logging.get('mpc_sol_com_pos', [1])), 3), dead_value))
+                    history_mpc_sol_pr_vel = np.array(logging['mpc_sol_pr_vel'] if 'mpc_sol_pr_vel' in logging else np.full((len(logging.get('mpc_sol_com_pos', [1])), 3), dead_value))
+                    history_mpc_sol_pr_acc = np.array(logging['mpc_sol_pr_acc'] if 'mpc_sol_pr_acc' in logging else np.full((len(logging.get('mpc_sol_com_pos', [1])), 3), dead_value))
+                    history_left_feet_pos = np.array(logging['left_feet_pos'] if 'left_feet_pos' in logging else np.full((len(logging.get('mpc_sol_com_pos', [1])), 3), dead_value))
+                    history_left_feet_vel = np.array(logging['left_feet_vel'] if 'left_feet_vel' in logging else np.full((len(logging.get('mpc_sol_com_pos', [1])), 3), dead_value))
+                    history_left_feet_acc = np.array(logging['left_feet_acc'] if 'left_feet_acc' in logging else np.full((len(logging.get('mpc_sol_com_pos', [1])), 3), dead_value))
+                    history_right_feet_pos = np.array(logging['right_feet_pos'] if 'right_feet_pos' in logging else np.full((len(logging.get('mpc_sol_com_pos', [1])), 3), dead_value))
+                    history_right_feet_vel = np.array(logging['right_feet_vel'] if 'right_feet_vel' in logging else np.full((len(logging.get('mpc_sol_com_pos', [1])), 3), dead_value))
+                    history_right_feet_acc = np.array(logging['right_feet_acc'] if 'right_feet_acc' in logging else np.full((len(logging.get('mpc_sol_com_pos', [1])), 3), dead_value))
 
                     frames = range(len(history_mpc_sol_pl_pos))
                     # Creazione griglia: 3 righe (Pos, Vel, Acc) e 2 colonne (Left, Right)
@@ -726,9 +760,10 @@ def test_enviroment(
                     axes[1, 0].legend(loc='upper right'); axes[1, 0].grid(True, alpha=0.3)
 
                     # 3. Accelerazione PL
-                    axes[2, 0].plot(frames, history_mpc_sol_pl_acc[:, 0], color='red', label='mpc_Ax')
-                    axes[2, 0].plot(frames, history_mpc_sol_pl_acc[:, 1], color='green', label='mpc_Ay')
-                    axes[2, 0].plot(frames, history_mpc_sol_pl_acc[:, 2], color='blue', label='mpc_Az')
+                    if not np.all(history_mpc_sol_pl_acc == dead_value):
+                        axes[2, 0].plot(frames, history_mpc_sol_pl_acc[:, 0], color='red', label='mpc_Ax')
+                        axes[2, 0].plot(frames, history_mpc_sol_pl_acc[:, 1], color='green', label='mpc_Ay')
+                        axes[2, 0].plot(frames, history_mpc_sol_pl_acc[:, 2], color='blue', label='mpc_Az')
                     axes[2, 0].plot(frames, history_left_feet_acc[:, 0], color='red', label='current_Ax', linestyle='--')
                     axes[2, 0].plot(frames, history_left_feet_acc[:, 1], color='green', label='current_Ay', linestyle='--')
                     axes[2, 0].plot(frames, history_left_feet_acc[:, 2], color='blue', label='current_Az', linestyle='--')
@@ -759,9 +794,10 @@ def test_enviroment(
                     axes[1, 1].legend(loc='upper right'); axes[1, 1].grid(True, alpha=0.3)
 
                     # 3. Accelerazione PR
-                    axes[2, 1].plot(frames, history_mpc_sol_pr_acc[:, 0], color='orange', label='mpc_Ax', )
-                    axes[2, 1].plot(frames, history_mpc_sol_pr_acc[:, 1], color='purple', label='mpc_Ay', )
-                    axes[2, 1].plot(frames, history_mpc_sol_pr_acc[:, 2], color='brown', label='mpc_Az', )
+                    if not np.all(history_mpc_sol_pr_acc == dead_value):
+                        axes[2, 1].plot(frames, history_mpc_sol_pr_acc[:, 0], color='orange', label='mpc_Ax', )
+                        axes[2, 1].plot(frames, history_mpc_sol_pr_acc[:, 1], color='purple', label='mpc_Ay', )
+                        axes[2, 1].plot(frames, history_mpc_sol_pr_acc[:, 2], color='brown', label='mpc_Az', )
                     axes[2, 1].plot(frames, history_right_feet_acc[:, 0], color='orange', label='current_Ax', linestyle='--')
                     axes[2, 1].plot(frames, history_right_feet_acc[:, 1], color='purple', label='current_Ay', linestyle='--')
                     axes[2, 1].plot(frames, history_right_feet_acc[:, 2], color='brown', label='current_Az', linestyle='--')
@@ -808,17 +844,29 @@ def test_enviroment(
                     subdir = os.path.join(save_plot_dir, "plots_train_in_test")
                     os.makedirs(subdir, exist_ok=True)
                     save_dir = os.path.join(subdir, f"test_epoch_{num_epoch}")
-                plot_com()
-                plot_feet()
-                plot_torques()
-                plot_reward_info()
-                plot_perturbation()
+                
+                plotting_task = [
+                    plot_com,
+                    plot_feet,
+                    plot_torques,
+                    plot_reward_info,
+                    plot_perturbation
+                ]
 
+                for func in plotting_task:
+                    try:
+                        func()
+                    except Exception as e:
+                        print(f"ERROR in function {func.__name__}: {e}")
+                        pass
                 break
                 
     except KeyboardInterrupt:
         pass
     finally:
+        end_test_time = time.time()
+        test_duration = end_test_time - start_test_time
+        print(f"Test duration: {test_duration:.2f} seconds")
         env.close()
         cv2.destroyAllWindows() 
 
@@ -859,10 +907,56 @@ def log_enviroment_config(task, env_single: gym.Env):
         if scale != 0:
             log_and_print(f"\t{reward_name}: {scale}")
 
+    observation_dict = env_single.unwrapped.get_obs_info()[0]
+    log_and_print(f"Observation:")
+
+    for k in observation_dict.keys():
+        log_and_print(f"\t{k}")
+
 def dist_fn(loc_scale: tuple[torch.Tensor, torch.Tensor]) -> Distribution:
     loc, scale = loc_scale
     return Independent(Normal(loc, scale), 1)
 
+class LayerNormalizer(nn.Module):
+    def __init__(self, shape):
+        super().__init__()
+        self.rms = RunningMeanStd() # Quella di tianshou
+        self.shape = shape
+        self.eps = 1e-8
+
+    def forward(self, obs):
+        if self.training:
+            self.rms.update(obs.detach().cpu().numpy())
+        
+        # Converte media e varianza in tensori per il calcolo
+        mean = torch.as_tensor(self.rms.mean, device=obs.device, dtype=torch.float32)
+        std = torch.as_tensor(np.sqrt(self.rms.var + self.eps), device=obs.device, dtype=torch.float32)
+        
+        return (obs - mean) / std
+    
+class TitaNetObsNormalizer(Net):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.input_normalizer = RunningMeanStd()
+        self.eps = 1e-8
+
+    def forward(self, obs, state=None, info={}):
+
+        device = next(self.parameters()).device
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.as_tensor(obs, dtype=torch.float32, device=device)
+        else:
+            obs = obs.to(device)
+
+        if self.training:
+            self.input_normalizer.update(obs.detach().cpu().numpy())
+        
+        mean = torch.as_tensor(self.input_normalizer.mean, device=obs.device, dtype=torch.float32)
+        std = torch.as_tensor(np.sqrt(self.input_normalizer.var + self.eps), device=obs.device, dtype=torch.float32)
+        
+        obs_normalized = (obs - mean) / std
+        return super().forward(obs_normalized, state, info)
+    
 def create_wrapped_env(task: str, render_mode=None) -> gym.Env:
     env = gym.make(task, render_mode=render_mode, width=1000, height=600)
     #env = gym.wrappers.NormalizeObservation(env)  
@@ -895,15 +989,15 @@ def init_last_layer(m):
 def main():
 
     # ----- Parse arguments -----
-    script_task, alg_type, render_mode, make_log, test_exp_name = parser_args()
+    script_task, alg_type, render_mode, make_log, name_weight_name = parser_args()
     
     # ----- Configuration -----
     logdir = os.path.join(get_git_root(), "TITA_MJ", "log", f"{alg_type}_logs")
     device = "cuda"
     task = "Tita-v0" #"Pendulum-v1"
     lr = 1e-5
-    hidden_sizes = [256, 128, 64]
-    num_training_envs = 4
+    hidden_sizes = [512, 256, 128]
+    num_training_envs = 8
     num_test_envs = 1
     num_view_test_env = 1
 
@@ -922,6 +1016,7 @@ def main():
         test_envs = SubprocVectorEnv([lambda: create_wrapped_env(task) for _ in range(num_test_envs)], )
 
     # ----- Get environment info ----- 
+    global env_single
     env_single = create_wrapped_env(task)
     space_info = SpaceInfo.from_env(env_single)
     state_shape = space_info.observation_info.obs_shape
@@ -939,6 +1034,14 @@ def main():
         state_shape=state_shape,
         hidden_sizes=hidden_sizes,
         activation=activation_fn,
+        #norm_layer=LayerNormalizer
+    )
+
+    net_r = TitaNetObsNormalizer(
+        state_shape=state_shape,
+        hidden_sizes=hidden_sizes,
+        activation=activation_fn,
+        norm_layer=LayerNormalizer
     )
     
     actor = ContinuousActorProbabilistic(
@@ -973,6 +1076,7 @@ def main():
             actor=actor,
             dist_fn=dist_fn,
             action_scaling=False,
+            action_bound_method="tanh",
             action_space=env_single.action_space,
             deterministic_eval=True,
         )
@@ -990,6 +1094,13 @@ def main():
             max_grad_norm=0.5,
             gamma=0.99,
         )
+        log_and_print(f"\nPPO Hyperparameters:")
+        log_and_print(f"\tEps clip: {algo.eps_clip}")
+        log_and_print(f"\tVf coef: {algo.vf_coef}")
+        log_and_print(f"\tEnt coef: {algo.ent_coef}")
+        log_and_print(f"\tGAE lambda: {algo.gae_lambda}")
+        log_and_print(f"\tMax grad norm: {algo.max_grad_norm}")
+        log_and_print(f"\tGamma: {algo.gamma}")
     elif alg_type == _STR_SAC:
         critic1 = ContinuousCritic(
             preprocess_net=Net(
@@ -1038,9 +1149,19 @@ def main():
             critic2_optim=AdamOptimizerFactory(lr=lr),
             tau=0.005,
             gamma=0.99,
-            alpha=0.1,
+            alpha=0.001,
             n_step_return_horizon=5,
         )
+
+        log_and_print(f"\nSAC Hyperparameters:")
+        log_and_print(f"\tTau: {algo.tau}")
+        log_and_print(f"\tGamma: {algo.gamma}")
+        try:
+            alpha_val = algo.alpha.value
+        except Exception:
+            alpha_val = algo.alpha
+        log_and_print(f"\tAlpha: {alpha_val}")
+        log_and_print(f"\tN-step return horizon: {algo.n_step_return_horizon}")
     else:
         raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
     
@@ -1079,8 +1200,8 @@ def main():
 
         policy.eval()
         root = os.path.join(get_git_root(), "TITA_MJ", "log", f"{alg_type}_logs")
-        if test_exp_name is not None:
-            exp_name = test_exp_name
+        if name_weight_name is not None:
+            exp_name = name_weight_name
         else:
             root =os.path.join(root, "weights")
             folders = [f for f in os.listdir(root) if os.path.isdir(os.path.join(root, f))]
@@ -1113,39 +1234,37 @@ def main():
     else:
         raise ValueError("Either --train or --test must be specified.")
 
-    # ------ Buffer -------
-    if alg_type == _STR_PPO:
-        buffer = VectorReplayBuffer(
-            total_size=EPISODE_LENGTH*num_training_envs,
-            buffer_num=num_training_envs,
-            stack_num=1#env_single.unwrapped.get_config().frame_stack,
-        )
-        log_and_print("\nPPO Buffer parameters:")
-        log_and_print(f"\t Total size: {buffer.maxsize:_}")
-        log_and_print(f"\t Buffer num: {buffer.buffer_num}")
-        log_and_print(f"\t Stack num: {buffer.stack_num}")
-    elif alg_type == _STR_SAC:
-        buffer_old = VectorReplayBuffer(
-            total_size=5*EPISODE_LENGTH*num_training_envs,
-            buffer_num=num_training_envs,
-            stack_num=1 #env_single.unwrapped.get_config().frame_stack,
-        )
+    buffer_total_size = 1_010_000
+    buffer_num  = num_training_envs
+    stack_num = 1  # env_single.unwrapped.get_config().frame_stack
 
-        buffer = PrioritizedVectorReplayBuffer(
-            total_size=5* EPISODE_LENGTH*num_training_envs,
-            buffer_num=num_training_envs,
-            alpha=0.6,
-            beta=0.4,
-            stack_num=1,  # env_single.unwrapped.get_config().frame_stack,
-        )
+    buffer_vanilla = VectorReplayBuffer(
+        total_size=buffer_total_size,
+        buffer_num=buffer_num,
+        stack_num=stack_num
+    )
 
-        log_and_print("\nSAC Buffer parameters:")
-        log_and_print(f"\t Total size: {buffer.maxsize:_}")
-        log_and_print(f"\t Buffer num: {buffer.buffer_num}")
-        log_and_print(f"\t Stack num: {buffer.stack_num}")
-    else:
-        raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
-    
+    buffer_per = PrioritizedVectorReplayBuffer(
+        total_size=buffer_total_size,
+        buffer_num=buffer_num,
+        alpha=0.6,
+        beta=0.4,
+        stack_num=stack_num,
+    )
+
+    buffer = buffer_vanilla
+    do_warmup = True
+    warmup_steps = 8*EPISODE_LENGTH
+
+    log_and_print("\nBuffer parameters:")
+    log_and_print(f"\t Total size: {buffer.maxsize:_}")
+    log_and_print(f"\t Buffer num: {buffer.buffer_num}")
+    log_and_print(f"\t Stack num: {buffer.stack_num}")
+    if isinstance(buffer, PrioritizedVectorReplayBuffer):
+        
+        log_and_print(f"\t Prioritized Buffer alpha: {buffer._alpha}")
+        log_and_print(f"\t Prioritized Buffer beta: {buffer._beta}")
+
     test_buffer = VectorReplayBuffer(
         total_size=EPISODE_LENGTH*num_test_envs, 
         buffer_num=len(test_envs), 
@@ -1172,8 +1291,8 @@ def main():
     train_collector.reset()
     test_collector.reset()
 
-    train_collector.collect(n_step=10*num_training_envs)
-    test_collector.collect(n_step=10*num_test_envs)
+    train_collector.collect(n_step=1*num_training_envs)
+    test_collector.collect(n_step=1*num_test_envs)
     train_batch, _ = train_collector.buffer.sample(1)
     log_and_print(f"Train Buffer - Batch Observation Shape: {train_batch.obs.shape}")
     log_and_print(f"Train Buffer - Single Sample Shape: {train_batch.obs[0].shape}")
@@ -1185,9 +1304,22 @@ def main():
     train_collector.reset()
     test_collector.reset()
 
-    train_collector.collect(n_step=2*1000*num_training_envs)
-    log_and_print(f"Train Buffer size after initial collection: {len(train_collector.buffer)}")
+    if do_warmup:
+        start_warmup_time = datetime.datetime.now()
+        log_and_print(f"\nCollecting {warmup_steps:_} warmup steps...")
 
+        steps_per_iter = warmup_steps // 10  # divido in 10 chunk
+        try:
+            for i in range(10):
+                train_collector.collect(n_step=steps_per_iter)
+                print(f"\rWarmup progress: {(i + 1) * steps_per_iter:_} / {warmup_steps:_} steps", end="", flush=True)
+        except KeyboardInterrupt:
+         pass
+
+        end_warmup_time = datetime.datetime.now()
+        warmup_total_time = end_warmup_time - start_warmup_time
+        log_and_print(f"\nCollected {len(train_collector.buffer)} sampled in time: {format_td(warmup_total_time)}")
+   
     # ----- Setup logger using LoggerFactoryDefault -----
     timestamp = datetime.datetime.now().strftime('day_%Y_%m_%d_time_%H_%M_%S')
     run_dir_name = f"{alg_type}_{timestamp}"
@@ -1197,11 +1329,17 @@ def main():
     global dir_experiment
     dir_experiment = os.path.join(logdir, "weights", run_dir_name)
     
-    checkpath_root = os.path.join(get_git_root(), "TITA_MJ", "log", "weights_saved")
-    checkpath_path_actor = "stand_up_randomize_reset.pt"
-    checkpath_actor = os.path.join(checkpath_root, checkpath_path_actor)
-    if os.path.exists(checkpath_actor):
-        actor.load_state_dict(torch.load(checkpath_actor, map_location=device))
+    checkpath_root = os.path.join(get_git_root(), "TITA_MJ", "log", f"{alg_type}_logs")
+    checkpath_actor = os.path.join(checkpath_root, name_weight_name if name_weight_name is not None else "", "final")
+    if name_weight_name is not None and os.path.exists(checkpath_actor):
+        log_and_print(f"\nLoading Actor and Critic weights from: {name_weight_name.split('/')[-1]}")
+        actor.load_state_dict(torch.load(os.path.join(os.path.join(checkpath_actor), "final_actor_state_dict.pt"), map_location=device))
+        if alg_type == _STR_PPO:
+            critic.load_state_dict(torch.load(os.path.join(os.path.join(checkpath_actor), "final_critic_state_dict.pt"), map_location=device))
+        elif alg_type == _STR_SAC:
+            critic1.load_state_dict(torch.load(os.path.join(os.path.join(checkpath_actor), "final_critic_state_dict_1.pt"), map_location=device))
+            critic2.load_state_dict(torch.load(os.path.join(os.path.join(checkpath_actor), "final_critic_state_dict_2.pt"), map_location=device))
+        log_and_print(f"Loaded Actor and Critic weights from: {checkpath_actor}")
     else:
         log_and_print(f"Actor file not found: {checkpath_actor}\n -> Continuing training from scratch.")
 
@@ -1257,7 +1395,7 @@ def main():
         log_and_print("\t Update step num repetitions:", trainer_type.update_step_num_repetitions)
         log_and_print("\t Test step num episodes:", trainer_type.test_step_num_episodes, "\n")
     elif alg_type == _STR_SAC: 
-        rollout = 100
+        rollout = 20
         trainer_type = OffPolicyTrainerParams(
                 training_collector=train_collector, 
                 test_collector=test_collector,  
@@ -1269,8 +1407,8 @@ def main():
                 test_in_training=False,
 
                 # Know parameters 
-                max_epochs=30,    
-                batch_size=256,
+                max_epochs=100,    
+                batch_size=1024,
 
                 # Total number of training steps to take per epoch
                 epoch_num_steps=EPISODE_LENGTH*num_training_envs, 
@@ -1278,10 +1416,10 @@ def main():
                 # the number of environment steps/transitions to collect in each collection step before the
                 # network update within each training step.
                 collection_step_num_env_steps=rollout*num_training_envs,
-                #collection_step_num_episodes=1*num_training_envs 
+                #collection_step_num_episodes=num_training_envs,
                 
                 # The number of times data 
-                update_step_num_gradient_steps_per_sample=10/(rollout*num_training_envs),
+                update_step_num_gradient_steps_per_sample=1.0,
 
                 # Number of episodes to colleact in each test step
                 # i.e. number of run for evaluation
@@ -1300,7 +1438,7 @@ def main():
             log_and_print("\t Collection step num env steps:", trainer_type.collection_step_num_env_steps, ", roullout: ", rollout)
         else:
             log_and_print("\t Collection step num episodes:", trainer_type.collection_step_num_episodes, ", episode per enviroment: ", trainer_type.collection_step_num_episodes/(rollout*num_training_envs))
-        log_and_print("\t Update step num gradient steps per sample:", trainer_type.update_step_num_gradient_steps_per_sample*(100*num_training_envs))
+        log_and_print("\t Update step num gradient steps per sample:", trainer_type.update_step_num_gradient_steps_per_sample)
         log_and_print("\t Test step num episodes:", trainer_type.test_step_num_episodes, "\n")
     else:
         raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
@@ -1308,17 +1446,16 @@ def main():
     actor_base_dir = os.path.dirname(actor_path)
     setup_auto_logging(os.path.join(actor_base_dir, DIR_EXPERIMENT_INFO, "training_log.txt"))
 
-    start_time = time.time()
+    start_time = datetime.datetime.now()
     try:
         result_policy = algo.run_training(
             trainer_type
         )
     except KeyboardInterrupt:
         pass
-    end_time = time.time()
+    end_time = datetime.datetime.now()
     total_time = end_time - start_time
-    minutes, seconds = divmod(total_time, 60)
-    log_and_print(f"\nTotal training time: {int(minutes)}m, {seconds:.2f}s")
+    log_and_print(f"Total training time: {format_td(total_time)}")
 
     log_and_print("\nTraining completed!")
     log_and_print(f"Logs saved to {logdir}")
