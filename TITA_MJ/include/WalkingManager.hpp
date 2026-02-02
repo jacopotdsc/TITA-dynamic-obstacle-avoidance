@@ -10,19 +10,34 @@
 
 namespace labrob {
 
+struct infoPinocchio {
+    Eigen::Vector3d p_CoM;
+    Eigen::Vector3d v_CoM;
+    Eigen::Vector3d a_CoM;
+
+    Eigen::Vector3d right_rCP;
+    Eigen::Vector3d left_rCP;
+    Eigen::Vector3d right_contact;
+    Eigen::Vector3d left_contact;
+};
+
 class WalkingManager {
  public:
 
-  bool init(const labrob::RobotState& initial_robot_state, std::map<std::string, double> &armatures);
+  bool init(const labrob::RobotState& initial_robot_state, std::map<std::string, double> &armatures, const labrob::walkingPlanner& walkingPlanner, labrob::infoPinocchio& pinocchio_info);
 
   void update(
       const labrob::RobotState& robot_state,
       const Eigen::Vector3d position_desired,
       labrob::JointCommand& joint_command,
-      labrob::SolutionMPC& sol
+      labrob::SolutionMPC& sol,
+      labrob::infoPinocchio& pinocchio_info
   );
 
   labrob::DesiredConfiguration des_configuration_;
+
+  const labrob::walkingPlanner& get_walking_planner() const { return walkingPlanner_; }
+  const labrob::MPC& get_mpc() const { return mpc_; }
 
 
  protected:

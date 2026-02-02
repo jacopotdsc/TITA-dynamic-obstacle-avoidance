@@ -1,0 +1,66 @@
+Enviroment: Tita-v0
+Observation space: 46 x 1 (stacked frames)
+Action space: (8,)
+Action size: 120.0
+
+	Action Scale: 10.0
+	Action Repeat: 1
+	cost_action_nn: -0.001
+	cost_action_rate: -0.001
+	cost_early_termination: -10
+	cost_orientation: -1.0
+	reward_tracking_ang_vel: 0.5
+	reward_tracking_height: 1
+	reward_tracking_lin_vel: 1
+Observation:
+	com_height_wrt_ground
+	gravity_body_frame
+	linvel
+	angvel
+	joint_angles
+	joint_vel
+	command
+	delta_mpc_sol_com_vel
+	mpc_sol_pl_vel
+	mpc_sol_pr_vel
+	prev_nn_act
+
+SAC Hyperparameters:
+	Tau: 0.005
+	Gamma: 0.99
+	Alpha: 0.001
+	N-step return horizon: 5
+
+Starting training enviroment Tita-v0
+
+Buffer parameters:
+	 Total size: 1_010_000
+	 Buffer num: 8
+	 Stack num: 1
+Train Buffer - Batch Observation Shape: (1, 46)
+Train Buffer - Single Sample Shape: (46,)
+Test Buffer - Batch Observation Shape: (1, 46)
+Test Buffer - Single Sample Shape: (46,)
+Actor file not found: /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/weights_saved/stand_up_randomize_reset.pt
+ -> Continuing training from scratch.
+
+SAC Trainer parameters:
+	 Num train/test envs 8 / 1
+	 learning rate: 1e-05
+	 hidden sizes: [512, 256, 128]
+	 Max epochs: 100
+	 Batch size: 254
+	 Epoch num steps: 8000
+	 Collection step num env steps: 160 , roullout:  20
+	 Update step num gradient steps per sample: 800.0
+	 Test step num episodes: 1 
+
+
+Total training time: 132m, 32.08s
+
+Training completed!
+Logs saved to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs
+Saving weights in /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs
+Saved actor weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_01_29_time_09_06_52/final/final_actor_state_dict.pt
+Saved critic1 weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_01_29_time_09_06_52/final/final_critic_state_dict_1.pt
+Saved critic2 weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_01_29_time_09_06_52/final/final_critic_state_dict_2.pt

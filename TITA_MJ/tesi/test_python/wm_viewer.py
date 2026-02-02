@@ -45,6 +45,7 @@ data.qpos[4] = 0.0  # x
 data.qpos[5] = 0.0  # y
 data.qpos[6] = 0.0  # z
 
+
 for joint_name, angle in joint_targets.items():
     
     joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, joint_name)
@@ -79,7 +80,60 @@ for i in range(model.njnt):
 
 initial_robot_state = wm.robot_state_from_mujoco(model, data)
 walking_manager = wm.WalkingManager()
-walking_manager.init(initial_robot_state, armatures)
+wp = wm.WalkingPlanner(0.0, 0.0, 0.0, 0.25, 0.49)
+res_init = walking_manager.init(initial_robot_state, armatures, wp)
+
+wp_variables = wp.get_variables()
+print(wp_variables.keys())
+print("\nWalking Planner reference trajectories:")
+print(f"vel_lin: {wp_variables['v']}, vel_z: {wp_variables['vz']}, vel_ang: {wp_variables['omega']}, z_min: {wp_variables['z_min']}, z_max: {wp_variables['z_max']}")
+
+
+x_ref = wp.get_x_ref()  # [NX x N_STEP]
+u_ref = wp.get_u_ref()  # [NU x (N_STEP-1)]
+NX, N_STEP = x_ref.shape
+
+dt = wp_variables['dt']  # 0.002
+T = wp_variables['T']    # 13 s
+
+# campiona ogni secondo
+times = np.arange(0, T+1e-6)
+for t in times:
+    step = int(t/dt) #int(t / dt)
+    step = min(step, N_STEP-1)
+    x = x_ref[:, step]
+    if step < u_ref.shape[1]:
+        u = u_ref[:, step]
+    else:
+        u = u_ref[:, -1]  # ultimo comando disponibile
+    print(f"[t={t:.1f}s] x={x[:3]} v={x[11]:.2f} vz={x[5]:.2f} omega={x[12]:.2f} u={u}")
+
+print("\nSample x_ref at specific times:")
+t0   = 0
+tmid = int(1000 * T / 2)
+t34 = int(1000 * T * 3 / 4)
+tend = int(1000 * T)
+
+for t_ms in [t0, tmid, t34, tend]:
+    x_ref = wp.get_xref_at_time_ms(t_ms).reshape(-1)  # <-- FIX
+
+    vz    = x_ref[5]
+    v     = x_ref[11]
+    omega = x_ref[12]
+
+    print(f"x_ref @ t={t_ms} ms -> v={v:.3f}, vz={vz:.3f}, omega={omega:.3f}")
+
+start_idx = max(0, N_STEP - 3)
+
+print(f"\nFull x_ref from step {start_idx} to {N_STEP}:")
+x_ref_full = wp.get_x_ref()  # shape (nx, N_STEP)
+N_STEP = x_ref_full.shape[1]
+for step in range(start_idx, N_STEP):
+    x = x_ref_full[:, step].reshape(-1)  # vettore 1D
+    vz    = x[5]
+    v     = x[11]
+    omega = x[12]
+    print(f"step {step} -> v={v:.3f}, vz={vz:.3f}, omega={omega:.3f}")
 
 start_real = time.time()
 start_sim = data.time
@@ -173,7 +227,7 @@ class Perturbator:
 perturbator = Perturbator(model, data, info, dt, torso_body_id, torso_mass, viewer)
 
 # --------------------------------
-np.set_printoptions(precision=3, suppress=True)
+np.set_printoptions(precision=5, suppress=True)
 while True:
     time.sleep(0.0)
     try:

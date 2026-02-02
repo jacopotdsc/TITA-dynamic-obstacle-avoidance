@@ -1,0 +1,12 @@
+- prendere tempo durata di un singolo enviroment
+- fare rollout piccoli e.g. 20 timestep di rollout
+- confronto fra dati prodotti e dati utilizzati ( e.g. la gpu 10^5, con cpu quanti?)
+
+
+dt = 0.002 
+frame = 500
+
+time_simulation = frame * dt
+1 time sim = 500 * 0.002
+
+1000 frame, 4 env 

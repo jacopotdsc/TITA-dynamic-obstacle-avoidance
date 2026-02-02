@@ -16,6 +16,8 @@ struct SolutionMPC {
   Com com;
   Pl pl;
   Pr pr;
+  Eigen::Vector3d contact_force_left;
+  Eigen::Vector3d contact_force_right;
   double theta;
   double omega;
   double alpha;
@@ -46,6 +48,8 @@ class MPC {
       {pos_com_, vel_com_, acc_com_},   // COM
       {pos_pl_, vel_pl_, acc_pl_},       // pl
       {pos_pr_, vel_pr_, acc_pr_},       // pr
+      {contact_force_left_},
+      {contact_force_right_},
       theta_,
       omega_,
       alpha_
@@ -63,6 +67,7 @@ private:
   const labrob::walkingPlanner* walkingPlanner_ptr_ = nullptr;
 
   Eigen::Vector3d pos_com_, vel_com_, acc_com_, pos_pl_, vel_pl_, acc_pl_, pos_pr_, vel_pr_, acc_pr_;
+  Eigen::Vector3d contact_force_left_, contact_force_right_;
   double theta_, omega_, alpha_;
 
   // VHIP parameters

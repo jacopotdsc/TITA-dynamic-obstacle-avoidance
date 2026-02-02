@@ -16,6 +16,7 @@ using namespace labrob;
 struct WalkingManagerResult {
     JointCommand cmd;
     SolutionMPC solution;
+    infoPinocchio pinocchio_info;
 };
 
 uintptr_t get_mujoco_ptr(py::object obj) {
@@ -152,6 +153,29 @@ PYBIND11_MODULE(wm, m) {
             << "], acc=[" << p.acc.transpose() << "])";
             return ss.str();
         });
+    
+    py::class_<infoPinocchio>(m, "InfoPinocchio")
+        .def(py::init<>())  
+        .def_readwrite("p_com", &infoPinocchio::p_CoM)
+        .def_readwrite("v_com", &infoPinocchio::v_CoM)
+        .def_readwrite("a_com", &infoPinocchio::a_CoM)
+        .def_readwrite("right_rcp", &infoPinocchio::right_rCP)
+        .def_readwrite("left_rcp", &infoPinocchio::left_rCP)
+        .def_readwrite("right_contact", &infoPinocchio::right_contact)
+        .def_readwrite("left_contact", &infoPinocchio::left_contact)
+        .def("__repr__", [](const infoPinocchio &self) {
+            std::ostringstream oss;
+            oss << "<InfoPinocchio "
+                << "p_CoM=" << self.p_CoM.transpose() << ", "
+                << "v_CoM=" << self.v_CoM.transpose() << ", "
+                << "a_CoM=" << self.a_CoM.transpose() << ", "
+                << "right_rCP=" << self.right_rCP.transpose() << ", "
+                << "left_rCP=" << self.left_rCP.transpose() << ", "
+                << "right_contact=" << self.right_contact.transpose() << ", "
+                << "left_contact=" << self.left_contact.transpose()
+                << ">";
+            return oss.str();
+        });
 
     py::class_<SolutionMPC>(m, "SolutionMPC")
         .def_readwrite("com", &SolutionMPC::com)
@@ -203,25 +227,36 @@ PYBIND11_MODULE(wm, m) {
 
     py::class_<WalkingManagerResult>(m, "WalkingManagerResult")
         .def_readwrite("cmd", &WalkingManagerResult::cmd)
-        .def_readwrite("solution", &WalkingManagerResult::solution);
+        .def_readwrite("solution", &WalkingManagerResult::solution)
+        .def_readwrite("pinocchio_info", &WalkingManagerResult::pinocchio_info);
 
     py::class_<walkingPlanner>(m, "WalkingPlanner")
-        .def(py::init<>())
+        .def(py::init<double, double, double, double, double>(),
+            py::arg("vel_lin"),
+            py::arg("vel_ang"),
+            py::arg("vel_z"),
+            py::arg("z_min"),
+            py::arg("z_max")
+            )
         .def("get_variables", &walkingPlanner::getVariables)
         .def("get_xref_at_time_ms", &walkingPlanner::get_xref_at_time_ms)
         .def("get_uref_at_time_ms", &walkingPlanner::get_uref_at_time_ms)
-        .def("get_x_ref", &labrob::walkingPlanner::get_x_ref)  
-        .def("get_u_ref", &labrob::walkingPlanner::get_u_ref); 
+        .def("get_x_ref", &walkingPlanner::get_x_ref)  
+        .def("get_u_ref", &walkingPlanner::get_u_ref); 
     
     py::class_<WalkingManager>(m, "WalkingManager")
         .def(py::init<>())
-        .def("init", [](WalkingManager &wm, const RobotState &state, py::dict &armatures) {
+        .def("init", [](WalkingManager &wm, const RobotState &state, py::dict &armatures, walkingPlanner& walking_planner) {
             
             std::map<std::string, double> armatures_map;
             for (auto item : armatures) {
                 armatures_map[item.first.cast<std::string>()] = item.second.cast<double>();
             }
-            return wm.init(state, armatures_map);
+            WalkingManagerResult result;
+            infoPinocchio pinocchio_info;
+            bool ret = wm.init(state, armatures_map, walking_planner, pinocchio_info);
+            result.pinocchio_info = pinocchio_info;
+            return result;
         })
 
         .def("get_walking_planner",
@@ -231,11 +266,13 @@ PYBIND11_MODULE(wm, m) {
         .def("update", [](WalkingManager &wm, const RobotState &state, const Eigen::Vector3d position_desired) {
             JointCommand cmd;
             SolutionMPC solution;
-            wm.update(state, position_desired, cmd, solution);
+            infoPinocchio pinocchio_info;
+            wm.update(state, position_desired, cmd, solution, pinocchio_info);
 
             WalkingManagerResult result;
             result.cmd = cmd;
             result.solution = solution;
+            result.pinocchio_info = pinocchio_info;
             return result;
         });
 }

@@ -4,6 +4,8 @@
 #include <fstream>
 
 #include <Eigen/Dense>
+#include <map>
+#include <string>
 
 
 
@@ -13,7 +15,7 @@ class walkingPlanner {
   private:
     static constexpr int NX = 13; 
     static constexpr int NU = 9; 
-    static constexpr int T = 11;              // in sec
+    static constexpr int T = 4;              // in sec
     static constexpr double dt = 0.002;
     static constexpr int N_STEP = static_cast<int>(T / dt);     //n. of timesteps
     
@@ -25,9 +27,23 @@ class walkingPlanner {
     // ref trajectory
     Eigen::MatrixXd x_ref;
     Eigen::MatrixXd u_ref;
+
+    double vz;
+    double v_contact_z;
+    double v;
+    double omega;
+    double theta0;
+
+    double x0;
+    double y0;
+    double z0;
+    double z0_contact;
+    double z_min;
+    double z_max;
+
     
   public:  
-  walkingPlanner(){
+  walkingPlanner(double vel_lin = 0.0, double vel_ang = 0.0, double vel_z = 0.0, double z_min = 0.25, double z_max = 0.49) {
     x_ref.setZero(NX, N_STEP);
     u_ref.setZero(NU, N_STEP-1);
 
@@ -43,18 +59,18 @@ class walkingPlanner {
 
     
     // constant velocity profile
-    double vz          = 0.0;
-    double v_contact_z = 0.0;
-    double v           = -0.3;
-    double omega       = -0.5;
-    double theta0      = 0.0;
+    vz          = vel_z;
+    v_contact_z = 0.0;
+    v           = vel_lin;
+    omega       = vel_ang;
+    theta0      = 0.0;
+    x0          = 0.0;
+    y0          = 0.0;
+    z0          = 0.4;
+    z0_contact  = 0.0;
 
-    double x0          = 0.0;
-    double y0          = 0.0;
-    double z0          = 0.4;
-    double z0_contact  = 0.0;
-
-    double z_min       = 0.25;
+    z_min       = z_min;
+    z_max       = z_max;
  
     double x = x0;
     double y = y0;
@@ -98,8 +114,11 @@ class walkingPlanner {
 
         double z = std::max(z0 + vz * t, z_min);
         double z_contact = z0_contact + v_contact_z * t;
-
-
+        
+        if ( z <= z_min || z >= z_max ){
+          vz = 0.0;
+        }
+        
         // stop at last state
         if (t_step == N_STEP - 1){
           vx = 0.0; vy = 0.0; vz = 0.0;
@@ -124,8 +143,6 @@ class walkingPlanner {
         x_ref.col(t_step)(12) = omega;  
     }
 
-   
-
     for (int t_step = 0; t_step < N_STEP - 1; ++t_step){
 
         u_ref.col(t_step)(0) = 0.0;     // a
@@ -140,8 +157,6 @@ class walkingPlanner {
         u_ref.col(t_step)(7) = 0;         // fr_y
         u_ref.col(t_step)(8) = m*grav/2;  // fr_z
     }
-
-
 
     if (log_plan){
       // create folder if it does not exist
@@ -267,6 +282,46 @@ class walkingPlanner {
     int time_step = get_time_step_idx(t_msec);
     time_step = std::clamp(time_step, 0, N_STEP - 2);
     return u_ref.col(time_step);
+  }
+
+
+  const Eigen::MatrixXd& get_x_ref() const {
+    return x_ref;
+  }
+
+  const Eigen::MatrixXd& get_u_ref() const {
+      return u_ref;
+  }
+
+  std::map<std::string, double> getVariables() const {
+    std::map<std::string, double> vars;
+
+    vars["NX"] = static_cast<double>(NX);
+    vars["NU"] = static_cast<double>(NU);
+    vars["T"] = static_cast<double>(T);
+    vars["dt"] = dt;
+    vars["N_STEP"] = static_cast<double>(N_STEP);
+    vars["grav"] = grav;
+    vars["m"] = m;
+    
+    vars["dim_x_ref_rows"] = static_cast<double>(x_ref.rows());
+    vars["dim_x_ref_cols"] = static_cast<double>(x_ref.cols());
+    vars["dim_u_ref_rows"] = static_cast<double>(u_ref.rows());
+    vars["dim_u_ref_cols"] = static_cast<double>(u_ref.cols());
+    
+    vars["vz"] = vz;
+    vars["v_contact_z"] = v_contact_z;
+    vars["v"] = v;
+    vars["omega"] = omega;
+    vars["theta0"] = theta0;
+    vars["x0"] = x0;
+    vars["y0"] = y0;
+    vars["z0"] = z0;
+    vars["z0_contact"] = z0_contact;
+    vars["z_min"] = z_min;
+    vars["z_max"] = z_max;
+
+    return vars;
   }
 
 }; 

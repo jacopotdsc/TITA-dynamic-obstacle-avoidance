@@ -4,7 +4,10 @@
 namespace labrob {
 
 bool WalkingManager::init(const labrob::RobotState& initial_robot_state,
-                     std::map<std::string, double> &armatures) {
+                     std::map<std::string, double> &armatures,
+                    const labrob::walkingPlanner& walkingPlanner,
+                    labrob::infoPinocchio& pinocchio_info
+                    ) {
     
     // Read URDF from file:
     std::string robot_description_filename = "/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/tita_description/tita.urdf";
@@ -36,6 +39,8 @@ bool WalkingManager::init(const labrob::RobotState& initial_robot_state,
     left_leg4_idx_ = robot_model_.getFrameId("left_leg_4");
 
     int njnt = robot_model_.nv - 6;
+
+    walkingPlanner_ = walkingPlanner;
 
     // TODO: init using node handle.
     controller_frequency_ = 500;                        // CONTROLLA!!!!!!
@@ -117,6 +122,7 @@ bool WalkingManager::init(const labrob::RobotState& initial_robot_state,
 
     Eigen::Vector3d p_CoM = robot_data_.com[0];
     Eigen::Vector3d v_CoM = robot_data_.vcom[0];
+    Eigen::Vector3d a_CoM = robot_data_.acom[0];
     const auto& r_wheel_center = robot_data_.oMf[right_leg4_idx_];
     const auto& l_wheel_center = robot_data_.oMf[left_leg4_idx_];
     Eigen::Vector3d right_rCP = labrob::get_rCP(r_wheel_center.rotation(), whole_body_controller_ptr_->wheel_radius_);
@@ -159,6 +165,14 @@ bool WalkingManager::init(const labrob::RobotState& initial_robot_state,
          << "wheel_r_x_des,wheel_r_y_des,wheel_r_z_des"
          << std::endl;
 
+    pinocchio_info.p_CoM = p_CoM;
+    pinocchio_info.v_CoM = v_CoM;
+    pinocchio_info.a_CoM = a_CoM;   
+    pinocchio_info.right_rCP = right_rCP;
+    pinocchio_info.left_rCP = left_rCP;
+    pinocchio_info.right_contact = right_contact;
+    pinocchio_info.left_contact = left_contact;
+
     return true;
     }
 
@@ -168,7 +182,8 @@ void WalkingManager::update(
     const labrob::RobotState& robot_state,
     const Eigen::Vector3d position_desired,
     labrob::JointCommand& joint_command,
-    labrob::SolutionMPC& solution
+    labrob::SolutionMPC& sol,
+    labrob::infoPinocchio& pinocchio_info
     ) {
 
     auto start_time = std::chrono::system_clock::now();
@@ -182,6 +197,7 @@ void WalkingManager::update(
 
     const auto& p_CoM = robot_data_.com[0];
     const auto& v_CoM = robot_data_.vcom[0];
+    const auto& a_CoM = robot_data_.acom[0];
     const auto& r_wheel_center = robot_data_.oMf[right_leg4_idx_];
     const auto& l_wheel_center = robot_data_.oMf[left_leg4_idx_];
     Eigen::Vector3d right_rCP = labrob::get_rCP(r_wheel_center.rotation(), whole_body_controller_ptr_->wheel_radius_);
@@ -240,9 +256,9 @@ void WalkingManager::update(
 
 
     // jump routine
-    if (std::fabs(t_msec_ - 2000.0) < 0.5){
-        walkingPlanner_.jumpRoutine(t_msec_);
-    }
+    //if (std::fabs(t_msec_ - 2000.0) < 0.5){
+    //    walkingPlanner_.jumpRoutine(t_msec_);
+    //}
 
     mpc_.t_msec = t_msec_;
 
@@ -279,7 +295,7 @@ void WalkingManager::update(
     auto delta_t = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     //std::cout << "MPC took " << delta_t << " us" << std::endl;
 
-    SolutionMPC sol = mpc_.get_solution();
+    sol = mpc_.get_solution();
     
     des_configuration_.com.pos = sol.com.pos;
     des_configuration_.com.vel = sol.com.vel;
@@ -330,6 +346,14 @@ void WalkingManager::update(
         << r_wheel_center.translation()(0) << "," << r_wheel_center.translation()(1) << "," << r_wheel_center.translation()(2) << ","
         << des_configuration_.rwheel.pos.p(0) << "," << des_configuration_.rwheel.pos.p(1) << "," << des_configuration_.rwheel.pos.p(2)
         << std::endl;
+
+    pinocchio_info.p_CoM = p_CoM;
+    pinocchio_info.v_CoM = v_CoM;
+    pinocchio_info.a_CoM = a_CoM;   
+    pinocchio_info.right_rCP = right_rCP;
+    pinocchio_info.left_rCP = left_rCP;
+    pinocchio_info.right_contact = right_contact;
+    pinocchio_info.left_contact = left_contact;
 }
 
 } // end namespace labrob

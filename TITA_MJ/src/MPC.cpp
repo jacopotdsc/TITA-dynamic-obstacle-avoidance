@@ -195,6 +195,8 @@ void labrob::MPC::solve(Eigen::Vector<double, N_IN> x_IN){
   omega_   = w_curr + dt_ * alpha_;
   theta_   = theta_curr +  dt_ * w_curr;
 
+  contact_force_left_ = fcl;
+  contact_force_right_ = fcr;
 
 
 

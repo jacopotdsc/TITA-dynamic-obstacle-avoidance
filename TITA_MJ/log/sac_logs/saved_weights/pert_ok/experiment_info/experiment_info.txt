@@ -1,0 +1,148 @@
+Enviroment: Tita-v0
+Observation space: 46 x 1 (stacked frames)
+Action space: (8,)
+Action size: 120.0
+
+	Action Scale: 10.0
+	Action Repeat: 1
+	cost_action_nn: -0.001
+	cost_action_rate: -0.001
+	cost_ang_vel_xy: -0.0001
+	cost_early_termination: -10
+	cost_lin_vel_z: -0.01
+	cost_orientation: -3.0
+	reward_tracking_ang_vel: 0.5
+	reward_tracking_height: 1
+	reward_tracking_lin_vel: 1
+Observation:
+	com_height_wrt_ground
+	gravity_body_frame
+	linvel
+	angvel
+	joint_angles
+	joint_vel
+	command
+	delta_mpc_sol_com_vel
+	mpc_sol_pl_vel
+	mpc_sol_pr_vel
+	prev_nn_act
+
+SAC Hyperparameters:
+	Tau: 0.005
+	Gamma: 0.99
+	Alpha: 0.001
+	N-step return horizon: 5
+
+Starting training enviroment Tita-v0
+
+Buffer parameters:
+	 Total size: 1_010_000
+	 Buffer num: 4
+	 Stack num: 1
+Train Buffer - Batch Observation Shape: (1, 46)
+Train Buffer - Single Sample Shape: (46,)
+Test Buffer - Batch Observation Shape: (1, 46)
+Test Buffer - Single Sample Shape: (46,)
+
+Collecting 8_000 warmup steps...
+
+Collected 8000 sampled in time: 00:00:52
+
+Loading Actor and Critic weights from: 20rollout
+Loaded Actor and Critic weights from: /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/saved_weights/20rollout/final
+
+SAC Trainer parameters:
+	 Num train/test envs 4 / 1
+	 learning rate: 1e-05
+	 hidden sizes: [512, 256, 128]
+	 Max epochs: 100
+	 Batch size: 1024
+	 Epoch num steps: 4000
+	 Collection step num env steps: 80 , roullout:  20
+	 Update step num gradient steps per sample: 1.0
+	 Test step num episodes: 1 
+
+Epoch: 0, epoch elapsed time: 00:01:12, time since start: 00:01:12
+
+Epoch: 1, epoch elapsed time: 00:03:59, time since start: 00:05:12
+
+Epoch: 2, epoch elapsed time: 00:03:46, time since start: 00:08:59
+
+Epoch: 3, epoch elapsed time: 00:03:54, time since start: 00:12:53
+
+Epoch: 4, epoch elapsed time: 00:03:56, time since start: 00:16:50
+
+Epoch: 5, epoch elapsed time: 00:03:52, time since start: 00:20:43
+
+Epoch: 6, epoch elapsed time: 00:03:54, time since start: 00:24:37
+
+Epoch: 7, epoch elapsed time: 00:03:48, time since start: 00:28:25
+
+Epoch: 8, epoch elapsed time: 00:03:51, time since start: 00:32:17
+
+Epoch: 9, epoch elapsed time: 00:03:50, time since start: 00:36:08
+
+Epoch: 10, epoch elapsed time: 00:04:06, time since start: 00:40:15
+
+Epoch: 11, epoch elapsed time: 00:03:58, time since start: 00:44:13
+
+Epoch: 12, epoch elapsed time: 00:03:56, time since start: 00:48:09
+
+Epoch: 13, epoch elapsed time: 00:03:57, time since start: 00:52:07
+
+Epoch: 14, epoch elapsed time: 00:04:00, time since start: 00:56:07
+
+Epoch: 15, epoch elapsed time: 00:03:59, time since start: 01:00:06
+
+Epoch: 16, epoch elapsed time: 00:03:57, time since start: 01:04:03
+
+Epoch: 17, epoch elapsed time: 00:03:53, time since start: 01:07:57
+
+Epoch: 18, epoch elapsed time: 00:04:12, time since start: 01:12:10
+
+Epoch: 19, epoch elapsed time: 00:04:04, time since start: 01:16:15
+
+Epoch: 20, epoch elapsed time: 00:03:54, time since start: 01:20:10
+
+Epoch: 21, epoch elapsed time: 00:03:48, time since start: 01:23:58
+
+Epoch: 22, epoch elapsed time: 00:03:53, time since start: 01:27:51
+
+Epoch: 23, epoch elapsed time: 00:03:53, time since start: 01:31:45
+
+Epoch: 24, epoch elapsed time: 00:04:16, time since start: 01:36:02
+
+Epoch: 25, epoch elapsed time: 00:04:15, time since start: 01:40:17
+
+Epoch: 26, epoch elapsed time: 00:04:07, time since start: 01:44:24
+
+Epoch: 27, epoch elapsed time: 00:03:58, time since start: 01:48:22
+
+Epoch: 28, epoch elapsed time: 00:04:17, time since start: 01:52:40
+
+Epoch: 29, epoch elapsed time: 00:03:56, time since start: 01:56:36
+
+Epoch: 30, epoch elapsed time: 00:03:57, time since start: 02:00:34
+
+Epoch: 31, epoch elapsed time: 00:03:58, time since start: 02:04:32
+
+Epoch: 32, epoch elapsed time: 00:03:57, time since start: 02:08:30
+
+Epoch: 33, epoch elapsed time: 00:03:58, time since start: 02:12:28
+
+Epoch: 34, epoch elapsed time: 00:03:58, time since start: 02:16:26
+
+Epoch: 35, epoch elapsed time: 00:03:59, time since start: 02:20:26
+
+Epoch: 36, epoch elapsed time: 00:03:59, time since start: 02:24:26
+
+Epoch: 37, epoch elapsed time: 00:03:59, time since start: 02:28:25
+
+Total training time: 02:27:35
+
+Training completed!
+Logs saved to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs
+Saving weights in /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs
+Saved actor weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_01_30_time_11_43_47/final/final_actor_state_dict.pt
+Saved critic1 weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_01_30_time_11_43_47/final/final_critic_state_dict_1.pt
+Saved critic2 weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_01_30_time_11_43_47/final/final_critic_state_dict_2.pt
