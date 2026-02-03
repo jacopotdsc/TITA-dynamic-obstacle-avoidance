@@ -80,7 +80,7 @@ for i in range(model.njnt):
 
 initial_robot_state = wm.robot_state_from_mujoco(model, data)
 walking_manager = wm.WalkingManager()
-wp = wm.WalkingPlanner(0.0, 0.0, 0.0, 0.25, 0.49)
+wp = wm.WalkingPlanner(0.3, 0.0, 0.0, 0.25, 0.49)
 res_init = walking_manager.init(initial_robot_state, armatures, wp)
 
 wp_variables = wp.get_variables()

@@ -169,15 +169,29 @@ def parser_args():
                         choices=["yes", "no"],
                         help="Start logging. Options: 'ppo' or 'sac' (default: sac)"
                        )
+    parser.add_argument("--warmup", 
+                        type=int, 
+                        default=0,
+                        help="Number of warmup steps to run before training (default 0)")
+    
+    parser.add_argument("--exec",
+                        type=int,
+                        required=False,   
+                        help="Start execution. Usage: --exec [script_name] [args...]")
+
+    parser.add_argument("--len",
+                        type=int,
+                        help="Length of each episode (default 1000)")
     
     args = parser.parse_args()
 
     script_task = _STR_TRAIN
     alg_type = _STR_SAC
-    resume = None
     render_mode = "human"
     name_weight_name = None
     make_log = False
+    warmup_steps = int(args.warmup) if args.warmup > 0 else None
+    task_to_display = 0
 
     if args.train:
         script_task = _STR_TRAIN
@@ -200,12 +214,19 @@ def parser_args():
                 render_mode = "rgb_array" if item in ['rgb', 'rgb_array'] else "human"
             else:
                 name_weight_name = item
+    if args.exec is not None:
+        task_to_display = args.exec
+        print(f"Executing task, taken: {task_to_display}")
 
     if args.log:
         make_log = True if args.log.lower() == "yes" else False
 
+    global EPISODE_LENGTH
+    if args.len is not None and args.len > 0:
+        EPISODE_LENGTH = args.len
+
     print(f"Script started with\n\ttask: {script_task},\n\talgorithm: {alg_type},\n\trender mode: {render_mode}\n\tpid: {os.getpid()}\n")
-    return script_task, alg_type, render_mode, make_log, name_weight_name
+    return script_task, alg_type, render_mode, make_log, name_weight_name, warmup_steps, task_to_display
 
 def get_git_root():
     try:
@@ -342,6 +363,7 @@ def save_best(algorithm, alg_type, actor_policy, actor_path, critic_policy, crit
 
 def test_enviroment(
         task_name: str,
+        task_to_display: int,
         policy: nn.Module,
         render_mode: str = "human",
         num_test_envs: int = 16,
@@ -354,7 +376,7 @@ def test_enviroment(
         policy.eval()
 
     if training_in_test == False:
-        test_envs = SubprocVectorEnv([lambda: create_wrapped_env(task_name) for _ in range(num_test_envs)], )
+        test_envs = SubprocVectorEnv([lambda i=i: create_wrapped_env(task_name, task_to_execute=i) for i in range(num_test_envs)], )
         collector = Collector(policy, test_envs, exploration_noise=False)
         collector.reset()
         result = collector.collect(n_episode=num_test_envs, render=0)
@@ -368,22 +390,22 @@ def test_enviroment(
         print("Finished testing in vectorized envs. Showing in viewer\n")
 
     # --- Manual rendering ---
-    env = create_wrapped_env(task_name, render_mode=render_mode)
+    env = create_wrapped_env(task_name, task_to_execute=task_to_display, render_mode=render_mode)
 
     # ----- Video recording setup -----
     timestamp = time.strftime("%Y%m%d-%H%M%S")
     os.makedirs("videos", exist_ok=True)
-    video_folder = os.path.join("videos", f"{task_name}_{timestamp}")
+    save_dir = os.path.join(save_plot_dir, "plots_test")
+    #video_folder = os.path.join("videos", f"{task_name}_{timestamp}")
     
     if render_mode == "rgb_array" :
         env = RecordVideo(
             env, 
-            video_folder=video_folder,
+            video_folder=save_dir,
             name_prefix="eval",
             episode_trigger=lambda episode_id: True 
         )
-        print(f"Video recording enabled. File will be saved in: {video_folder}")
-
+        print(f"Video recording enabled. File will be saved in: {save_dir}")
     try:
         policy.eval()
         obs, info = env.reset()
@@ -400,6 +422,16 @@ def test_enviroment(
             'n_frame': [],
             'perturb': [],
             'tita_controller_output': [],
+
+            "mpc_sol_com_pos" : [],
+            "mpc_sol_com_vel" : [],
+            "mpc_sol_com_acc" : [],
+            "mpc_sol_pl_pos" : [],
+            "mpc_sol_pl_vel" : [],
+            "mpc_sol_pl_acc" : [],
+            "mpc_sol_pr_pos" : [],
+            "mpc_sol_pr_vel" : [],
+            "mpc_sol_pr_acc" : [],
 
             'gt_com_pos': [],
             'gt_com_lin_vel': [],
@@ -439,6 +471,11 @@ def test_enviroment(
 
             scaled_action = action * env.unwrapped.get_config().action_scale
             obs, reward, terminated, truncated, reward_info = env.step(action)
+            env.unwrapped._update_perturbation_visual()
+
+            if render_mode is not None:
+                frame = env.render()
+                
             total_reward += reward
 
             # Logging
@@ -455,6 +492,16 @@ def test_enviroment(
             logging['action'].append(scaled_action.copy())
             logging['reward_per_frame'].append(reward)
 
+            logging["mpc_sol_com_pos"].append(env_info_dict["mpc_sol_com_pos"])
+            logging["mpc_sol_com_vel"].append(env_info_dict["mpc_sol_com_vel"])
+            logging["mpc_sol_com_acc"].append(env_info_dict["mpc_sol_com_acc"])
+            logging["mpc_sol_pl_pos"].append(env_info_dict["mpc_sol_pl_pos"])
+            logging["mpc_sol_pl_vel"].append(env_info_dict["mpc_sol_pl_vel"])
+            logging["mpc_sol_pl_acc"].append(env_info_dict["mpc_sol_pl_acc"])
+            logging["mpc_sol_pr_pos"].append(env_info_dict["mpc_sol_pr_pos"])
+            logging["mpc_sol_pr_vel"].append(env_info_dict["mpc_sol_pr_vel"])
+            logging["mpc_sol_pr_acc"].append(env_info_dict["mpc_sol_pr_acc"])
+            
             gt_com_pos = env.unwrapped.data.subtree_com[0, :].copy()
             gt_com_lin_vel = env.unwrapped.data.qvel[0:3].copy()
             gt_com_lin_acc = env.unwrapped.data.qacc[0:3].copy()
@@ -490,23 +537,9 @@ def test_enviroment(
             reward_info.pop('n_frame', None)
             logging['reward_info'].append(reward_info.copy())
 
-            #print("-----------")
-            #line_counter = 0
-            #keys = list(reward_info.keys())
-            #print(f"Frame: {n_frame}")
-            #for i, k in enumerate(keys):
-            #    v = reward_info[k]
-            #    print(f"{k}: {v:.6f}")
-            #    line_counter += 1
-            #if line_counter != 0:
-            #    print()
-
             # Rendering and small loggin
             if n_frame == 0 or (n_frame+1) % 100 == 0 or terminated or truncated:
                 print("Frame:", n_frame, "Action:", scaled_action, ", reward: ", reward, "Total Reward:", total_reward)
-
-            if render_mode is not None:
-                frame = env.render()
             
             if render_mode is not None and frame is not None and render_mode == "rgb_array":
                 frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
@@ -645,21 +678,54 @@ def test_enviroment(
                     print(f"Saved {saved}")
                     plt.savefig(saved)
 
+                def plot_total_reward_info():
+                    reward_per_frame = np.array(logging["reward_per_frame"])
+                    total_rewards_arr = []
+                    tot_reward = 0
+
+                    for r in reward_per_frame:
+                        tot_reward += r
+                        total_rewards_arr.append(tot_reward)
+
+                    fig, axes = plt.subplots(2, 1, figsize=(12, 10), sharex=False)
+
+                    # ---- sopra: cumulative reward per episodio ----
+                    episodes = np.arange(0, len(total_rewards_arr))
+                    axes[0].plot(episodes, total_rewards_arr, label="Total reward")
+                    axes[0].set_title("Cumulative Reward per Episode")
+                    axes[0].set_xlabel("Episode")
+                    axes[0].set_ylabel("Total reward")
+                    axes[0].grid(True)
+                    axes[0].legend()
+
+                    # ---- sotto: reward per frame ultimo episodio ----
+                    axes[1].plot(episodes, reward_per_frame, label="Reward per frame")
+                    axes[1].set_title(f"Reward per frame (last episode: {len(total_rewards_arr)})")
+                    axes[1].set_xlabel("Frame")
+                    axes[1].set_ylabel("Reward")
+                    axes[1].grid(True)
+                    axes[1].legend()
+
+                    plt.tight_layout()
+                    os.makedirs(save_dir, exist_ok=True)
+                    saved = os.path.join(save_dir, "render_test_total_reward.png")
+                    plt.savefig(saved)
+                    print(f"Saved {saved}")
+                
                 def plot_com():
                     
-                    dead_value = -10
-                    history_gt_com_pos = np.array(logging['gt_com_pos']) if 'gt_com_pos' in logging else np.full((len(logging.get('mpc_sol_com_pos', [1])), 3), dead_value)
-                    history_gt_com_vel = np.array(logging['gt_com_lin_vel']) if 'gt_com_lin_vel' in logging else np.full((len(logging.get('mpc_sol_com_vel', [1])), 3), dead_value)
-                    history_gt_com_acc = np.array(logging['gt_com_lin_acc']) if 'gt_com_lin_acc' in logging else np.full((len(logging.get('mpc_sol_com_acc', [1])), 3), dead_value)
+                    history_gt_com_pos = np.array(logging['gt_com_pos'])
+                    history_gt_com_vel = np.array(logging['gt_com_lin_vel'])
+                    history_gt_com_acc = np.array(logging['gt_com_lin_acc'])
 
-                    history_gt_com_orientation = np.array(logging['gt_com_orientation']) if 'gt_com_orientation' in logging else np.full((len(history_gt_com_pos), 3), dead_value)
-                    history_gt_com_ang_vel = np.array(logging['gt_com_ang_vel']) if 'gt_com_ang_vel' in logging else np.full((len(history_gt_com_pos), 3), dead_value)
-                    history_gt_com_ang_acc = np.array(logging['gt_com_ang_acc']) if 'gt_com_ang_acc' in logging else np.full((len(history_gt_com_pos), 3), dead_value)
+                    history_gt_com_orientation = np.array(logging['gt_com_orientation']) 
+                    history_gt_com_ang_vel = np.array(logging['gt_com_ang_vel']) 
+                    history_gt_com_ang_acc = np.array(logging['gt_com_ang_acc']) 
 
-                    history_mpc_com_pos = np.array(logging['mpc_sol_com_pos']) if 'mpc_sol_com_pos' in logging else np.full((len(history_gt_com_pos), 3), dead_value)
-                    history_mpc_com_vel = np.array(logging['mpc_sol_com_vel']) if 'mpc_sol_com_vel' in logging else np.full((len(history_gt_com_pos), 3), dead_value)
-                    history_mpc_com_acc = np.array(logging['mpc_sol_com_acc']) if 'mpc_sol_com_acc' in logging else np.full((len(history_gt_com_pos), 3), dead_value)
-                    
+                    history_mpc_com_pos = np.array(logging['mpc_sol_com_pos'])
+                    history_mpc_com_vel = np.array(logging['mpc_sol_com_vel'])
+                    history_mpc_com_acc = np.array(logging['mpc_sol_com_acc'])
+
                     frames = range(len(history_mpc_com_pos))
                     fig, axes = plt.subplots(3, 2, figsize=(12, 12), sharex=True)
                     
@@ -676,16 +742,12 @@ def test_enviroment(
                         titles = ["CoM Position [m]", "CoM Velocity [m/s]", "CoM Acceleration [m/s²]"]
                         
 
-                        for j in range(3): # Plot assi X, Y, Z
-                            if i == 0:
-                                data_gt[:, j] = np.where(data_gt[:, j] > np.pi, data_gt[:, j] - 2*np.pi, data_gt[:, j])
-                                data_gt[:, j] = np.where(data_gt[:, j] < -np.pi, data_gt[:, j] + 2*np.pi, data_gt[:, j])
+                        for j in range(3):
+                            data_gt[:, j] = np.where(data_gt[:, j] > np.pi, data_gt[:, j] - 2*np.pi, data_gt[:, j])
+                            data_gt[:, j] = np.where(data_gt[:, j] < -np.pi, data_gt[:, j] + 2*np.pi, data_gt[:, j])
 
-                            if not np.all(data_gt[:, j] == dead_value):
-                                axes[i, 0].plot(frames, data_gt[:, j], color=colors[j], label=f'GT {labels_lin[j]}')
-                            
-                            if not np.all(data_mpc[:, j] == dead_value):
-                                axes[i, 0].plot(frames, data_mpc[:, j], color=colors[j], linestyle='--', alpha=0.6, label=f'MPC {labels_lin[j]}')
+                            axes[i, 0].plot(frames, data_gt[:, j], color=colors[j], label=f'GT {labels_lin[j]}')
+                            axes[i, 0].plot(frames, data_mpc[:, j], color=colors[j], linestyle='--', alpha=0.6, label=f'MPC {labels_lin[j]}')
                         
                         axes[i, 0].set_title(titles[i])
                         axes[i, 0].legend(loc='upper right', ncol=2, fontsize='small')
@@ -697,8 +759,6 @@ def test_enviroment(
                         titles_ang = ["Orientation [rad]", "Angular Velocity [rad/s]", "Angular Acceleration [rad/s²]"]
 
                         for j in range(3): # Plot Roll, Pitch, Yaw
-                            if np.all(data_ang[:, j] == dead_value):
-                                continue
                             axes[i, 1].plot(frames, data_ang[:, j], color=colors[j], label=labels_ang[j])
                         
                         axes[i, 1].set_title(titles_ang[i])
@@ -839,17 +899,17 @@ def test_enviroment(
                     plt.savefig(saved)
                     print(f"Saved {saved}")
                     
-                save_dir = os.path.join(save_plot_dir, "plots_test")
                 if training_in_test == True:
                     subdir = os.path.join(save_plot_dir, "plots_train_in_test")
                     os.makedirs(subdir, exist_ok=True)
                     save_dir = os.path.join(subdir, f"test_epoch_{num_epoch}")
                 
                 plotting_task = [
+                    plot_reward_info,
+                    plot_total_reward_info,
                     plot_com,
                     plot_feet,
                     plot_torques,
-                    plot_reward_info,
                     plot_perturbation
                 ]
 
@@ -874,7 +934,7 @@ def test_enviroment(
             policy.train()
 
         if render_mode == "rgb_array":
-            print(f"Videos saved in: {video_folder}")
+            print(f"Videos saved in: {save_plot_dir}")
 
 def print_net_info(name, net, state_shape, action_shape=None):
     if action_shape is not None:
@@ -896,16 +956,26 @@ def log_enviroment_config(task, env_single: gym.Env):
     frame_stack = config.frame_stack
 
     log_and_print(f"Enviroment: {task}")
+    log_and_print(f"Episode lenght: {EPISODE_LENGTH}")
     log_and_print(f"Observation space: {int(state_shape/frame_stack)} x {frame_stack} (stacked frames)")
     log_and_print(f"Action space: {action_shape}")
     log_and_print(f"Action size: {max_action}\n")
 
     log_and_print(f"\tAction Scale: {config.action_scale}")
     log_and_print(f"\tAction Repeat: {config.action_repeat}")
+    log_and_print(f"\tFrame Stack: {config.frame_stack}")
+
+    # ---- Reward config ----
     reward_scales = config.reward_config.scales
     for reward_name, scale in reward_scales.items():
         if scale != 0:
             log_and_print(f"\t{reward_name}: {scale}")
+
+     # ---- Perturbation config ----
+    if hasattr(config, "pert_config"):
+        log_and_print("\nPerturbation config:")
+        for k, v in config.pert_config.items():
+            log_and_print(f"\t{k}: {v}")
 
     observation_dict = env_single.unwrapped.get_obs_info()[0]
     log_and_print(f"Observation:")
@@ -957,8 +1027,8 @@ class TitaNetObsNormalizer(Net):
         obs_normalized = (obs - mean) / std
         return super().forward(obs_normalized, state, info)
     
-def create_wrapped_env(task: str, render_mode=None) -> gym.Env:
-    env = gym.make(task, render_mode=render_mode, width=1000, height=600)
+def create_wrapped_env(task: str, task_to_execute: int, render_mode=None,  ) -> gym.Env:
+    env = gym.make(task, render_mode=render_mode, width=1000, height=600, task_to_execute=task_to_execute)
     #env = gym.wrappers.NormalizeObservation(env)  
     #env = gym.wrappers.TransformObservation(env, lambda obs: np.clip(obs, -10, 10), env.observation_space)
     env = gym.wrappers.FrameStackObservation(env, stack_size=env.unwrapped.get_config().frame_stack)
@@ -989,7 +1059,7 @@ def init_last_layer(m):
 def main():
 
     # ----- Parse arguments -----
-    script_task, alg_type, render_mode, make_log, name_weight_name = parser_args()
+    script_task, alg_type, render_mode, make_log, name_weight_name, warmup_steps, task_to_display = parser_args()
     
     # ----- Configuration -----
     logdir = os.path.join(get_git_root(), "TITA_MJ", "log", f"{alg_type}_logs")
@@ -1012,12 +1082,12 @@ def main():
         )
     
     if script_task == _STR_TRAIN:
-        training_envs = SubprocVectorEnv( [lambda: create_wrapped_env(task) for _ in range(num_training_envs)], )
-        test_envs = SubprocVectorEnv([lambda: create_wrapped_env(task) for _ in range(num_test_envs)], )
+        training_envs = SubprocVectorEnv( [lambda i=i: create_wrapped_env(task, task_to_execute=i) for i in range(num_training_envs)], )
+        test_envs = SubprocVectorEnv([lambda i=i: create_wrapped_env(task, task_to_execute=i) for i in range(num_test_envs)], )
 
     # ----- Get environment info ----- 
     global env_single
-    env_single = create_wrapped_env(task)
+    env_single = create_wrapped_env(task, task_to_execute=task_to_display)
     space_info = SpaceInfo.from_env(env_single)
     state_shape = space_info.observation_info.obs_shape
     action_shape = space_info.action_info.action_shape
@@ -1222,6 +1292,7 @@ def main():
     
         test_enviroment(
             task_name=task,
+            task_to_display=task_to_display,
             policy=policy,
             render_mode=render_mode,
             num_test_envs=num_view_test_env,
@@ -1253,8 +1324,6 @@ def main():
     )
 
     buffer = buffer_vanilla
-    do_warmup = True
-    warmup_steps = 8*EPISODE_LENGTH
 
     log_and_print("\nBuffer parameters:")
     log_and_print(f"\t Total size: {buffer.maxsize:_}")
@@ -1304,7 +1373,7 @@ def main():
     train_collector.reset()
     test_collector.reset()
 
-    if do_warmup:
+    if warmup_steps is not None:
         start_warmup_time = datetime.datetime.now()
         log_and_print(f"\nCollecting {warmup_steps:_} warmup steps...")
 
@@ -1510,6 +1579,7 @@ def main():
         try:
             test_enviroment(
                 task_name=task,
+                task_to_display=task_to_display,
                 policy=policy,
                 render_mode=None,
                 num_test_envs=num_view_test_env,

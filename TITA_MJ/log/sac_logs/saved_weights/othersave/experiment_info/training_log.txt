@@ -1,0 +1,44 @@
+Initial test step: test_reward: 4.335907 ± 0.000000, best_reward: 4.335907 ± 0.000000 in #0
+Epoch #1: 100%|##########| 8000/8000 [03:40<00:00, 37.80it/s, env_episode=7, env_step=7840, n_ep=0, n_st=160, update_step=49]
+Epoch #1: 100%|##########| 8000/8000 [03:40<00:00, 37.80it/s, env_episode=7, env_step=7840, n_ep=0, n_st=160, update_step=49]
+Epoch #1: 100%|##########| 8000/8000 [03:40<00:00, 37.80it/s, env_episode=10, env_step=8000, len=996, n_ep=3, n_st=160, rew=-0.86, update_step=50]
+Epoch #1: 100%|##########| 8000/8000 [03:40<00:00, 37.80it/s, env_episode=10, env_step=8000, len=996, n_ep=3, n_st=160, rew=-0.86, update_step=50]
+Epoch #1: 100%|##########| 8000/8000 [03:40<00:00, 36.36it/s, env_episode=10, env_step=8000, len=996, n_ep=3, n_st=160, rew=-0.86, update_step=50]
+Epoch #1: 100%|##########| 8000/8000 [03:40<00:00, 36.36it/s, env_episode=10, env_step=8000, len=996, n_ep=3, n_st=160, rew=-0.86, update_step=50]
+Epoch #1: test_reward: 3.123730 ± 0.000000, best_reward: 4.335907 ± 0.000000 in #0
+Epoch #2: 100%|##########| 8000/8000 [03:28<00:00, 37.84it/s, env_episode=15, env_step=15840, n_ep=0, n_st=160, update_step=99]
+Epoch #2: 100%|##########| 8000/8000 [03:28<00:00, 37.84it/s, env_episode=15, env_step=15840, n_ep=0, n_st=160, update_step=99]
+Epoch #2: 100%|##########| 8000/8000 [03:28<00:00, 37.84it/s, env_episode=18, env_step=16000, len=1000, n_ep=3, n_st=160, rew=0.31, update_step=100]
+Epoch #2: 100%|##########| 8000/8000 [03:28<00:00, 37.84it/s, env_episode=18, env_step=16000, len=1000, n_ep=3, n_st=160, rew=0.31, update_step=100]
+Epoch #2: 100%|##########| 8000/8000 [03:28<00:00, 38.40it/s, env_episode=18, env_step=16000, len=1000, n_ep=3, n_st=160, rew=0.31, update_step=100]
+Epoch #2: 100%|##########| 8000/8000 [03:28<00:00, 38.40it/s, env_episode=18, env_step=16000, len=1000, n_ep=3, n_st=160, rew=0.31, update_step=100]
+Epoch #2: test_reward: 2.278604 ± 0.000000, best_reward: 4.335907 ± 0.000000 in #0
+Epoch #3: 100%|##########| 8000/8000 [03:29<00:00, 37.62it/s, env_episode=23, env_step=23840, n_ep=0, n_st=160, update_step=149]
+Epoch #3: 100%|##########| 8000/8000 [03:29<00:00, 37.62it/s, env_episode=23, env_step=23840, n_ep=0, n_st=160, update_step=149]
+Epoch #3: 100%|##########| 8000/8000 [03:29<00:00, 37.62it/s, env_episode=26, env_step=24000, len=1000, n_ep=3, n_st=160, rew=0.56, update_step=150]
+Epoch #3: 100%|##########| 8000/8000 [03:29<00:00, 37.62it/s, env_episode=26, env_step=24000, len=1000, n_ep=3, n_st=160, rew=0.56, update_step=150]
+Epoch #3: 100%|##########| 8000/8000 [03:29<00:00, 38.11it/s, env_episode=26, env_step=24000, len=1000, n_ep=3, n_st=160, rew=0.56, update_step=150]
+Epoch #3: 100%|##########| 8000/8000 [03:29<00:00, 38.11it/s, env_episode=26, env_step=24000, len=1000, n_ep=3, n_st=160, rew=0.56, update_step=150]
+Epoch #3: test_reward: 4.167299 ± 0.000000, best_reward: 4.335907 ± 0.000000 in #0
+Epoch #4: 100%|##########| 8000/8000 [03:31<00:00, 37.36it/s, env_episode=31, env_step=31840, n_ep=0, n_st=160, update_step=199]
+Epoch #4: 100%|##########| 8000/8000 [03:31<00:00, 37.36it/s, env_episode=31, env_step=31840, n_ep=0, n_st=160, update_step=199]
+Epoch #4: 100%|##########| 8000/8000 [03:31<00:00, 37.36it/s, env_episode=34, env_step=32000, len=1000, n_ep=3, n_st=160, rew=0.19, update_step=200]
+Epoch #4: 100%|##########| 8000/8000 [03:31<00:00, 37.36it/s, env_episode=34, env_step=32000, len=1000, n_ep=3, n_st=160, rew=0.19, update_step=200]
+Epoch #4: 100%|##########| 8000/8000 [03:31<00:00, 37.80it/s, env_episode=34, env_step=32000, len=1000, n_ep=3, n_st=160, rew=0.19, update_step=200]
+Epoch #4: 100%|##########| 8000/8000 [03:31<00:00, 37.80it/s, env_episode=34, env_step=32000, len=1000, n_ep=3, n_st=160, rew=0.19, update_step=200]
+Epoch #4: test_reward: 2.353235 ± 0.000000, best_reward: 4.335907 ± 0.000000 in #0
+Epoch #5: 100%|##########| 8000/8000 [03:31<00:00, 37.19it/s, env_episode=39, env_step=39840, n_ep=0, n_st=160, update_step=249]
+Epoch #5: 100%|##########| 8000/8000 [03:31<00:00, 37.19it/s, env_episode=39, env_step=39840, n_ep=0, n_st=160, update_step=249]
+Epoch #5: 100%|##########| 8000/8000 [03:31<00:00, 37.19it/s, env_episode=42, env_step=40000, len=1000, n_ep=3, n_st=160, rew=0.53, update_step=250]
+Epoch #5: 100%|##########| 8000/8000 [03:31<00:00, 37.19it/s, env_episode=42, env_step=40000, len=1000, n_ep=3, n_st=160, rew=0.53, update_step=250]
+Epoch #5: 100%|##########| 8000/8000 [03:31<00:00, 37.75it/s, env_episode=42, env_step=40000, len=1000, n_ep=3, n_st=160, rew=0.53, update_step=250]
+Epoch #5: 100%|##########| 8000/8000 [03:31<00:00, 37.75it/s, env_episode=42, env_step=40000, len=1000, n_ep=3, n_st=160, rew=0.53, update_step=250]
+Epoch #5: test_reward: 3.956125 ± 0.000000, best_reward: 4.335907 ± 0.000000 in #0
+Epoch #6: 100%|##########| 8000/8000 [03:33<00:00, 37.35it/s, env_episode=48, env_step=47840, n_ep=0, n_st=160, update_step=299]
+Epoch #6: 100%|##########| 8000/8000 [03:33<00:00, 37.35it/s, env_episode=48, env_step=47840, n_ep=0, n_st=160, update_step=299]
+Epoch #6: 100%|##########| 8000/8000 [03:33<00:00, 37.35it/s, env_episode=50, env_step=48000, len=1000, n_ep=2, n_st=160, rew=0.22, update_step=300]
+Epoch #6: 100%|##########| 8000/8000 [03:33<00:00, 37.35it/s, env_episode=50, env_step=48000, len=1000, n_ep=2, n_st=160, rew=0.22, update_step=300]
+Epoch #6: 100%|##########| 8000/8000 [03:33<00:00, 37.48it/s, env_episode=50, env_step=48000, len=1000, n_ep=2, n_st=160, rew=0.22, update_step=300]
+Epoch #6: 100%|##########| 8000/8000 [03:33<00:00, 37.48it/s, env_episode=50, env_step=48000, len=1000, n_ep=2, n_st=160, rew=0.22, update_step=300]
+Epoch #6: test_reward: 2.865911 ± 0.000000, best_reward: 4.335907 ± 0.000000 in #0
+Saved /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_02_02_time_22_15_12/experiment_info/plots/plots_test/render_test_reward_info.png

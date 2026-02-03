@@ -14,7 +14,7 @@ gym.register(
     max_episode_steps=1000,
 )
 
-env = gym.make("Tita-v0", render_mode=None)
+env = gym.make("Tita-v0", render_mode=None, task_to_execute=0)
 def get_git_root():
     """
     Ritorna la root della repository git corrente.

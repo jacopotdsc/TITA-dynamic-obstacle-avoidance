@@ -1,0 +1,29 @@
+Initial test step: test_reward: -4.417107 ± 0.000000, best_reward: -4.417107 ± 0.000000 in #0
+Epoch #1: test_reward: -0.172891 ± 0.000000, best_reward: -0.172891 ± 0.000000 in #1
+Epoch #2: test_reward: -1.958988 ± 0.000000, best_reward: -0.172891 ± 0.000000 in #1
+Epoch #3: test_reward: -0.592810 ± 0.000000, best_reward: -0.172891 ± 0.000000 in #1
+Epoch #4: test_reward: 2.755116 ± 0.000000, best_reward: 2.755116 ± 0.000000 in #4
+Epoch #5: test_reward: 7.858333 ± 0.000000, best_reward: 7.858333 ± 0.000000 in #5
+Epoch #6: test_reward: 0.439555 ± 0.000000, best_reward: 7.858333 ± 0.000000 in #5
+Epoch #7: test_reward: 6.006421 ± 0.000000, best_reward: 7.858333 ± 0.000000 in #5
+Epoch #8: test_reward: 3.682590 ± 0.000000, best_reward: 7.858333 ± 0.000000 in #5
+Epoch #9: test_reward: 1.581177 ± 0.000000, best_reward: 7.858333 ± 0.000000 in #5
+Epoch #10: test_reward: 2.848325 ± 0.000000, best_reward: 7.858333 ± 0.000000 in #5
+Epoch #11: test_reward: 3.500873 ± 0.000000, best_reward: 7.858333 ± 0.000000 in #5
+Epoch #12: test_reward: 3.303633 ± 0.000000, best_reward: 7.858333 ± 0.000000 in #5
+Epoch #13: test_reward: 5.359065 ± 0.000000, best_reward: 7.858333 ± 0.000000 in #5
+Epoch #14: test_reward: 3.365328 ± 0.000000, best_reward: 7.858333 ± 0.000000 in #5
+Epoch #15: test_reward: 2.051832 ± 0.000000, best_reward: 7.858333 ± 0.000000 in #5
+Epoch #16: test_reward: 1.426478 ± 0.000000, best_reward: 7.858333 ± 0.000000 in #5
+Epoch #17: test_reward: 2.445606 ± 0.000000, best_reward: 7.858333 ± 0.000000 in #5
+Epoch #18: test_reward: 2.629318 ± 0.000000, best_reward: 7.858333 ± 0.000000 in #5
+Epoch #19: test_reward: 8.740545 ± 0.000000, best_reward: 8.740545 ± 0.000000 in #19
+Epoch #20: test_reward: 3.920241 ± 0.000000, best_reward: 8.740545 ± 0.000000 in #19
+Epoch #21: test_reward: 1.624044 ± 0.000000, best_reward: 8.740545 ± 0.000000 in #19
+Epoch #22: test_reward: 8.276133 ± 0.000000, best_reward: 8.740545 ± 0.000000 in #19
+Epoch #23: test_reward: 10.537918 ± 0.000000, best_reward: 10.537918 ± 0.000000 in #23
+Epoch #24: test_reward: 2.120250 ± 0.000000, best_reward: 10.537918 ± 0.000000 in #23
+Epoch #25: test_reward: 9.435750 ± 0.000000, best_reward: 10.537918 ± 0.000000 in #23
+Epoch #26: test_reward: 3.823748 ± 0.000000, best_reward: 10.537918 ± 0.000000 in #23
+Epoch #27: test_reward: 12.165867 ± 0.000000, best_reward: 12.165867 ± 0.000000 in #27
+Saved /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_01_24_time_17_23_09/experiment_info/plots/plots_test/render_test_reward_info.png
