@@ -17,6 +17,7 @@ TITA_MJ/compiled/
 TITA_MJ/exec/
 TITA_MJ/tita_mj-*.conda
 TITA_MJ/.conda
+TITA_MJ/out.txt
 
 TITA_MJ/tesi/other/tita_rl
 

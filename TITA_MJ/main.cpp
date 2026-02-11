@@ -88,7 +88,7 @@ void print_contacts(const mjModel* m, const mjData* d) {
 
 void apply_disturbance(mjModel* mj_model_ptr, mjData* mj_data_ptr, int& timestep_counter){
   double point[3]{0.0, 0.0, 0.0};
-  double force[3] {110.0, -100.0, 110.0}; // {110.0, -100.0, 110.0}; {-200.0, -160.0, -300.0};
+  double force[3] {10.0, 0.0, 0.0}; // {110.0, -100.0, 110.0}; {-200.0, -160.0, -300.0};
   double torque[3]{0.0, 0.0, 0.0};
 
   int torso_id = mj_name2id(mj_model_ptr, mjOBJ_BODY, "base_link");
@@ -167,7 +167,9 @@ int main() {
   // Walking Manager:
   labrob::RobotState initial_robot_state = labrob::robot_state_from_mujoco(mj_model_ptr, mj_data_ptr);
   labrob::WalkingManager walking_manager;
-  walking_manager.init(initial_robot_state, armatures);
+  labrob::walkingPlanner walking_planner = labrob::walkingPlanner(0.0, 0.0, 0.0, 0.25, 0.49);
+  labrob::infoPinocchio pinocchio_info;
+  walking_manager.init(initial_robot_state, armatures, walking_planner, pinocchio_info);
 
 
   // // zero gravity
@@ -205,14 +207,16 @@ int main() {
 
   // Simulation loop:
 
-  std::cout << "Starting height: " << mj_data_ptr->qpos[2] << std::endl;
   while (!mujoco_ui.windowShouldClose()) {
 
   auto start_time = std::chrono::high_resolution_clock::now();
 
   mjtNum simstart = mj_data_ptr->time;
   while( mj_data_ptr->time - simstart < 1.0/framerate ) { // non serve
-    
+    std::cout << "--------------\nheight: " << mj_data_ptr->qpos[2] << std::endl;
+    std::cout << "com height: " << mj_data_ptr->subtree_com[2] << std::endl;
+    std::cout << "xpos: " << mj_data_ptr->xpos[2] << std::endl;
+  
     mj_step1(mj_model_ptr, mj_data_ptr);
     labrob::RobotState robot_state = labrob::robot_state_from_mujoco(mj_model_ptr, mj_data_ptr);
     
@@ -220,10 +224,11 @@ int main() {
     labrob::JointCommand joint_command;
     labrob::SolutionMPC sol;
     Eigen::Vector3d position_desired = {0.0, 0.0, 0.35};
-    walking_manager.update(robot_state, position_desired, joint_command, sol);
+    labrob::infoPinocchio pinocchio_info;
+    walking_manager.update(robot_state, position_desired, joint_command, sol, pinocchio_info);
 
     // apply a disturbance
-    // apply_disturbance(mj_model_ptr, mj_data_ptr, timestep_counter);
+    //apply_disturbance(mj_model_ptr, mj_data_ptr, timestep_counter);
     ++timestep_counter;
     
     mj_step1(mj_model_ptr, mj_data_ptr);
@@ -267,7 +272,7 @@ int main() {
   //std::cout << "Real time: " << real_elapsed << std::endl;
   //std::cout << "Real-time factor: " << RTF << std::endl;
 
-  mujoco_ui.render();
+  //mujoco_ui.render();
   }
 
   // Free memory (Mujoco):

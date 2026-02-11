@@ -44,8 +44,14 @@ from tianshou.utils.statistics import RunningMeanStd
 from tianshou.trainer import OnPolicyTrainerParams
 from tianshou.trainer import OffPolicyTrainerParams
 from tianshou.utils.net.common import Net
+from tianshou.utils.net.common import ActionReprNetWithVectorOutput
 from tianshou.utils.net.continuous import ContinuousActorProbabilistic, ContinuousCritic
 from tianshou.utils.space_info import SpaceInfo
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from tianshou.utils.net.common import ActionReprNetWithVectorOutput
+from tianshou.utils.net.continuous import ContinuousActorProbabilistic
 from tianshou.data import Batch
 
 _STR_TRAIN = "train"
@@ -235,7 +241,7 @@ def get_git_root():
     except git.InvalidGitRepositoryError:
         return None
     
-def test_fn(num_epoch, step_idx, policy, task, num_view_test_env, save_plot_dir):
+def test_fn(num_epoch, step_idx, policy, task, num_test_envs, num_view_test_env, save_plot_dir):
     global BEST_LAST_EPOCH
     BEST_LAST_EPOCH = num_epoch
 
@@ -257,7 +263,7 @@ def test_fn(num_epoch, step_idx, policy, task, num_view_test_env, save_plot_dir)
 
     policy.eval()
     test_collector.reset()
-    res = test_collector.collect(n_episode=1, render=0)
+    res = test_collector.collect(n_episode=num_test_envs, render=0)
     mean_len = np.mean(res.lens)
     policy.train()
     buf = test_collector.buffer  
@@ -325,16 +331,19 @@ def test_fn(num_epoch, step_idx, policy, task, num_view_test_env, save_plot_dir)
 
     df.to_csv(csv_path, index=False)
 
-    if False and  num_epoch > 0 and num_epoch % 1 == 0:
+    if False and num_epoch >= 0 and num_epoch % 1 == 0:
+        policy.eval()
         test_enviroment(
             task_name=task,
-            policy=policy,
+            task_to_display=0,
+            policy=deepcopy(policy),
             render_mode=None,
-            num_test_envs=num_view_test_env,
+            num_test_envs=num_test_envs,
             save_plot_dir=save_plot_dir,
             training_in_test=True,
             num_epoch=num_epoch
         )
+        policy.train()
 
 def save_best(algorithm, alg_type, actor_policy, actor_path, critic_policy, critic_path):
     global BEST_LAST_EPOCH
@@ -394,15 +403,23 @@ def test_enviroment(
 
     # ----- Video recording setup -----
     timestamp = time.strftime("%Y%m%d-%H%M%S")
-    os.makedirs("videos", exist_ok=True)
-    save_dir = os.path.join(save_plot_dir, "plots_test")
+    trial = 0
+    while True:
+        exp_dir_name = f"task_{task_to_display}_{trial}"
+        save_dir = os.path.join(save_plot_dir, exp_dir_name)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+            break
+        trial += 1
+    
+
     #video_folder = os.path.join("videos", f"{task_name}_{timestamp}")
     
     if render_mode == "rgb_array" :
         env = RecordVideo(
             env, 
             video_folder=save_dir,
-            name_prefix="eval",
+            name_prefix=f"eval_task_{task_to_display}",
             episode_trigger=lambda episode_id: True 
         )
         print(f"Video recording enabled. File will be saved in: {save_dir}")
@@ -635,8 +652,7 @@ def test_enviroment(
 
                     plt.tight_layout()
                     
-                    # save_dir deve essere definita globalmente o passata
-                    os.makedirs(save_dir, exist_ok=True)
+                    #os.makedirs(save_dir, exist_ok=True)
                     name = "render_test_actions_comparison.png"
                     saved = os.path.join(save_dir, name)
                     plt.savefig(saved)
@@ -671,7 +687,7 @@ def test_enviroment(
                     axes[1].grid(True)
 
                     plt.tight_layout()
-                    os.makedirs(save_dir, exist_ok=True)
+                    #os.makedirs(save_dir, exist_ok=True)
                     name = "render_test_reward_info.png"
                     saved = os.path.join(save_dir, name)
                     plt.savefig(saved)
@@ -707,7 +723,7 @@ def test_enviroment(
                     axes[1].legend()
 
                     plt.tight_layout()
-                    os.makedirs(save_dir, exist_ok=True)
+                    #os.makedirs(save_dir, exist_ok=True)
                     saved = os.path.join(save_dir, "render_test_total_reward.png")
                     plt.savefig(saved)
                     print(f"Saved {saved}")
@@ -770,7 +786,7 @@ def test_enviroment(
                     axes[2, 1].set_xlabel("Frame")
                     
                     plt.tight_layout()
-                    os.makedirs(save_dir, exist_ok=True)
+                    #os.makedirs(save_dir, exist_ok=True)
                     name = "render_test_com_dynamics.png"
                     saved = os.path.join(save_dir, name)
                     plt.savefig(saved)
@@ -866,7 +882,7 @@ def test_enviroment(
                     axes[2, 1].legend(loc='upper right'); axes[2, 1].grid(True, alpha=0.3)
 
                     plt.tight_layout()
-                    os.makedirs(save_dir, exist_ok=True)
+                    #os.makedirs(save_dir, exist_ok=True)
                     name = "render_test_feet_dynamics_comparison.png"
                     saved = os.path.join(save_dir, name)
                     plt.savefig(saved)
@@ -893,7 +909,7 @@ def test_enviroment(
                     plt.tight_layout()
                     
                     # Salvataggio
-                    os.makedirs(save_dir, exist_ok=True)
+                    #os.makedirs(save_dir, exist_ok=True)
                     name = "perturbation_plot.png"
                     saved = os.path.join(save_dir, name)
                     plt.savefig(saved)
@@ -924,14 +940,15 @@ def test_enviroment(
     except KeyboardInterrupt:
         pass
     finally:
+        if training_in_test == True:
+            policy.train()
+
         end_test_time = time.time()
         test_duration = end_test_time - start_test_time
         print(f"Test duration: {test_duration:.2f} seconds")
         env.close()
         cv2.destroyAllWindows() 
 
-        if training_in_test == True:
-            policy.train()
 
         if render_mode == "rgb_array":
             print(f"Videos saved in: {save_plot_dir}")
@@ -1027,6 +1044,67 @@ class TitaNetObsNormalizer(Net):
         obs_normalized = (obs - mean) / std
         return super().forward(obs_normalized, state, info)
     
+
+class TransformerActorNet(ActionReprNetWithVectorOutput):
+    """Transformer-based preprocess network pronto per ContinuousActorProbabilistic."""
+
+    def __init__(
+        self,
+        state_dim: int,           
+        embedding_sizes: list[int] = [512, 512],
+        output_dim: int = 128,    
+        seq_len: int = 2,
+        hidden_sizes: int = 256,
+        n_head: int = 4,
+        n_encoder: int = 2,
+        mlp_ratio: int = 2,
+        activation_mlp: type = nn.ReLU,
+        activation_encoder: type = F.relu,
+        device: str = "cuda"
+    ):
+        super().__init__(output_dim)
+        self.seq_len = seq_len
+
+        # embedding iniziale
+        embedding_layers = []
+        in_dim = state_dim
+        for h in embedding_sizes:
+            embedding_layers.append(nn.Linear(in_dim, h))
+            embedding_layers.append(activation_mlp)
+            in_dim = h
+        self.embedding = nn.Sequential(*embedding_layers)
+        dim_encoder = embedding_sizes[-1]
+
+        # encoder transformer
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=dim_encoder,
+            nhead=n_head,
+            dim_feedforward=dim_encoder*mlp_ratio,
+            activation=activation_encoder,
+            batch_first=True
+        )
+
+        self.encoder = nn.TransformerEncoder(
+            encoder_layer, 
+            num_layers=n_encoder
+        )
+
+        # output vector per SAC
+        self.output_layer = nn.Linear(
+            dim_encoder, output_dim
+        )
+
+    def forward(self, obs, state=None):
+        # obs: [B, state_dim] -> [B, seq_len, state_dim]
+        if isinstance(obs, np.ndarray):
+            obs = torch.tensor(obs, dtype=torch.float32, device=self.output_layer.weight.device)
+
+        x = obs.unsqueeze(1).repeat(1, self.seq_len, 1)
+        x = self.embedding(x)
+        x = self.encoder(x)
+        x = self.output_layer(x[:, -1, :])  # prendi solo l'ultima "token"
+        return x, state
+
 def create_wrapped_env(task: str, task_to_execute: int, render_mode=None,  ) -> gym.Env:
     env = gym.make(task, render_mode=render_mode, width=1000, height=600, task_to_execute=task_to_execute)
     #env = gym.wrappers.NormalizeObservation(env)  
@@ -1062,15 +1140,8 @@ def main():
     script_task, alg_type, render_mode, make_log, name_weight_name, warmup_steps, task_to_display = parser_args()
     
     # ----- Configuration -----
-    logdir = os.path.join(get_git_root(), "TITA_MJ", "log", f"{alg_type}_logs")
-    device = "cuda"
     task = "Tita-v0" #"Pendulum-v1"
-    lr = 1e-5
-    hidden_sizes = [512, 256, 128]
-    num_training_envs = 8
-    num_test_envs = 1
-    num_view_test_env = 1
-
+    
     if task == "Tita-v0":
         import sys
         sys.path.insert(0, '/home/ubuntu/miniconda3/envs/tianshou_gpu/lib/python3.12/site-packages')
@@ -1081,13 +1152,21 @@ def main():
             max_episode_steps=EPISODE_LENGTH,
         )
     
+    global env_single
+    env_single = create_wrapped_env(task, task_to_execute=task_to_display)
+
+    logdir = os.path.join(get_git_root(), "TITA_MJ", "log", f"{alg_type}_logs")
+    device = "cuda"
+    lr = 1e-5
+    hidden_sizes = [512, 256, 128]
+    num_training_envs = 4
+    num_test_envs = 2*env_single.unwrapped.get_num_tasks()
+    num_view_test_env = 1
     if script_task == _STR_TRAIN:
         training_envs = SubprocVectorEnv( [lambda i=i: create_wrapped_env(task, task_to_execute=i) for i in range(num_training_envs)], )
         test_envs = SubprocVectorEnv([lambda i=i: create_wrapped_env(task, task_to_execute=i) for i in range(num_test_envs)], )
 
     # ----- Get environment info ----- 
-    global env_single
-    env_single = create_wrapped_env(task, task_to_execute=task_to_display)
     space_info = SpaceInfo.from_env(env_single)
     state_shape = space_info.observation_info.obs_shape
     action_shape = space_info.action_info.action_shape
@@ -1100,20 +1179,36 @@ def main():
     activation_fn = nn.Softsign
 
     # ----- Choose algorithm -----
-    net = Net(
+    net_mlp = Net(
         state_shape=state_shape,
         hidden_sizes=hidden_sizes,
         activation=activation_fn,
         #norm_layer=LayerNormalizer
     )
 
-    net_r = TitaNetObsNormalizer(
+    net_norm = TitaNetObsNormalizer(
         state_shape=state_shape,
         hidden_sizes=hidden_sizes,
         activation=activation_fn,
         norm_layer=LayerNormalizer
     )
-    
+
+    net_transformer = TransformerActorNet(
+        state_dim=state_shape[0], 
+        embedding_sizes=[512, 192],
+        seq_len=2,
+        hidden_sizes=hidden_sizes,
+        n_head=4,
+        n_encoder=1,
+        mlp_ratio=2,
+        output_dim=128,
+        activation_mlp=nn.Tanh(),
+        activation_encoder=F.relu,
+        device=device
+    )
+
+    net = net_transformer
+
     actor = ContinuousActorProbabilistic(
         preprocess_net=net,
         action_shape=action_shape,
@@ -1295,7 +1390,7 @@ def main():
             task_to_display=task_to_display,
             policy=policy,
             render_mode=render_mode,
-            num_test_envs=num_view_test_env,
+            num_test_envs=num_test_envs,
             save_plot_dir=os.path.join(root, exp_name, DIR_EXPERIMENT_INFO, "plots")
         )
 
@@ -1470,7 +1565,7 @@ def main():
                 test_collector=test_collector,  
                 logger=logger,
                 #test_fn=test_fn,
-                test_fn=partial(test_fn, policy=deepcopy(actor), task=task, num_view_test_env=num_view_test_env, save_plot_dir=os.path.join(os.path.dirname(actor_path), DIR_EXPERIMENT_INFO, "plots") ),
+                test_fn=partial(test_fn, policy=deepcopy(actor), task=task, num_test_envs=num_test_envs, num_view_test_env=num_view_test_env, save_plot_dir=os.path.join(os.path.dirname(actor_path), DIR_EXPERIMENT_INFO, "plots") ),
                 #stop_fn=lambda mean_rewards: mean_rewards >= 2950.0,
                 save_best_fn=partial(save_best, alg_type=alg_type, actor_policy=actor, actor_path=actor_path, critic_policy=[critic1, critic2], critic_path=critic_path),
                 test_in_training=False,
@@ -1582,7 +1677,7 @@ def main():
                 task_to_display=task_to_display,
                 policy=policy,
                 render_mode=None,
-                num_test_envs=num_view_test_env,
+                num_test_envs=num_test_envs,
                 save_plot_dir=os.path.join(actor_base_dir, DIR_EXPERIMENT_INFO, "plots")
             )
         except Exception as e:
