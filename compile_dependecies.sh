@@ -46,6 +46,7 @@ echo "Success: libblasfeo.a moved to $(pwd)/lib/"
 
 sleep 3
 
+# 5. Build HPIPM
 echo ">>>     Building HPIPM..."
 cd "$DEP_PATH/hpipm"
 mkdir -p build
@@ -68,4 +69,25 @@ echo " SETUP COMPLETED SUCCESSFULLY                         "
 echo "-------------------------------------------------------"
 echo "BLASFEO Path: $DEP_PATH/blasfeo/lib/libblasfeo.a"
 echo "HPIPM Path:   $DEP_PATH/hpipm/lib/libhpipm.a"
+echo "-------------------------------------------------------"
+
+
+sleep 3
+
+# 5. Build Crocoddyl
+echo ">>>     Building Crocoddyl..."
+cd "$DEP_PATH/crocoddyl"
+
+# Directory di installazione assoluta (come per HPIPM)
+INSTALL_DIR_ABS=$(readlink -f "../../local")
+
+cmake .. \
+    -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR_ABS" \
+    -DCMAKE_BUILD_TYPE=Release
+
+make -j$(nproc)
+make install
+
+echo "-------------------------------------------------------"
+echo " Crocoddyl installed in: $INSTALL_DIR_ABS"
 echo "-------------------------------------------------------"

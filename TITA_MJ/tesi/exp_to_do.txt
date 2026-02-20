@@ -1,0 +1,12 @@
+In reale
+- resistenza perturbazioni 
+	fermo con spinte in xy
+- opporre resistenza a movimento
+- movimento con carico sopra
+
+In simulata:
+- movimento su terreno accidentato
+- salite
+- ostacoli che lo fanno inciampare ( valutare per reale )
+
+

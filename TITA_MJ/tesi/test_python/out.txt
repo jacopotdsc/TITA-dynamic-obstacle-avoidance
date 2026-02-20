@@ -1,0 +1,1187 @@
+Starting height: 0.4
+['joint_left_leg_1', 'joint_left_leg_2', 'joint_left_leg_3', 'joint_left_leg_4', 'joint_right_leg_1', 'joint_right_leg_2', 'joint_right_leg_3', 'joint_right_leg_4']
+Initial joint states (actuated order):
+  joint_left_leg_1               pos:  0.00000 vel:  0.00000
+  joint_left_leg_2               pos:  0.50000 vel:  0.00000
+  joint_left_leg_3               pos: -1.00000 vel:  0.00000
+  joint_left_leg_4               pos:  0.00000 vel:  0.00000
+  joint_right_leg_1              pos:  0.00000 vel:  0.00000
+  joint_right_leg_2              pos:  0.50000 vel:  0.00000
+  joint_right_leg_3              pos: -1.00000 vel:  0.00000
+  joint_right_leg_4              pos:  0.00000 vel:  0.00000
+model ptr: <mujoco._structs.MjModel object at 0x71b7955ed330>
+data ptr: <mujoco._structs.MjData object at 0x71b7955caaf0>
+id:  125033298973488 125033298832112
+Initiazlizing robot state and walking manager...
+Model pointer: 284152576, Data pointer: 312072192
+Model pointer (hex): 0x10efd300, Data pointer (hex): 0x1299d800
+Initial robot state:
+  Pos: [  0   0 0.4]
+  Ori: [0 0 0 1]
+  LinVel: [0 0 0]
+  AngVel: [0 0 0]
+  Contacts: 4 active
+  Total Force: [   -101.687 -0.00260054     1368.43]
+dict_keys(['NU', 'NX', 'N_STEP', 'T', 'dim_u_ref_cols', 'dim_u_ref_rows', 'dim_x_ref_cols', 'dim_x_ref_rows', 'dt', 'grav', 'm', 'omega', 'theta0', 'v', 'v_contact_z', 'vz', 'x0', 'y0', 'z0', 'z0_contact', 'z_max', 'z_min'])
+
+Walking Planner reference trajectories:
+vel_lin: 0.0, vel_z: 0.0, vel_ang: 0.0, z_min: 1.40375378e-315, z_max: 1.40483021e-315
+[t=0.0s] x=[0.  0.  0.4] v=0.00 vz=0.00 omega=0.00 u=[  0.          0.          0.          0.          0.        135.8183709
+   0.          0.        135.8183709]
+[t=1.0s] x=[0.  0.  0.4] v=0.00 vz=0.00 omega=0.00 u=[  0.          0.          0.          0.          0.        135.8183709
+   0.          0.        135.8183709]
+[t=2.0s] x=[0.  0.  0.4] v=0.00 vz=0.00 omega=0.00 u=[  0.          0.          0.          0.          0.        135.8183709
+   0.          0.        135.8183709]
+[t=3.0s] x=[0.  0.  0.4] v=0.00 vz=0.00 omega=0.00 u=[  0.          0.          0.          0.          0.        135.8183709
+   0.          0.        135.8183709]
+[t=4.0s] x=[0.  0.  0.4] v=0.00 vz=0.00 omega=0.00 u=[  0.          0.          0.          0.          0.        135.8183709
+   0.          0.        135.8183709]
+
+Sample x_ref at specific times:
+x_ref @ t=0 ms -> v=0.000, vz=0.000, omega=0.000
+x_ref @ t=2000 ms -> v=0.000, vz=0.000, omega=0.000
+x_ref @ t=3000 ms -> v=0.000, vz=0.000, omega=0.000
+x_ref @ t=4000 ms -> v=0.000, vz=0.000, omega=0.000
+
+Full x_ref from step 1997 to 2000:
+step 1997 -> v=0.000, vz=0.000, omega=0.000
+step 1998 -> v=0.000, vz=0.000, omega=0.000
+step 1999 -> v=0.000, vz=0.000, omega=0.000
+Frame 0:
+  joint_left_leg_1               pos:  0.00000 vel:  0.00000
+  joint_left_leg_2               pos:  0.50000 vel:  0.00000
+  joint_left_leg_3               pos: -1.00000 vel:  0.00000
+  joint_left_leg_4               pos:  0.00000 vel:  0.00000
+  joint_right_leg_1              pos:  0.00000 vel:  0.00000
+  joint_right_leg_2              pos:  0.50000 vel:  0.00000
+  joint_right_leg_3              pos: -1.00000 vel:  0.00000
+  joint_right_leg_4              pos:  0.00000 vel:  0.00000
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00000 vel_rs:  0.00000
+  joint_left_leg_2               pos_rs:  0.50000 vel_rs:  0.00000
+  joint_left_leg_3               pos_rs: -1.00000 vel_rs:  0.00000
+  joint_left_leg_4               pos_rs:  0.00000 vel_rs:  0.00000
+  joint_right_leg_1              pos_rs:  0.00000 vel_rs:  0.00000
+  joint_right_leg_2              pos_rs:  0.50000 vel_rs:  0.00000
+  joint_right_leg_3              pos_rs: -1.00000 vel_rs:  0.00000
+  joint_right_leg_4              pos_rs:  0.00000 vel_rs:  0.00000
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00000 | torque:  0.00000
+  joint_left_leg_2 | pos:  0.50000 | torque:  0.00000
+  joint_left_leg_3 | pos: -1.00000 | torque:  0.00000
+  joint_left_leg_4 | pos:  0.00000 | torque:  0.00000
+  joint_right_leg_1 | pos:  0.00000 | torque:  0.00000
+  joint_right_leg_2 | pos:  0.50000 | torque:  0.00000
+  joint_right_leg_3 | pos: -1.00000 | torque:  0.00000
+  joint_right_leg_4 | pos:  0.00000 | torque:  0.00000
+-------
+Frame 1:
+  joint_left_leg_1               pos:  0.00001 vel:  0.00814
+  joint_left_leg_2               pos:  0.50164 vel:  1.51048
+  joint_left_leg_3               pos: -1.00367 vel: -3.39689
+  joint_left_leg_4               pos:  0.00271 vel:  2.53184
+  joint_right_leg_1              pos: -0.00001 vel: -0.00814
+  joint_right_leg_2              pos:  0.50164 vel:  1.51045
+  joint_right_leg_3              pos: -1.00367 vel: -3.39683
+  joint_right_leg_4              pos:  0.00271 vel:  2.53180
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00001 vel_rs:  0.00814
+  joint_left_leg_2               pos_rs:  0.50164 vel_rs:  1.51048
+  joint_left_leg_3               pos_rs: -1.00367 vel_rs: -3.39689
+  joint_left_leg_4               pos_rs:  0.00271 vel_rs:  2.53184
+  joint_right_leg_1              pos_rs: -0.00001 vel_rs: -0.00814
+  joint_right_leg_2              pos_rs:  0.50164 vel_rs:  1.51045
+  joint_right_leg_3              pos_rs: -1.00367 vel_rs: -3.39683
+  joint_right_leg_4              pos_rs:  0.00271 vel_rs:  2.53180
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00001 | torque: -120.00000
+  joint_left_leg_2 | pos:  0.50164 | torque:  10.36500
+  joint_left_leg_3 | pos: -1.00367 | torque:  94.81728
+  joint_left_leg_4 | pos:  0.00271 | torque:  2.75555
+  joint_right_leg_1 | pos: -0.00001 | torque:  120.00000
+  joint_right_leg_2 | pos:  0.50164 | torque:  10.36563
+  joint_right_leg_3 | pos: -1.00367 | torque:  94.81754
+  joint_right_leg_4 | pos:  0.00271 | torque:  2.75566
+-------
+Frame 2:
+  joint_left_leg_1               pos:  0.00003 vel:  0.00822
+  joint_left_leg_2               pos:  0.50576 vel:  2.50885
+  joint_left_leg_3               pos: -1.01293 vel: -5.64788
+  joint_left_leg_4               pos:  0.00962 vel:  4.23690
+  joint_right_leg_1              pos: -0.00003 vel: -0.00822
+  joint_right_leg_2              pos:  0.50576 vel:  2.50882
+  joint_right_leg_3              pos: -1.01293 vel: -5.64779
+  joint_right_leg_4              pos:  0.00962 vel:  4.23684
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00003 vel_rs:  0.00822
+  joint_left_leg_2               pos_rs:  0.50576 vel_rs:  2.50885
+  joint_left_leg_3               pos_rs: -1.01293 vel_rs: -5.64788
+  joint_left_leg_4               pos_rs:  0.00962 vel_rs:  4.23690
+  joint_right_leg_1              pos_rs: -0.00003 vel_rs: -0.00822
+  joint_right_leg_2              pos_rs:  0.50576 vel_rs:  2.50882
+  joint_right_leg_3              pos_rs: -1.01293 vel_rs: -5.64779
+  joint_right_leg_4              pos_rs:  0.00962 vel_rs:  4.23684
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00003 | torque: -120.00000
+  joint_left_leg_2 | pos:  0.50576 | torque:  8.56680
+  joint_left_leg_3 | pos: -1.01293 | torque:  78.13730
+  joint_left_leg_4 | pos:  0.00962 | torque:  2.11041
+  joint_right_leg_1 | pos: -0.00003 | torque:  120.00000
+  joint_right_leg_2 | pos:  0.50576 | torque:  8.56716
+  joint_right_leg_3 | pos: -1.01293 | torque:  78.13651
+  joint_right_leg_4 | pos:  0.00962 | torque:  2.11045
+-------
+Frame 3:
+  joint_left_leg_1               pos:  0.00004 vel:  0.00725
+  joint_left_leg_2               pos:  0.51145 vel:  3.10174
+  joint_left_leg_3               pos: -1.02575 vel: -6.99717
+  joint_left_leg_4               pos:  0.01926 vel:  5.29668
+  joint_right_leg_1              pos: -0.00004 vel: -0.00727
+  joint_right_leg_2              pos:  0.51145 vel:  3.10170
+  joint_right_leg_3              pos: -1.02575 vel: -6.99707
+  joint_right_leg_4              pos:  0.01926 vel:  5.29662
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00004 vel_rs:  0.00725
+  joint_left_leg_2               pos_rs:  0.51145 vel_rs:  3.10174
+  joint_left_leg_3               pos_rs: -1.02575 vel_rs: -6.99717
+  joint_left_leg_4               pos_rs:  0.01926 vel_rs:  5.29668
+  joint_right_leg_1              pos_rs: -0.00004 vel_rs: -0.00727
+  joint_right_leg_2              pos_rs:  0.51145 vel_rs:  3.10170
+  joint_right_leg_3              pos_rs: -1.02575 vel_rs: -6.99707
+  joint_right_leg_4              pos_rs:  0.01926 vel_rs:  5.29662
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00004 | torque: -100.64102
+  joint_left_leg_2 | pos:  0.51145 | torque:  7.12399
+  joint_left_leg_3 | pos: -1.02575 | torque:  65.11055
+  joint_left_leg_4 | pos:  0.01926 | torque:  1.63099
+  joint_right_leg_1 | pos: -0.00004 | torque:  100.64005
+  joint_right_leg_2 | pos:  0.51145 | torque:  7.12430
+  joint_right_leg_3 | pos: -1.02575 | torque:  65.11055
+  joint_right_leg_4 | pos:  0.01926 | torque:  1.63103
+-------
+Frame 4:
+  joint_left_leg_1               pos:  0.00005 vel:  0.00601
+  joint_left_leg_2               pos:  0.51799 vel:  3.38433
+  joint_left_leg_3               pos: -1.04053 vel: -7.65820
+  joint_left_leg_4               pos:  0.03050 vel:  5.86104
+  joint_right_leg_1              pos: -0.00005 vel: -0.00604
+  joint_right_leg_2              pos:  0.51799 vel:  3.38429
+  joint_right_leg_3              pos: -1.04053 vel: -7.65808
+  joint_right_leg_4              pos:  0.03050 vel:  5.86096
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00005 vel_rs:  0.00601
+  joint_left_leg_2               pos_rs:  0.51799 vel_rs:  3.38433
+  joint_left_leg_3               pos_rs: -1.04053 vel_rs: -7.65820
+  joint_left_leg_4               pos_rs:  0.03050 vel_rs:  5.86104
+  joint_right_leg_1              pos_rs: -0.00005 vel_rs: -0.00604
+  joint_right_leg_2              pos_rs:  0.51799 vel_rs:  3.38429
+  joint_right_leg_3              pos_rs: -1.04053 vel_rs: -7.65808
+  joint_right_leg_4              pos_rs:  0.03050 vel_rs:  5.86096
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00005 | torque: -83.82431
+  joint_left_leg_2 | pos:  0.51799 | torque:  5.96015
+  joint_left_leg_3 | pos: -1.04053 | torque:  54.74665
+  joint_left_leg_4 | pos:  0.03050 | torque:  1.25351
+  joint_right_leg_1 | pos: -0.00005 | torque:  83.82290
+  joint_right_leg_2 | pos:  0.51799 | torque:  5.96044
+  joint_right_leg_3 | pos: -1.04053 | torque:  54.74739
+  joint_right_leg_4 | pos:  0.03050 | torque:  1.25355
+-------
+Frame 5:
+  joint_left_leg_1               pos:  0.00007 vel:  0.00473
+  joint_left_leg_2               pos:  0.52485 vel:  3.43649
+  joint_left_leg_3               pos: -1.05609 vel: -7.80767
+  joint_left_leg_4               pos:  0.04248 vel:  6.05249
+  joint_right_leg_1              pos: -0.00007 vel: -0.00477
+  joint_right_leg_2              pos:  0.52485 vel:  3.43645
+  joint_right_leg_3              pos: -1.05609 vel: -7.80755
+  joint_right_leg_4              pos:  0.04248 vel:  6.05241
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00007 vel_rs:  0.00473
+  joint_left_leg_2               pos_rs:  0.52485 vel_rs:  3.43649
+  joint_left_leg_3               pos_rs: -1.05609 vel_rs: -7.80767
+  joint_left_leg_4               pos_rs:  0.04248 vel_rs:  6.05249
+  joint_right_leg_1              pos_rs: -0.00007 vel_rs: -0.00477
+  joint_right_leg_2              pos_rs:  0.52485 vel_rs:  3.43645
+  joint_right_leg_3              pos_rs: -1.05609 vel_rs: -7.80755
+  joint_right_leg_4              pos_rs:  0.04248 vel_rs:  6.05241
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00007 | torque: -70.28858
+  joint_left_leg_2 | pos:  0.52485 | torque:  5.01746
+  joint_left_leg_3 | pos: -1.05609 | torque:  46.38567
+  joint_left_leg_4 | pos:  0.04248 | torque:  0.95086
+  joint_right_leg_1 | pos: -0.00007 | torque:  70.28749
+  joint_right_leg_2 | pos:  0.52485 | torque:  5.01765
+  joint_right_leg_3 | pos: -1.05609 | torque:  46.38613
+  joint_right_leg_4 | pos:  0.04248 | torque:  0.95088
+-------
+Frame 6:
+  joint_left_leg_1               pos:  0.00007 vel:  0.00353
+  joint_left_leg_2               pos:  0.53164 vel:  3.32330
+  joint_left_leg_3               pos: -1.07155 vel: -7.58862
+  joint_left_leg_4               pos:  0.05455 vel:  5.97034
+  joint_right_leg_1              pos: -0.00007 vel: -0.00357
+  joint_right_leg_2              pos:  0.53164 vel:  3.32325
+  joint_right_leg_3              pos: -1.07155 vel: -7.58850
+  joint_right_leg_4              pos:  0.05454 vel:  5.97026
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00007 vel_rs:  0.00353
+  joint_left_leg_2               pos_rs:  0.53164 vel_rs:  3.32330
+  joint_left_leg_3               pos_rs: -1.07155 vel_rs: -7.58862
+  joint_left_leg_4               pos_rs:  0.05455 vel_rs:  5.97034
+  joint_right_leg_1              pos_rs: -0.00007 vel_rs: -0.00357
+  joint_right_leg_2              pos_rs:  0.53164 vel_rs:  3.32325
+  joint_right_leg_3              pos_rs: -1.07155 vel_rs: -7.58850
+  joint_right_leg_4              pos_rs:  0.05454 vel_rs:  5.97026
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00007 | torque: -59.36360
+  joint_left_leg_2 | pos:  0.53164 | torque:  4.25101
+  joint_left_leg_3 | pos: -1.07155 | torque:  39.57118
+  joint_left_leg_4 | pos:  0.05455 | torque:  0.70655
+  joint_right_leg_1 | pos: -0.00007 | torque:  59.36256
+  joint_right_leg_2 | pos:  0.53164 | torque:  4.25115
+  joint_right_leg_3 | pos: -1.07155 | torque:  39.57170
+  joint_right_leg_4 | pos:  0.05454 | torque:  0.70657
+-------
+Frame 7:
+  joint_left_leg_1               pos:  0.00008 vel:  0.00247
+  joint_left_leg_2               pos:  0.53809 vel:  3.09657
+  joint_left_leg_3               pos: -1.08631 vel: -7.11458
+  joint_left_leg_4               pos:  0.06624 vel:  5.69430
+  joint_right_leg_1              pos: -0.00008 vel: -0.00250
+  joint_right_leg_2              pos:  0.53809 vel:  3.09653
+  joint_right_leg_3              pos: -1.08630 vel: -7.11446
+  joint_right_leg_4              pos:  0.06624 vel:  5.69422
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00008 vel_rs:  0.00247
+  joint_left_leg_2               pos_rs:  0.53809 vel_rs:  3.09657
+  joint_left_leg_3               pos_rs: -1.08631 vel_rs: -7.11458
+  joint_left_leg_4               pos_rs:  0.06624 vel_rs:  5.69430
+  joint_right_leg_1              pos_rs: -0.00008 vel_rs: -0.00250
+  joint_right_leg_2              pos_rs:  0.53809 vel_rs:  3.09653
+  joint_right_leg_3              pos_rs: -1.08630 vel_rs: -7.11446
+  joint_right_leg_4              pos_rs:  0.06624 vel_rs:  5.69422
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00008 | torque: -50.50993
+  joint_left_leg_2 | pos:  0.53809 | torque:  3.62524
+  joint_left_leg_3 | pos: -1.08631 | torque:  33.97293
+  joint_left_leg_4 | pos:  0.06624 | torque:  0.50976
+  joint_right_leg_1 | pos: -0.00008 | torque:  50.50936
+  joint_right_leg_2 | pos:  0.53809 | torque:  3.62530
+  joint_right_leg_3 | pos: -1.08630 | torque:  33.97291
+  joint_right_leg_4 | pos:  0.06624 | torque:  0.50977
+-------
+Frame 8:
+  joint_left_leg_1               pos:  0.00008 vel:  0.00157
+  joint_left_leg_2               pos:  0.54399 vel:  2.79665
+  joint_left_leg_3               pos: -1.09993 vel: -6.47400
+  joint_left_leg_4               pos:  0.07725 vel:  5.28740
+  joint_right_leg_1              pos: -0.00008 vel: -0.00160
+  joint_right_leg_2              pos:  0.54399 vel:  2.79660
+  joint_right_leg_3              pos: -1.09993 vel: -6.47388
+  joint_right_leg_4              pos:  0.07725 vel:  5.28732
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00008 vel_rs:  0.00157
+  joint_left_leg_2               pos_rs:  0.54399 vel_rs:  2.79665
+  joint_left_leg_3               pos_rs: -1.09993 vel_rs: -6.47400
+  joint_left_leg_4               pos_rs:  0.07725 vel_rs:  5.28740
+  joint_right_leg_1              pos_rs: -0.00008 vel_rs: -0.00160
+  joint_right_leg_2              pos_rs:  0.54399 vel_rs:  2.79660
+  joint_right_leg_3              pos_rs: -1.09993 vel_rs: -6.47388
+  joint_right_leg_4              pos_rs:  0.07725 vel_rs:  5.28732
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00008 | torque: -43.29746
+  joint_left_leg_2 | pos:  0.54399 | torque:  3.11158
+  joint_left_leg_3 | pos: -1.09993 | torque:  29.34051
+  joint_left_leg_4 | pos:  0.07725 | torque:  0.35253
+  joint_right_leg_1 | pos: -0.00008 | torque:  43.29641
+  joint_right_leg_2 | pos:  0.54399 | torque:  3.11169
+  joint_right_leg_3 | pos: -1.09993 | torque:  29.34124
+  joint_right_leg_4 | pos:  0.07725 | torque:  0.35254
+-------
+Frame 9:
+  joint_left_leg_1               pos:  0.00009 vel:  0.00084
+  joint_left_leg_2               pos:  0.54925 vel:  2.45422
+  joint_left_leg_3               pos: -1.11216 vel: -5.73447
+  joint_left_leg_4               pos:  0.08735 vel:  4.79874
+  joint_right_leg_1              pos: -0.00009 vel: -0.00086
+  joint_right_leg_2              pos:  0.54925 vel:  2.45417
+  joint_right_leg_3              pos: -1.11216 vel: -5.73435
+  joint_right_leg_4              pos:  0.08735 vel:  4.79867
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00009 vel_rs:  0.00084
+  joint_left_leg_2               pos_rs:  0.54925 vel_rs:  2.45422
+  joint_left_leg_3               pos_rs: -1.11216 vel_rs: -5.73447
+  joint_left_leg_4               pos_rs:  0.08735 vel_rs:  4.79874
+  joint_right_leg_1              pos_rs: -0.00009 vel_rs: -0.00086
+  joint_right_leg_2              pos_rs:  0.54925 vel_rs:  2.45417
+  joint_right_leg_3              pos_rs: -1.11216 vel_rs: -5.73435
+  joint_right_leg_4              pos_rs:  0.08735 vel_rs:  4.79867
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00009 | torque: -37.38217
+  joint_left_leg_2 | pos:  0.54925 | torque:  2.68740
+  joint_left_leg_3 | pos: -1.11216 | torque:  25.48201
+  joint_left_leg_4 | pos:  0.08735 | torque:  0.22845
+  joint_right_leg_1 | pos: -0.00009 | torque:  37.38152
+  joint_right_leg_2 | pos:  0.54925 | torque:  2.68746
+  joint_right_leg_3 | pos: -1.11216 | torque:  25.48226
+  joint_right_leg_4 | pos:  0.08735 | torque:  0.22845
+-------
+Frame 10:
+  joint_left_leg_1               pos:  0.00009 vel:  0.00025
+  joint_left_leg_2               pos:  0.55381 vel:  2.09214
+  joint_left_leg_3               pos: -1.12285 vel: -4.94665
+  joint_left_leg_4               pos:  0.09642 vel:  4.26584
+  joint_right_leg_1              pos: -0.00009 vel: -0.00027
+  joint_right_leg_2              pos:  0.55381 vel:  2.09210
+  joint_right_leg_3              pos: -1.12285 vel: -4.94653
+  joint_right_leg_4              pos:  0.09642 vel:  4.26577
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00009 vel_rs:  0.00025
+  joint_left_leg_2               pos_rs:  0.55381 vel_rs:  2.09214
+  joint_left_leg_3               pos_rs: -1.12285 vel_rs: -4.94665
+  joint_left_leg_4               pos_rs:  0.09642 vel_rs:  4.26584
+  joint_right_leg_1              pos_rs: -0.00009 vel_rs: -0.00027
+  joint_right_leg_2              pos_rs:  0.55381 vel_rs:  2.09210
+  joint_right_leg_3              pos_rs: -1.12285 vel_rs: -4.94653
+  joint_right_leg_4              pos_rs:  0.09642 vel_rs:  4.26577
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00009 | torque: -32.49089
+  joint_left_leg_2 | pos:  0.55381 | torque:  2.33435
+  joint_left_leg_3 | pos: -1.12285 | torque:  22.24288
+  joint_left_leg_4 | pos:  0.09642 | torque:  0.13197
+  joint_right_leg_1 | pos: -0.00009 | torque:  32.49016
+  joint_right_leg_2 | pos:  0.55381 | torque:  2.33442
+  joint_right_leg_3 | pos: -1.12285 | torque:  22.24331
+  joint_right_leg_4 | pos:  0.09642 | torque:  0.13198
+-------
+Frame 11:
+  joint_left_leg_1               pos:  0.00009 vel: -0.00019
+  joint_left_leg_2               pos:  0.55763 vel:  1.72704
+  joint_left_leg_3               pos: -1.13195 vel: -4.14764
+  joint_left_leg_4               pos:  0.10441 vel:  3.71675
+  joint_right_leg_1              pos: -0.00009 vel:  0.00019
+  joint_right_leg_2              pos:  0.55763 vel:  1.72700
+  joint_right_leg_3              pos: -1.13195 vel: -4.14753
+  joint_right_leg_4              pos:  0.10440 vel:  3.71669
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00009 vel_rs: -0.00019
+  joint_left_leg_2               pos_rs:  0.55763 vel_rs:  1.72704
+  joint_left_leg_3               pos_rs: -1.13195 vel_rs: -4.14764
+  joint_left_leg_4               pos_rs:  0.10441 vel_rs:  3.71675
+  joint_right_leg_1              pos_rs: -0.00009 vel_rs:  0.00019
+  joint_right_leg_2              pos_rs:  0.55763 vel_rs:  1.72700
+  joint_right_leg_3              pos_rs: -1.13195 vel_rs: -4.14753
+  joint_right_leg_4              pos_rs:  0.10440 vel_rs:  3.71669
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00009 | torque: -28.40666
+  joint_left_leg_2 | pos:  0.55763 | torque:  2.03788
+  joint_left_leg_3 | pos: -1.13195 | torque:  19.50055
+  joint_left_leg_4 | pos:  0.10441 | torque:  0.05823
+  joint_right_leg_1 | pos: -0.00009 | torque:  28.40570
+  joint_right_leg_2 | pos:  0.55763 | torque:  2.03798
+  joint_right_leg_3 | pos: -1.13195 | torque:  19.50137
+  joint_right_leg_4 | pos:  0.10440 | torque:  0.05824
+-------
+Frame 12:
+  joint_left_leg_1               pos:  0.00009 vel: -0.00053
+  joint_left_leg_2               pos:  0.56073 vel:  1.37062
+  joint_left_leg_3               pos: -1.13946 vel: -3.36391
+  joint_left_leg_4               pos:  0.11130 vel:  3.17195
+  joint_right_leg_1              pos: -0.00009 vel:  0.00053
+  joint_right_leg_2              pos:  0.56073 vel:  1.37058
+  joint_right_leg_3              pos: -1.13946 vel: -3.36381
+  joint_right_leg_4              pos:  0.11129 vel:  3.17189
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00009 vel_rs: -0.00053
+  joint_left_leg_2               pos_rs:  0.56073 vel_rs:  1.37062
+  joint_left_leg_3               pos_rs: -1.13946 vel_rs: -3.36391
+  joint_left_leg_4               pos_rs:  0.11130 vel_rs:  3.17195
+  joint_right_leg_1              pos_rs: -0.00009 vel_rs:  0.00053
+  joint_right_leg_2              pos_rs:  0.56073 vel_rs:  1.37058
+  joint_right_leg_3              pos_rs: -1.13946 vel_rs: -3.36381
+  joint_right_leg_4              pos_rs:  0.11129 vel_rs:  3.17189
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00009 | torque: -24.96071
+  joint_left_leg_2 | pos:  0.56073 | torque:  1.78665
+  joint_left_leg_3 | pos: -1.13946 | torque:  17.15895
+  joint_left_leg_4 | pos:  0.11130 | torque:  0.00297
+  joint_right_leg_1 | pos: -0.00009 | torque:  24.96029
+  joint_right_leg_2 | pos:  0.56073 | torque:  1.78669
+  joint_right_leg_3 | pos: -1.13946 | torque:  17.15907
+  joint_right_leg_4 | pos:  0.11129 | torque:  0.00298
+-------
+Frame 13:
+  joint_left_leg_1               pos:  0.00008 vel: -0.00076
+  joint_left_leg_2               pos:  0.56313 vel:  1.03085
+  joint_left_leg_3               pos: -1.14544 vel: -2.61372
+  joint_left_leg_4               pos:  0.11711 vel:  2.64587
+  joint_right_leg_1              pos: -0.00009 vel:  0.00077
+  joint_right_leg_2              pos:  0.56313 vel:  1.03080
+  joint_right_leg_3              pos: -1.14544 vel: -2.61362
+  joint_right_leg_4              pos:  0.11711 vel:  2.64581
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00008 vel_rs: -0.00076
+  joint_left_leg_2               pos_rs:  0.56313 vel_rs:  1.03085
+  joint_left_leg_3               pos_rs: -1.14544 vel_rs: -2.61372
+  joint_left_leg_4               pos_rs:  0.11711 vel_rs:  2.64587
+  joint_right_leg_1              pos_rs: -0.00009 vel_rs:  0.00077
+  joint_right_leg_2              pos_rs:  0.56313 vel_rs:  1.03080
+  joint_right_leg_3              pos_rs: -1.14544 vel_rs: -2.61362
+  joint_right_leg_4              pos_rs:  0.11711 vel_rs:  2.64581
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00008 | torque: -22.02135
+  joint_left_leg_2 | pos:  0.56313 | torque:  1.57149
+  joint_left_leg_3 | pos: -1.14544 | torque:  15.13912
+  joint_left_leg_4 | pos:  0.11711 | torque: -0.03753
+  joint_right_leg_1 | pos: -0.00009 | torque:  22.02056
+  joint_right_leg_2 | pos:  0.56313 | torque:  1.57158
+  joint_right_leg_3 | pos: -1.14544 | torque:  15.13980
+  joint_right_leg_4 | pos:  0.11711 | torque: -0.03752
+-------
+Frame 14:
+  joint_left_leg_1               pos:  0.00008 vel: -0.00092
+  joint_left_leg_2               pos:  0.56487 vel:  0.71283
+  joint_left_leg_3               pos: -1.14996 vel: -1.90902
+  joint_left_leg_4               pos:  0.12190 vel:  2.14824
+  joint_right_leg_1              pos: -0.00008 vel:  0.00093
+  joint_right_leg_2              pos:  0.56487 vel:  0.71279
+  joint_right_leg_3              pos: -1.14996 vel: -1.90892
+  joint_right_leg_4              pos:  0.12190 vel:  2.14819
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00008 vel_rs: -0.00092
+  joint_left_leg_2               pos_rs:  0.56487 vel_rs:  0.71283
+  joint_left_leg_3               pos_rs: -1.14996 vel_rs: -1.90902
+  joint_left_leg_4               pos_rs:  0.12190 vel_rs:  2.14824
+  joint_right_leg_1              pos_rs: -0.00008 vel_rs:  0.00093
+  joint_right_leg_2              pos_rs:  0.56487 vel_rs:  0.71279
+  joint_right_leg_3              pos_rs: -1.14996 vel_rs: -1.90892
+  joint_right_leg_4              pos_rs:  0.12190 vel_rs:  2.14819
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00008 | torque: -19.48765
+  joint_left_leg_2 | pos:  0.56487 | torque:  1.38561
+  joint_left_leg_3 | pos: -1.14996 | torque:  13.38251
+  joint_left_leg_4 | pos:  0.12190 | torque: -0.06639
+  joint_right_leg_1 | pos: -0.00008 | torque:  19.48713
+  joint_right_leg_2 | pos:  0.56487 | torque:  1.38567
+  joint_right_leg_3 | pos: -1.14996 | torque:  13.38286
+  joint_right_leg_4 | pos:  0.12190 | torque: -0.06638
+-------
+Frame 15:
+  joint_left_leg_1               pos:  0.00008 vel: -0.00102
+  joint_left_leg_2               pos:  0.56600 vel:  0.41956
+  joint_left_leg_3               pos: -1.15312 vel: -1.25705
+  joint_left_leg_4               pos:  0.12573 vel:  1.68522
+  joint_right_leg_1              pos: -0.00008 vel:  0.00104
+  joint_right_leg_2              pos:  0.56600 vel:  0.41952
+  joint_right_leg_3              pos: -1.15312 vel: -1.25696
+  joint_right_leg_4              pos:  0.12573 vel:  1.68517
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00008 vel_rs: -0.00102
+  joint_left_leg_2               pos_rs:  0.56600 vel_rs:  0.41956
+  joint_left_leg_3               pos_rs: -1.15312 vel_rs: -1.25705
+  joint_left_leg_4               pos_rs:  0.12573 vel_rs:  1.68522
+  joint_right_leg_1              pos_rs: -0.00008 vel_rs:  0.00104
+  joint_right_leg_2              pos_rs:  0.56600 vel_rs:  0.41952
+  joint_right_leg_3              pos_rs: -1.15312 vel_rs: -1.25696
+  joint_right_leg_4              pos_rs:  0.12573 vel_rs:  1.68517
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00008 | torque: -17.28269
+  joint_left_leg_2 | pos:  0.56600 | torque:  1.22356
+  joint_left_leg_3 | pos: -1.15312 | torque:  11.84166
+  joint_left_leg_4 | pos:  0.12573 | torque: -0.08627
+  joint_right_leg_1 | pos: -0.00008 | torque:  17.28223
+  joint_right_leg_2 | pos:  0.56600 | torque:  1.22363
+  joint_right_leg_3 | pos: -1.15312 | torque:  11.84196
+  joint_right_leg_4 | pos:  0.12573 | torque: -0.08626
+-------
+Frame 16:
+  joint_left_leg_1               pos:  0.00008 vel: -0.00107
+  joint_left_leg_2               pos:  0.56657 vel:  0.15250
+  joint_left_leg_3               pos: -1.15503 vel: -0.66157
+  joint_left_leg_4               pos:  0.12867 vel:  1.26021
+  joint_right_leg_1              pos: -0.00008 vel:  0.00109
+  joint_right_leg_2              pos:  0.56657 vel:  0.15247
+  joint_right_leg_3              pos: -1.15503 vel: -0.66149
+  joint_right_leg_4              pos:  0.12867 vel:  1.26016
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00008 vel_rs: -0.00107
+  joint_left_leg_2               pos_rs:  0.56657 vel_rs:  0.15250
+  joint_left_leg_3               pos_rs: -1.15503 vel_rs: -0.66157
+  joint_left_leg_4               pos_rs:  0.12867 vel_rs:  1.26021
+  joint_right_leg_1              pos_rs: -0.00008 vel_rs:  0.00109
+  joint_right_leg_2              pos_rs:  0.56657 vel_rs:  0.15247
+  joint_right_leg_3              pos_rs: -1.15503 vel_rs: -0.66149
+  joint_right_leg_4              pos_rs:  0.12867 vel_rs:  1.26016
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00008 | torque: -15.34866
+  joint_left_leg_2 | pos:  0.56657 | torque:  1.08130
+  joint_left_leg_3 | pos: -1.15503 | torque:  10.48114
+  joint_left_leg_4 | pos:  0.12867 | torque: -0.09930
+  joint_right_leg_1 | pos: -0.00008 | torque:  15.34804
+  joint_right_leg_2 | pos:  0.56657 | torque:  1.08139
+  joint_right_leg_3 | pos: -1.15503 | torque:  10.48172
+  joint_right_leg_4 | pos:  0.12867 | torque: -0.09929
+-------
+Frame 17:
+  joint_left_leg_1               pos:  0.00008 vel: -0.00108
+  joint_left_leg_2               pos:  0.56663 vel: -0.08800
+  joint_left_leg_3               pos: -1.15581 vel: -0.12379
+  joint_left_leg_4               pos:  0.13080 vel:  0.87464
+  joint_right_leg_1              pos: -0.00008 vel:  0.00111
+  joint_right_leg_2              pos:  0.56663 vel: -0.08804
+  joint_right_leg_3              pos: -1.15581 vel: -0.12371
+  joint_right_leg_4              pos:  0.13080 vel:  0.87460
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00008 vel_rs: -0.00108
+  joint_left_leg_2               pos_rs:  0.56663 vel_rs: -0.08800
+  joint_left_leg_3               pos_rs: -1.15581 vel_rs: -0.12379
+  joint_left_leg_4               pos_rs:  0.13080 vel_rs:  0.87464
+  joint_right_leg_1              pos_rs: -0.00008 vel_rs:  0.00111
+  joint_right_leg_2              pos_rs:  0.56663 vel_rs: -0.08804
+  joint_right_leg_3              pos_rs: -1.15581 vel_rs: -0.12371
+  joint_right_leg_4              pos_rs:  0.13080 vel_rs:  0.87460
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00008 | torque: -13.64119
+  joint_left_leg_2 | pos:  0.56663 | torque:  0.95573
+  joint_left_leg_3 | pos: -1.15581 | torque:  9.27423
+  joint_left_leg_4 | pos:  0.13080 | torque: -0.10723
+  joint_right_leg_1 | pos: -0.00008 | torque:  13.64092
+  joint_right_leg_2 | pos:  0.56663 | torque:  0.95578
+  joint_right_leg_3 | pos: -1.15581 | torque:  9.27432
+  joint_right_leg_4 | pos:  0.13080 | torque: -0.10722
+-------
+Frame 18:
+  joint_left_leg_1               pos:  0.00007 vel: -0.00107
+  joint_left_leg_2               pos:  0.56623 vel: -0.30239
+  joint_left_leg_3               pos: -1.15557 vel:  0.35689
+  joint_left_leg_4               pos:  0.13220 vel:  0.52849
+  joint_right_leg_1              pos: -0.00008 vel:  0.00110
+  joint_right_leg_2              pos:  0.56623 vel: -0.30243
+  joint_right_leg_3              pos: -1.15557 vel:  0.35696
+  joint_right_leg_4              pos:  0.13220 vel:  0.52845
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00007 vel_rs: -0.00107
+  joint_left_leg_2               pos_rs:  0.56623 vel_rs: -0.30239
+  joint_left_leg_3               pos_rs: -1.15557 vel_rs:  0.35689
+  joint_left_leg_4               pos_rs:  0.13220 vel_rs:  0.52849
+  joint_right_leg_1              pos_rs: -0.00008 vel_rs:  0.00110
+  joint_right_leg_2              pos_rs:  0.56623 vel_rs: -0.30243
+  joint_right_leg_3              pos_rs: -1.15557 vel_rs:  0.35696
+  joint_right_leg_4              pos_rs:  0.13220 vel_rs:  0.52845
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00007 | torque: -12.12852
+  joint_left_leg_2 | pos:  0.56623 | torque:  0.84452
+  joint_left_leg_3 | pos: -1.15557 | torque:  8.20039
+  joint_left_leg_4 | pos:  0.13220 | torque: -0.11144
+  joint_right_leg_1 | pos: -0.00008 | torque:  12.12839
+  joint_right_leg_2 | pos:  0.56623 | torque:  0.84456
+  joint_right_leg_3 | pos: -1.15557 | torque:  8.20029
+  joint_right_leg_4 | pos:  0.13220 | torque: -0.11144
+-------
+Frame 19:
+  joint_left_leg_1               pos:  0.00007 vel: -0.00103
+  joint_left_leg_2               pos:  0.56544 vel: -0.49162
+  joint_left_leg_3               pos: -1.15442 vel:  0.78228
+  joint_left_leg_4               pos:  0.13295 vel:  0.22071
+  joint_right_leg_1              pos: -0.00007 vel:  0.00107
+  joint_right_leg_2              pos:  0.56544 vel: -0.49165
+  joint_right_leg_3              pos: -1.15442 vel:  0.78234
+  joint_right_leg_4              pos:  0.13294 vel:  0.22068
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00007 vel_rs: -0.00103
+  joint_left_leg_2               pos_rs:  0.56544 vel_rs: -0.49162
+  joint_left_leg_3               pos_rs: -1.15442 vel_rs:  0.78228
+  joint_left_leg_4               pos_rs:  0.13295 vel_rs:  0.22071
+  joint_right_leg_1              pos_rs: -0.00007 vel_rs:  0.00107
+  joint_right_leg_2              pos_rs:  0.56544 vel_rs: -0.49165
+  joint_right_leg_3              pos_rs: -1.15442 vel_rs:  0.78234
+  joint_right_leg_4              pos_rs:  0.13294 vel_rs:  0.22068
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00007 | torque: -10.78534
+  joint_left_leg_2 | pos:  0.56544 | torque:  0.74583
+  joint_left_leg_3 | pos: -1.15442 | torque:  7.24363
+  joint_left_leg_4 | pos:  0.13295 | torque: -0.11302
+  joint_right_leg_1 | pos: -0.00007 | torque:  10.78516
+  joint_right_leg_2 | pos:  0.56544 | torque:  0.74588
+  joint_right_leg_3 | pos: -1.15442 | torque:  7.24364
+  joint_right_leg_4 | pos:  0.13294 | torque: -0.11301
+-------
+Frame 20:
+  joint_left_leg_1               pos:  0.00007 vel: -0.00099
+  joint_left_leg_2               pos:  0.56429 vel: -0.65696
+  joint_left_leg_3               pos: -1.15248 vel:  1.15503
+  joint_left_leg_4               pos:  0.13311 vel: -0.05039
+  joint_right_leg_1              pos: -0.00007 vel:  0.00103
+  joint_right_leg_2              pos:  0.56428 vel: -0.65699
+  joint_right_leg_3              pos: -1.15248 vel:  1.15509
+  joint_right_leg_4              pos:  0.13311 vel: -0.05042
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00007 vel_rs: -0.00099
+  joint_left_leg_2               pos_rs:  0.56429 vel_rs: -0.65696
+  joint_left_leg_3               pos_rs: -1.15248 vel_rs:  1.15503
+  joint_left_leg_4               pos_rs:  0.13311 vel_rs: -0.05039
+  joint_right_leg_1              pos_rs: -0.00007 vel_rs:  0.00103
+  joint_right_leg_2              pos_rs:  0.56428 vel_rs: -0.65699
+  joint_right_leg_3              pos_rs: -1.15248 vel_rs:  1.15509
+  joint_right_leg_4              pos_rs:  0.13311 vel_rs: -0.05042
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00007 | torque: -9.59361
+  joint_left_leg_2 | pos:  0.56429 | torque:  0.65836
+  joint_left_leg_3 | pos: -1.15248 | torque:  6.39286
+  joint_left_leg_4 | pos:  0.13311 | torque: -0.11277
+  joint_right_leg_1 | pos: -0.00007 | torque:  9.59348
+  joint_right_leg_2 | pos:  0.56428 | torque:  0.65840
+  joint_right_leg_3 | pos: -1.15248 | torque:  6.39281
+  joint_right_leg_4 | pos:  0.13311 | torque: -0.11277
+-------
+Frame 21:
+  joint_left_leg_1               pos:  0.00007 vel: -0.00094
+  joint_left_leg_2               pos:  0.56283 vel: -0.79993
+  joint_left_leg_3               pos: -1.14984 vel:  1.47831
+  joint_left_leg_4               pos:  0.13277 vel: -0.28697
+  joint_right_leg_1              pos: -0.00007 vel:  0.00098
+  joint_right_leg_2              pos:  0.56282 vel: -0.79995
+  joint_right_leg_3              pos: -1.14984 vel:  1.47836
+  joint_right_leg_4              pos:  0.13277 vel: -0.28700
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00007 vel_rs: -0.00094
+  joint_left_leg_2               pos_rs:  0.56283 vel_rs: -0.79993
+  joint_left_leg_3               pos_rs: -1.14984 vel_rs:  1.47831
+  joint_left_leg_4               pos_rs:  0.13277 vel_rs: -0.28697
+  joint_right_leg_1              pos_rs: -0.00007 vel_rs:  0.00098
+  joint_right_leg_2              pos_rs:  0.56282 vel_rs: -0.79995
+  joint_right_leg_3              pos_rs: -1.14984 vel_rs:  1.47836
+  joint_right_leg_4              pos_rs:  0.13277 vel_rs: -0.28700
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00007 | torque: -8.53957
+  joint_left_leg_2 | pos:  0.56283 | torque:  0.58107
+  joint_left_leg_3 | pos: -1.14984 | torque:  5.63897
+  joint_left_leg_4 | pos:  0.13277 | torque: -0.11133
+  joint_right_leg_1 | pos: -0.00007 | torque:  8.53935
+  joint_right_leg_2 | pos:  0.56282 | torque:  0.58112
+  joint_right_leg_3 | pos: -1.14984 | torque:  5.63906
+  joint_right_leg_4 | pos:  0.13277 | torque: -0.11132
+-------
+Frame 22:
+  joint_left_leg_1               pos:  0.00007 vel: -0.00088
+  joint_left_leg_2               pos:  0.56110 vel: -0.92210
+  joint_left_leg_3               pos: -1.14660 vel:  1.75553
+  joint_left_leg_4               pos:  0.13199 vel: -0.49141
+  joint_right_leg_1              pos: -0.00007 vel:  0.00092
+  joint_right_leg_2              pos:  0.56110 vel: -0.92212
+  joint_right_leg_3              pos: -1.14660 vel:  1.75557
+  joint_right_leg_4              pos:  0.13199 vel: -0.49143
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00007 vel_rs: -0.00088
+  joint_left_leg_2               pos_rs:  0.56110 vel_rs: -0.92210
+  joint_left_leg_3               pos_rs: -1.14660 vel_rs:  1.75553
+  joint_left_leg_4               pos_rs:  0.13199 vel_rs: -0.49141
+  joint_right_leg_1              pos_rs: -0.00007 vel_rs:  0.00092
+  joint_right_leg_2              pos_rs:  0.56110 vel_rs: -0.92212
+  joint_right_leg_3              pos_rs: -1.14660 vel_rs:  1.75557
+  joint_right_leg_4              pos_rs:  0.13199 vel_rs: -0.49143
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00007 | torque: -7.61138
+  joint_left_leg_2 | pos:  0.56110 | torque:  0.51310
+  joint_left_leg_3 | pos: -1.14660 | torque:  4.97454
+  joint_left_leg_4 | pos:  0.13199 | torque: -0.10913
+  joint_right_leg_1 | pos: -0.00007 | torque:  7.61130
+  joint_right_leg_2 | pos:  0.56110 | torque:  0.51313
+  joint_right_leg_3 | pos: -1.14660 | torque:  4.97445
+  joint_right_leg_4 | pos:  0.13199 | torque: -0.10912
+-------
+Frame 23:
+  joint_left_leg_1               pos:  0.00007 vel: -0.00082
+  joint_left_leg_2               pos:  0.55915 vel: -1.02511
+  joint_left_leg_3               pos: -1.14285 vel:  1.99023
+  joint_left_leg_4               pos:  0.13083 vel: -0.66620
+  joint_right_leg_1              pos: -0.00007 vel:  0.00087
+  joint_right_leg_2              pos:  0.55915 vel: -1.02513
+  joint_right_leg_3              pos: -1.14285 vel:  1.99028
+  joint_right_leg_4              pos:  0.13082 vel: -0.66622
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00007 vel_rs: -0.00082
+  joint_left_leg_2               pos_rs:  0.55915 vel_rs: -1.02511
+  joint_left_leg_3               pos_rs: -1.14285 vel_rs:  1.99023
+  joint_left_leg_4               pos_rs:  0.13083 vel_rs: -0.66620
+  joint_right_leg_1              pos_rs: -0.00007 vel_rs:  0.00087
+  joint_right_leg_2              pos_rs:  0.55915 vel_rs: -1.02513
+  joint_right_leg_3              pos_rs: -1.14285 vel_rs:  1.99028
+  joint_right_leg_4              pos_rs:  0.13082 vel_rs: -0.66622
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00007 | torque: -6.80066
+  joint_left_leg_2 | pos:  0.55915 | torque:  0.45378
+  joint_left_leg_3 | pos: -1.14285 | torque:  4.39350
+  joint_left_leg_4 | pos:  0.13083 | torque: -0.10650
+  joint_right_leg_1 | pos: -0.00007 | torque:  6.80054
+  joint_right_leg_2 | pos:  0.55915 | torque:  0.45381
+  joint_right_leg_3 | pos: -1.14285 | torque:  4.39349
+  joint_right_leg_4 | pos:  0.13082 | torque: -0.10650
+-------
+Frame 24:
+  joint_left_leg_1               pos:  0.00006 vel: -0.00075
+  joint_left_leg_2               pos:  0.55701 vel: -1.11057
+  joint_left_leg_3               pos: -1.13867 vel:  2.18596
+  joint_left_leg_4               pos:  0.12934 vel: -0.81383
+  joint_right_leg_1              pos: -0.00006 vel:  0.00081
+  joint_right_leg_2              pos:  0.55701 vel: -1.11059
+  joint_right_leg_3              pos: -1.13866 vel:  2.18600
+  joint_right_leg_4              pos:  0.12934 vel: -0.81385
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00006 vel_rs: -0.00075
+  joint_left_leg_2               pos_rs:  0.55701 vel_rs: -1.11057
+  joint_left_leg_3               pos_rs: -1.13867 vel_rs:  2.18596
+  joint_left_leg_4               pos_rs:  0.12934 vel_rs: -0.81383
+  joint_right_leg_1              pos_rs: -0.00006 vel_rs:  0.00081
+  joint_right_leg_2              pos_rs:  0.55701 vel_rs: -1.11059
+  joint_right_leg_3              pos_rs: -1.13866 vel_rs:  2.18600
+  joint_right_leg_4              pos_rs:  0.12934 vel_rs: -0.81385
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00006 | torque: -6.09988
+  joint_left_leg_2 | pos:  0.55701 | torque:  0.40254
+  joint_left_leg_3 | pos: -1.13867 | torque:  3.89086
+  joint_left_leg_4 | pos:  0.12934 | torque: -0.10367
+  joint_right_leg_1 | pos: -0.00006 | torque:  6.09975
+  joint_right_leg_2 | pos:  0.55701 | torque:  0.40258
+  joint_right_leg_3 | pos: -1.13866 | torque:  3.89087
+  joint_right_leg_4 | pos:  0.12934 | torque: -0.10367
+-------
+Frame 25:
+  joint_left_leg_1               pos:  0.00006 vel: -0.00069
+  joint_left_leg_2               pos:  0.55472 vel: -1.18004
+  joint_left_leg_3               pos: -1.13413 vel:  2.34617
+  joint_left_leg_4               pos:  0.12759 vel: -0.93676
+  joint_right_leg_1              pos: -0.00006 vel:  0.00075
+  joint_right_leg_2              pos:  0.55472 vel: -1.18006
+  joint_right_leg_3              pos: -1.13413 vel:  2.34620
+  joint_right_leg_4              pos:  0.12759 vel: -0.93678
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00006 vel_rs: -0.00069
+  joint_left_leg_2               pos_rs:  0.55472 vel_rs: -1.18004
+  joint_left_leg_3               pos_rs: -1.13413 vel_rs:  2.34617
+  joint_left_leg_4               pos_rs:  0.12759 vel_rs: -0.93676
+  joint_right_leg_1              pos_rs: -0.00006 vel_rs:  0.00075
+  joint_right_leg_2              pos_rs:  0.55472 vel_rs: -1.18006
+  joint_right_leg_3              pos_rs: -1.13413 vel_rs:  2.34620
+  joint_right_leg_4              pos_rs:  0.12759 vel_rs: -0.93678
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00006 | torque: -5.50260
+  joint_left_leg_2 | pos:  0.55472 | torque:  0.35891
+  joint_left_leg_3 | pos: -1.13413 | torque:  3.46204
+  joint_left_leg_4 | pos:  0.12759 | torque: -0.10078
+  joint_right_leg_1 | pos: -0.00006 | torque:  5.50253
+  joint_right_leg_2 | pos:  0.55472 | torque:  0.35894
+  joint_right_leg_3 | pos: -1.13413 | torque:  3.46198
+  joint_right_leg_4 | pos:  0.12759 | torque: -0.10077
+-------
+Frame 26:
+  joint_left_leg_1               pos:  0.00006 vel: -0.00064
+  joint_left_leg_2               pos:  0.55230 vel: -1.23501
+  joint_left_leg_3               pos: -1.12931 vel:  2.47416
+  joint_left_leg_4               pos:  0.12561 vel: -1.03733
+  joint_right_leg_1              pos: -0.00006 vel:  0.00069
+  joint_right_leg_2              pos:  0.55230 vel: -1.23503
+  joint_right_leg_3              pos: -1.12930 vel:  2.47419
+  joint_right_leg_4              pos:  0.12561 vel: -1.03735
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00006 vel_rs: -0.00064
+  joint_left_leg_2               pos_rs:  0.55230 vel_rs: -1.23501
+  joint_left_leg_3               pos_rs: -1.12931 vel_rs:  2.47416
+  joint_left_leg_4               pos_rs:  0.12561 vel_rs: -1.03733
+  joint_right_leg_1              pos_rs: -0.00006 vel_rs:  0.00069
+  joint_right_leg_2              pos_rs:  0.55230 vel_rs: -1.23503
+  joint_right_leg_3              pos_rs: -1.12930 vel_rs:  2.47419
+  joint_right_leg_4              pos_rs:  0.12561 vel_rs: -1.03735
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00006 | torque: -5.00269
+  joint_left_leg_2 | pos:  0.55230 | torque:  0.32240
+  joint_left_leg_3 | pos: -1.12931 | torque:  3.10247
+  joint_left_leg_4 | pos:  0.12561 | torque: -0.09790
+  joint_right_leg_1 | pos: -0.00006 | torque:  5.00269
+  joint_right_leg_2 | pos:  0.55230 | torque:  0.32242
+  joint_right_leg_3 | pos: -1.12930 | torque:  3.10231
+  joint_right_leg_4 | pos:  0.12561 | torque: -0.09790
+-------
+Frame 27:
+  joint_left_leg_1               pos:  0.00006 vel: -0.00058
+  joint_left_leg_2               pos:  0.54979 vel: -1.27691
+  joint_left_leg_3               pos: -1.12426 vel:  2.57308
+  joint_left_leg_4               pos:  0.12346 vel: -1.11777
+  joint_right_leg_1              pos: -0.00006 vel:  0.00064
+  joint_right_leg_2              pos:  0.54979 vel: -1.27692
+  joint_right_leg_3              pos: -1.12425 vel:  2.57311
+  joint_right_leg_4              pos:  0.12345 vel: -1.11778
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00006 vel_rs: -0.00058
+  joint_left_leg_2               pos_rs:  0.54979 vel_rs: -1.27691
+  joint_left_leg_3               pos_rs: -1.12426 vel_rs:  2.57308
+  joint_left_leg_4               pos_rs:  0.12346 vel_rs: -1.11777
+  joint_right_leg_1              pos_rs: -0.00006 vel_rs:  0.00064
+  joint_right_leg_2              pos_rs:  0.54979 vel_rs: -1.27692
+  joint_right_leg_3              pos_rs: -1.12425 vel_rs:  2.57311
+  joint_right_leg_4              pos_rs:  0.12345 vel_rs: -1.11778
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00006 | torque: -4.59483
+  joint_left_leg_2 | pos:  0.54979 | torque:  0.29260
+  joint_left_leg_3 | pos: -1.12426 | torque:  2.80798
+  joint_left_leg_4 | pos:  0.12346 | torque: -0.09510
+  joint_right_leg_1 | pos: -0.00006 | torque:  4.59477
+  joint_right_leg_2 | pos:  0.54979 | torque:  0.29263
+  joint_right_leg_3 | pos: -1.12425 | torque:  2.80791
+  joint_right_leg_4 | pos:  0.12345 | torque: -0.09509
+-------
+Frame 28:
+  joint_left_leg_1               pos:  0.00006 vel: -0.00053
+  joint_left_leg_2               pos:  0.54720 vel: -1.30704
+  joint_left_leg_3               pos: -1.11903 vel:  2.64587
+  joint_left_leg_4               pos:  0.12115 vel: -1.18015
+  joint_right_leg_1              pos: -0.00006 vel:  0.00059
+  joint_right_leg_2              pos:  0.54720 vel: -1.30705
+  joint_right_leg_3              pos: -1.11903 vel:  2.64590
+  joint_right_leg_4              pos:  0.12115 vel: -1.18016
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00006 vel_rs: -0.00053
+  joint_left_leg_2               pos_rs:  0.54720 vel_rs: -1.30704
+  joint_left_leg_3               pos_rs: -1.11903 vel_rs:  2.64587
+  joint_left_leg_4               pos_rs:  0.12115 vel_rs: -1.18015
+  joint_right_leg_1              pos_rs: -0.00006 vel_rs:  0.00059
+  joint_right_leg_2              pos_rs:  0.54720 vel_rs: -1.30705
+  joint_right_leg_3              pos_rs: -1.11903 vel_rs:  2.64590
+  joint_right_leg_4              pos_rs:  0.12115 vel_rs: -1.18016
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00006 | torque: -4.27355
+  joint_left_leg_2 | pos:  0.54720 | torque:  0.26912
+  joint_left_leg_3 | pos: -1.11903 | torque:  2.57462
+  joint_left_leg_4 | pos:  0.12115 | torque: -0.09237
+  joint_right_leg_1 | pos: -0.00006 | torque:  4.27351
+  joint_right_leg_2 | pos:  0.54720 | torque:  0.26914
+  joint_right_leg_3 | pos: -1.11903 | torque:  2.57452
+  joint_right_leg_4 | pos:  0.12115 | torque: -0.09236
+-------
+Frame 29:
+  joint_left_leg_1               pos:  0.00006 vel: -0.00048
+  joint_left_leg_2               pos:  0.54457 vel: -1.32666
+  joint_left_leg_3               pos: -1.11369 vel:  2.69530
+  joint_left_leg_4               pos:  0.11875 vel: -1.22641
+  joint_right_leg_1              pos: -0.00006 vel:  0.00054
+  joint_right_leg_2              pos:  0.54457 vel: -1.32667
+  joint_right_leg_3              pos: -1.11368 vel:  2.69532
+  joint_right_leg_4              pos:  0.11874 vel: -1.22642
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00006 vel_rs: -0.00048
+  joint_left_leg_2               pos_rs:  0.54457 vel_rs: -1.32666
+  joint_left_leg_3               pos_rs: -1.11369 vel_rs:  2.69530
+  joint_left_leg_4               pos_rs:  0.11875 vel_rs: -1.22641
+  joint_right_leg_1              pos_rs: -0.00006 vel_rs:  0.00054
+  joint_right_leg_2              pos_rs:  0.54457 vel_rs: -1.32667
+  joint_right_leg_3              pos_rs: -1.11368 vel_rs:  2.69532
+  joint_right_leg_4              pos_rs:  0.11874 vel_rs: -1.22642
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00006 | torque: -4.03359
+  joint_left_leg_2 | pos:  0.54457 | torque:  0.25154
+  joint_left_leg_3 | pos: -1.11369 | torque:  2.39826
+  joint_left_leg_4 | pos:  0.11875 | torque: -0.08971
+  joint_right_leg_1 | pos: -0.00006 | torque:  4.03359
+  joint_right_leg_2 | pos:  0.54457 | torque:  0.25156
+  joint_right_leg_3 | pos: -1.11368 | torque:  2.39812
+  joint_right_leg_4 | pos:  0.11874 | torque: -0.08971
+-------
+Frame 30:
+  joint_left_leg_1               pos:  0.00006 vel: -0.00044
+  joint_left_leg_2               pos:  0.54190 vel: -1.33689
+  joint_left_leg_3               pos: -1.10827 vel:  2.72390
+  joint_left_leg_4               pos:  0.11626 vel: -1.25832
+  joint_right_leg_1              pos: -0.00006 vel:  0.00050
+  joint_right_leg_2              pos:  0.54190 vel: -1.33690
+  joint_right_leg_3              pos: -1.10826 vel:  2.72392
+  joint_right_leg_4              pos:  0.11626 vel: -1.25833
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00006 vel_rs: -0.00044
+  joint_left_leg_2               pos_rs:  0.54190 vel_rs: -1.33689
+  joint_left_leg_3               pos_rs: -1.10827 vel_rs:  2.72390
+  joint_left_leg_4               pos_rs:  0.11626 vel_rs: -1.25832
+  joint_right_leg_1              pos_rs: -0.00006 vel_rs:  0.00050
+  joint_right_leg_2              pos_rs:  0.54190 vel_rs: -1.33690
+  joint_right_leg_3              pos_rs: -1.10826 vel_rs:  2.72392
+  joint_right_leg_4              pos_rs:  0.11626 vel_rs: -1.25833
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00006 | torque: -3.86953
+  joint_left_leg_2 | pos:  0.54190 | torque:  0.23947
+  joint_left_leg_3 | pos: -1.10827 | torque:  2.27462
+  joint_left_leg_4 | pos:  0.11626 | torque: -0.08711
+  joint_right_leg_1 | pos: -0.00006 | torque:  3.86947
+  joint_right_leg_2 | pos:  0.54190 | torque:  0.23948
+  joint_right_leg_3 | pos: -1.10826 | torque:  2.27456
+  joint_right_leg_4 | pos:  0.11626 | torque: -0.08711
+-------
+Frame 31:
+  joint_left_leg_1               pos:  0.00006 vel: -0.00040
+  joint_left_leg_2               pos:  0.53923 vel: -1.33881
+  joint_left_leg_3               pos: -1.10281 vel:  2.73404
+  joint_left_leg_4               pos:  0.11372 vel: -1.27753
+  joint_right_leg_1              pos: -0.00005 vel:  0.00046
+  joint_right_leg_2              pos:  0.53923 vel: -1.33882
+  joint_right_leg_3              pos: -1.10280 vel:  2.73406
+  joint_right_leg_4              pos:  0.11372 vel: -1.27753
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00006 vel_rs: -0.00040
+  joint_left_leg_2               pos_rs:  0.53923 vel_rs: -1.33881
+  joint_left_leg_3               pos_rs: -1.10281 vel_rs:  2.73404
+  joint_left_leg_4               pos_rs:  0.11372 vel_rs: -1.27753
+  joint_right_leg_1              pos_rs: -0.00005 vel_rs:  0.00046
+  joint_right_leg_2              pos_rs:  0.53923 vel_rs: -1.33882
+  joint_right_leg_3              pos_rs: -1.10280 vel_rs:  2.73406
+  joint_right_leg_4              pos_rs:  0.11372 vel_rs: -1.27753
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00006 | torque: -3.77641
+  joint_left_leg_2 | pos:  0.53923 | torque:  0.23253
+  joint_left_leg_3 | pos: -1.10281 | torque:  2.20001
+  joint_left_leg_4 | pos:  0.11372 | torque: -0.08454
+  joint_right_leg_1 | pos: -0.00005 | torque:  3.77635
+  joint_right_leg_2 | pos:  0.53923 | torque:  0.23255
+  joint_right_leg_3 | pos: -1.10280 | torque:  2.19996
+  joint_right_leg_4 | pos:  0.11372 | torque: -0.08454
+-------
+Frame 32:
+  joint_left_leg_1               pos:  0.00006 vel: -0.00036
+  joint_left_leg_2               pos:  0.53655 vel: -1.33339
+  joint_left_leg_3               pos: -1.09734 vel:  2.72789
+  joint_left_leg_4               pos:  0.11116 vel: -1.28553
+  joint_right_leg_1              pos: -0.00005 vel:  0.00042
+  joint_right_leg_2              pos:  0.53655 vel: -1.33339
+  joint_right_leg_3              pos: -1.09734 vel:  2.72790
+  joint_right_leg_4              pos:  0.11115 vel: -1.28553
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00006 vel_rs: -0.00036
+  joint_left_leg_2               pos_rs:  0.53655 vel_rs: -1.33339
+  joint_left_leg_3               pos_rs: -1.09734 vel_rs:  2.72789
+  joint_left_leg_4               pos_rs:  0.11116 vel_rs: -1.28553
+  joint_right_leg_1              pos_rs: -0.00005 vel_rs:  0.00042
+  joint_right_leg_2              pos_rs:  0.53655 vel_rs: -1.33339
+  joint_right_leg_3              pos_rs: -1.09734 vel_rs:  2.72790
+  joint_right_leg_4              pos_rs:  0.11115 vel_rs: -1.28553
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00006 | torque: -3.74893
+  joint_left_leg_2 | pos:  0.53655 | torque:  0.23035
+  joint_left_leg_3 | pos: -1.09734 | torque:  2.17039
+  joint_left_leg_4 | pos:  0.11116 | torque: -0.08197
+  joint_right_leg_1 | pos: -0.00005 | torque:  3.74892
+  joint_right_leg_2 | pos:  0.53655 | torque:  0.23036
+  joint_right_leg_3 | pos: -1.09734 | torque:  2.17027
+  joint_right_leg_4 | pos:  0.11115 | torque: -0.08198
+-------
+Frame 33:
+  joint_left_leg_1               pos:  0.00005 vel: -0.00032
+  joint_left_leg_2               pos:  0.53390 vel: -1.32152
+  joint_left_leg_3               pos: -1.09190 vel:  2.70745
+  joint_left_leg_4               pos:  0.10859 vel: -1.28369
+  joint_right_leg_1              pos: -0.00005 vel:  0.00039
+  joint_right_leg_2              pos:  0.53390 vel: -1.32152
+  joint_right_leg_3              pos: -1.09190 vel:  2.70745
+  joint_right_leg_4              pos:  0.10858 vel: -1.28369
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00005 vel_rs: -0.00032
+  joint_left_leg_2               pos_rs:  0.53390 vel_rs: -1.32152
+  joint_left_leg_3               pos_rs: -1.09190 vel_rs:  2.70745
+  joint_left_leg_4               pos_rs:  0.10859 vel_rs: -1.28369
+  joint_right_leg_1              pos_rs: -0.00005 vel_rs:  0.00039
+  joint_right_leg_2              pos_rs:  0.53390 vel_rs: -1.32152
+  joint_right_leg_3              pos_rs: -1.09190 vel_rs:  2.70745
+  joint_right_leg_4              pos_rs:  0.10858 vel_rs: -1.28369
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00005 | torque: -3.78210
+  joint_left_leg_2 | pos:  0.53390 | torque:  0.23254
+  joint_left_leg_3 | pos: -1.09190 | torque:  2.18181
+  joint_left_leg_4 | pos:  0.10859 | torque: -0.07938
+  joint_right_leg_1 | pos: -0.00005 | torque:  3.78205
+  joint_right_leg_2 | pos:  0.53390 | torque:  0.23255
+  joint_right_leg_3 | pos: -1.09190 | torque:  2.18174
+  joint_right_leg_4 | pos:  0.10858 | torque: -0.07938
+-------
+Frame 34:
+  joint_left_leg_1               pos:  0.00005 vel: -0.00029
+  joint_left_leg_2               pos:  0.53127 vel: -1.30402
+  joint_left_leg_3               pos: -1.08652 vel:  2.67452
+  joint_left_leg_4               pos:  0.10603 vel: -1.27325
+  joint_right_leg_1              pos: -0.00005 vel:  0.00035
+  joint_right_leg_2              pos:  0.53127 vel: -1.30402
+  joint_right_leg_3              pos: -1.08652 vel:  2.67453
+  joint_right_leg_4              pos:  0.10603 vel: -1.27325
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00005 vel_rs: -0.00029
+  joint_left_leg_2               pos_rs:  0.53127 vel_rs: -1.30402
+  joint_left_leg_3               pos_rs: -1.08652 vel_rs:  2.67452
+  joint_left_leg_4               pos_rs:  0.10603 vel_rs: -1.27325
+  joint_right_leg_1              pos_rs: -0.00005 vel_rs:  0.00035
+  joint_right_leg_2              pos_rs:  0.53127 vel_rs: -1.30402
+  joint_right_leg_3              pos_rs: -1.08652 vel_rs:  2.67453
+  joint_right_leg_4              pos_rs:  0.10603 vel_rs: -1.27325
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00005 | torque: -3.87082
+  joint_left_leg_2 | pos:  0.53127 | torque:  0.23875
+  joint_left_leg_3 | pos: -1.08652 | torque:  2.23062
+  joint_left_leg_4 | pos:  0.10603 | torque: -0.07674
+  joint_right_leg_1 | pos: -0.00005 | torque:  3.87081
+  joint_right_leg_2 | pos:  0.53127 | torque:  0.23875
+  joint_right_leg_3 | pos: -1.08652 | torque:  2.23050
+  joint_right_leg_4 | pos:  0.10603 | torque: -0.07674
+-------
+Frame 35:
+  joint_left_leg_1               pos:  0.00005 vel: -0.00026
+  joint_left_leg_2               pos:  0.52869 vel: -1.28165
+  joint_left_leg_3               pos: -1.08121 vel:  2.63079
+  joint_left_leg_4               pos:  0.10350 vel: -1.25534
+  joint_right_leg_1              pos: -0.00005 vel:  0.00033
+  joint_right_leg_2              pos:  0.52868 vel: -1.28165
+  joint_right_leg_3              pos: -1.08121 vel:  2.63079
+  joint_right_leg_4              pos:  0.10350 vel: -1.25534
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00005 vel_rs: -0.00026
+  joint_left_leg_2               pos_rs:  0.52869 vel_rs: -1.28165
+  joint_left_leg_3               pos_rs: -1.08121 vel_rs:  2.63079
+  joint_left_leg_4               pos_rs:  0.10350 vel_rs: -1.25534
+  joint_right_leg_1              pos_rs: -0.00005 vel_rs:  0.00033
+  joint_right_leg_2              pos_rs:  0.52868 vel_rs: -1.28165
+  joint_right_leg_3              pos_rs: -1.08121 vel_rs:  2.63079
+  joint_right_leg_4              pos_rs:  0.10350 vel_rs: -1.25534
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00005 | torque: -4.01018
+  joint_left_leg_2 | pos:  0.52869 | torque:  0.24860
+  joint_left_leg_3 | pos: -1.08121 | torque:  2.31303
+  joint_left_leg_4 | pos:  0.10350 | torque: -0.07402
+  joint_right_leg_1 | pos: -0.00005 | torque:  4.01015
+  joint_right_leg_2 | pos:  0.52868 | torque:  0.24860
+  joint_right_leg_3 | pos: -1.08121 | torque:  2.31295
+  joint_right_leg_4 | pos:  0.10350 | torque: -0.07402
+-------
+Frame 36:
+  joint_left_leg_1               pos:  0.00005 vel: -0.00023
+  joint_left_leg_2               pos:  0.52615 vel: -1.25510
+  joint_left_leg_3               pos: -1.07600 vel:  2.57778
+  joint_left_leg_4               pos:  0.10101 vel: -1.23099
+  joint_right_leg_1              pos: -0.00005 vel:  0.00030
+  joint_right_leg_2              pos:  0.52615 vel: -1.25510
+  joint_right_leg_3              pos: -1.07600 vel:  2.57777
+  joint_right_leg_4              pos:  0.10101 vel: -1.23099
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00005 vel_rs: -0.00023
+  joint_left_leg_2               pos_rs:  0.52615 vel_rs: -1.25510
+  joint_left_leg_3               pos_rs: -1.07600 vel_rs:  2.57778
+  joint_left_leg_4               pos_rs:  0.10101 vel_rs: -1.23099
+  joint_right_leg_1              pos_rs: -0.00005 vel_rs:  0.00030
+  joint_right_leg_2              pos_rs:  0.52615 vel_rs: -1.25510
+  joint_right_leg_3              pos_rs: -1.07600 vel_rs:  2.57777
+  joint_right_leg_4              pos_rs:  0.10101 vel_rs: -1.23099
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00005 | torque: -4.19534
+  joint_left_leg_2 | pos:  0.52615 | torque:  0.26175
+  joint_left_leg_3 | pos: -1.07600 | torque:  2.42558
+  joint_left_leg_4 | pos:  0.10101 | torque: -0.07120
+  joint_right_leg_1 | pos: -0.00005 | torque:  4.19529
+  joint_right_leg_2 | pos:  0.52615 | torque:  0.26175
+  joint_right_leg_3 | pos: -1.07600 | torque:  2.42550
+  joint_right_leg_4 | pos:  0.10101 | torque: -0.07121
+-------
+Frame 37:
+  joint_left_leg_1               pos:  0.00005 vel: -0.00021
+  joint_left_leg_2               pos:  0.52367 vel: -1.22504
+  joint_left_leg_3               pos: -1.07091 vel:  2.51696
+  joint_left_leg_4               pos:  0.09858 vel: -1.20119
+  joint_right_leg_1              pos: -0.00005 vel:  0.00027
+  joint_right_leg_2              pos:  0.52367 vel: -1.22503
+  joint_right_leg_3              pos: -1.07090 vel:  2.51696
+  joint_right_leg_4              pos:  0.09857 vel: -1.20119
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00005 vel_rs: -0.00021
+  joint_left_leg_2               pos_rs:  0.52367 vel_rs: -1.22504
+  joint_left_leg_3               pos_rs: -1.07091 vel_rs:  2.51696
+  joint_left_leg_4               pos_rs:  0.09858 vel_rs: -1.20119
+  joint_right_leg_1              pos_rs: -0.00005 vel_rs:  0.00027
+  joint_right_leg_2              pos_rs:  0.52367 vel_rs: -1.22503
+  joint_right_leg_3              pos_rs: -1.07090 vel_rs:  2.51696
+  joint_right_leg_4              pos_rs:  0.09857 vel_rs: -1.20119
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00005 | torque: -4.42168
+  joint_left_leg_2 | pos:  0.52367 | torque:  0.27787
+  joint_left_leg_3 | pos: -1.07091 | torque:  2.56493
+  joint_left_leg_4 | pos:  0.09858 | torque: -0.06828
+  joint_right_leg_1 | pos: -0.00005 | torque:  4.42162
+  joint_right_leg_2 | pos:  0.52367 | torque:  0.27787
+  joint_right_leg_3 | pos: -1.07090 | torque:  2.56486
+  joint_right_leg_4 | pos:  0.09857 | torque: -0.06829
+-------
+Frame 38:
+  joint_left_leg_1               pos:  0.00005 vel: -0.00019
+  joint_left_leg_2               pos:  0.52125 vel: -1.19226
+  joint_left_leg_3               pos: -1.06594 vel:  2.45009
+  joint_left_leg_4               pos:  0.09621 vel: -1.16710
+  joint_right_leg_1              pos: -0.00005 vel:  0.00025
+  joint_right_leg_2              pos:  0.52125 vel: -1.19225
+  joint_right_leg_3              pos: -1.06593 vel:  2.45008
+  joint_right_leg_4              pos:  0.09621 vel: -1.16709
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00005 vel_rs: -0.00019
+  joint_left_leg_2               pos_rs:  0.52125 vel_rs: -1.19226
+  joint_left_leg_3               pos_rs: -1.06594 vel_rs:  2.45009
+  joint_left_leg_4               pos_rs:  0.09621 vel_rs: -1.16710
+  joint_right_leg_1              pos_rs: -0.00005 vel_rs:  0.00025
+  joint_right_leg_2              pos_rs:  0.52125 vel_rs: -1.19225
+  joint_right_leg_3              pos_rs: -1.06593 vel_rs:  2.45008
+  joint_right_leg_4              pos_rs:  0.09621 vel_rs: -1.16709
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00005 | torque: -4.68489
+  joint_left_leg_2 | pos:  0.52125 | torque:  0.29664
+  joint_left_leg_3 | pos: -1.06594 | torque:  2.72800
+  joint_left_leg_4 | pos:  0.09621 | torque: -0.06524
+  joint_right_leg_1 | pos: -0.00005 | torque:  4.68483
+  joint_right_leg_2 | pos:  0.52125 | torque:  0.29663
+  joint_right_leg_3 | pos: -1.06593 | torque:  2.72793
+  joint_right_leg_4 | pos:  0.09621 | torque: -0.06524
+-------
+Frame 39:
+  joint_left_leg_1               pos:  0.00005 vel: -0.00018
+  joint_left_leg_2               pos:  0.51890 vel: -1.15741
+  joint_left_leg_3               pos: -1.06111 vel:  2.37856
+  joint_left_leg_4               pos:  0.09391 vel: -1.12965
+  joint_right_leg_1              pos: -0.00005 vel:  0.00024
+  joint_right_leg_2              pos:  0.51890 vel: -1.15740
+  joint_right_leg_3              pos: -1.06110 vel:  2.37854
+  joint_right_leg_4              pos:  0.09391 vel: -1.12964
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00005 vel_rs: -0.00018
+  joint_left_leg_2               pos_rs:  0.51890 vel_rs: -1.15741
+  joint_left_leg_3               pos_rs: -1.06111 vel_rs:  2.37856
+  joint_left_leg_4               pos_rs:  0.09391 vel_rs: -1.12965
+  joint_right_leg_1              pos_rs: -0.00005 vel_rs:  0.00024
+  joint_right_leg_2              pos_rs:  0.51890 vel_rs: -1.15740
+  joint_right_leg_3              pos_rs: -1.06110 vel_rs:  2.37854
+  joint_right_leg_4              pos_rs:  0.09391 vel_rs: -1.12964
+number of joints: 9
+  joint_left_leg_1 | pos:  0.00005 | torque: -4.98178
+  joint_left_leg_2 | pos:  0.51890 | torque:  0.31782
+  joint_left_leg_3 | pos: -1.06111 | torque:  2.91252
+  joint_left_leg_4 | pos:  0.09391 | torque: -0.06202
+  joint_right_leg_1 | pos: -0.00005 | torque:  4.98170
+  joint_right_leg_2 | pos:  0.51890 | torque:  0.31782
+  joint_right_leg_3 | pos: -1.06110 | torque:  2.91248
+  joint_right_leg_4 | pos:  0.09391 | torque: -0.06203
+-------
+Frame 40:
+  joint_left_leg_1               pos:  0.00005 vel: -0.00016
+  joint_left_leg_2               pos:  0.51662 vel: -1.12097
+  joint_left_leg_3               pos: -1.05642 vel:  2.30343
+  joint_left_leg_4               pos:  0.09169 vel: -1.08952
+  joint_right_leg_1              pos: -0.00005 vel:  0.00023
+  joint_right_leg_2              pos:  0.51662 vel: -1.12096
+  joint_right_leg_3              pos: -1.05642 vel:  2.30342
+  joint_right_leg_4              pos:  0.09169 vel: -1.08952
+robot_state joints (actuated order):
+  joint_left_leg_1               pos_rs:  0.00005 vel_rs: -0.00016
+  joint_left_leg_2               pos_rs:  0.51662 vel_rs: -1.12097
+  joint_left_leg_3               pos_rs: -1.05642 vel_rs:  2.30343
+  joint_left_leg_4               pos_rs:  0.09169 vel_rs: -1.08952
+  joint_right_leg_1              pos_rs: -0.00005 vel_rs:  0.00023
+  joint_right_leg_2              pos_rs:  0.51662 vel_rs: -1.12096
+  joint_right_leg_3              pos_rs: -1.05642 vel_rs:  2.30342
+  joint_right_leg_4              pos_rs:  0.09169 vel_rs: -1.08952

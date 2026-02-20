@@ -1046,7 +1046,6 @@ class TitaNetObsNormalizer(Net):
     
 
 class TransformerActorNet(ActionReprNetWithVectorOutput):
-    """Transformer-based preprocess network pronto per ContinuousActorProbabilistic."""
 
     def __init__(
         self,
@@ -1065,7 +1064,6 @@ class TransformerActorNet(ActionReprNetWithVectorOutput):
         super().__init__(output_dim)
         self.seq_len = seq_len
 
-        # embedding iniziale
         embedding_layers = []
         in_dim = state_dim
         for h in embedding_sizes:
@@ -1075,7 +1073,6 @@ class TransformerActorNet(ActionReprNetWithVectorOutput):
         self.embedding = nn.Sequential(*embedding_layers)
         dim_encoder = embedding_sizes[-1]
 
-        # encoder transformer
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=dim_encoder,
             nhead=n_head,
@@ -1114,15 +1111,6 @@ def create_wrapped_env(task: str, task_to_execute: int, render_mode=None,  ) -> 
     return env
 
 def init_layer_orthogonal(m):
-    '''
-    Docstring for init_layer_orthogonal
-    
-    Initialize the weights of a linear layer using orthogonal initialization.
-    Given a tensor w, it will be initialized in a way that w @ w.T = I  ( or w.T @ w = I).
-    Property of orthogonal matrix is that |Wx| = |x|, so it preserves the norm of the input
-    as matrix rotation does.
-    It is used to aboid the vanishing/exploding gradient problem.
-    '''
 
     if isinstance(m, torch.nn.Linear):
         torch.nn.init.orthogonal_(m.weight, gain=1.0)
@@ -1176,7 +1164,8 @@ def main():
     N_FRAME_STACK = env_single.unwrapped.get_config().frame_stack
 
     log_enviroment_config(task, env_single)
-    activation_fn = nn.Softsign
+    #activation_fn = nn.Softsign
+    activation_fn = nn.Tanh
 
     # ----- Choose algorithm -----
     net_mlp = Net(
@@ -1207,7 +1196,7 @@ def main():
         device=device
     )
 
-    net = net_transformer
+    net = net_mlp
 
     actor = ContinuousActorProbabilistic(
         preprocess_net=net,

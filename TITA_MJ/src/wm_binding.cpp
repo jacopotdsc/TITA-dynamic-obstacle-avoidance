@@ -1,3 +1,5 @@
+#include <Python.h>
+#include <frameobject.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/eigen.h>
@@ -75,12 +77,14 @@ PYBIND11_MODULE(wm, m) {
             return ss.str();
         });
 
-    m.def("robot_state_from_mujoco", [](py::object model_obj, py::object data_obj) {
-        uintptr_t model_ptr = get_mujoco_ptr(model_obj);
-        uintptr_t data_ptr = get_mujoco_ptr(data_obj);
-
+    m.def("robot_state_from_mujoco", [](uintptr_t model_ptr, uintptr_t data_ptr) {
         mjModel* model = reinterpret_cast<mjModel*>(model_ptr);
-        mjData* data = reinterpret_cast<mjData*>(data_ptr);
+        mjData* data   = reinterpret_cast<mjData*>(data_ptr);
+
+        if (!model || !data)
+            throw std::runtime_error("Errore: non è stato possibile ottenere i puntatori MuJoCo");
+
+
         return robot_state_from_mujoco(model, data);
     }, "Converte lo stato di MuJoCo in RobotState", 
        py::arg("model_address"), py::arg("data_address"));

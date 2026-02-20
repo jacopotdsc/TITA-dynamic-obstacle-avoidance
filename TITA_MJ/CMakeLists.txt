@@ -7,10 +7,27 @@ set(LOCAL_DEP_DIR "${PROJECT_SOURCE_DIR}/../dependencies/local")
 if(BUILD_PYTHON_BINDINGS)
 message(STATUS ">>> MODE: PYTHON, compilining wm.so)")
 
+set(Python3_ROOT_DIR "/home/ubuntu/miniconda3/envs/tianshou_gpu")
+find_package(Python COMPONENTS Interpreter Development REQUIRED)
+
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set(CMAKE_INSTALL_RPATH "${PROJECT_SOURCE_DIR}/compiled;$ENV{CONDA_PREFIX}/lib;${PROJECT_SOURCE_DIR}/../dependencies/local/lib")
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+set(CMAKE_PREFIX_PATH "/opt/openrobots" ${CMAKE_PREFIX_PATH})
+
+# ---- Forza OpenRobots come priorità ----
+list(PREPEND CMAKE_PREFIX_PATH "/opt/openrobots")
+set(ENV{PKG_CONFIG_PATH} "/opt/openrobots/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+
+# ---- RPATH: carica sempre da OpenRobots ----
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+set(CMAKE_INSTALL_RPATH "/opt/openrobots/lib;${PROJECT_SOURCE_DIR}/compiled")
+
+set(Python3_EXECUTABLE "$ENV{CONDA_PREFIX}/bin/python")
+find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
 find_package(Boost REQUIRED COMPONENTS filesystem serialization system)
 find_package(glfw3 REQUIRED)
@@ -32,34 +49,28 @@ else()
     include_directories(SYSTEM "$ENV{CONDA_PREFIX}/include/coin-or")
 endif()
 
-#set(CONDA_PREFIX $ENV{CONDA_PREFIX})
+set(MUJOCO_PY_PATH "/home/ubuntu/.local/lib/python3.10/site-packages/mujoco")
+list(APPEND CMAKE_INSTALL_RPATH ${MUJOCO_PY_PATH})
 
-find_package(mujoco CONFIG QUIET)
-if(TARGET mujoco::mujoco)
-    message(STATUS "MuJoCo found: using mujoco::mujoco")
-else()
-    set(MUJOCO_PATH "$ENV{HOME}/.pixi/build/work/.../host_placehold*/lib")
-    find_library(MUJOCO_LIBRARY NAMES mujoco PATHS ${MUJOCO_PATH})
-    if(NOT MUJOCO_LIBRARY)
-        message(FATAL_ERROR "MuJoCo library not found in ${MUJOCO_PATH}")
-    endif()
-    add_library(mujoco::mujoco UNKNOWN IMPORTED)
-    set_target_properties(mujoco::mujoco PROPERTIES IMPORTED_LOCATION ${MUJOCO_LIBRARY})
-endif()
+add_library(mujoco::mujoco UNKNOWN IMPORTED)
+set_target_properties(mujoco::mujoco PROPERTIES
+    IMPORTED_LOCATION "${MUJOCO_PY_PATH}/libmujoco.so.3.3.7"
+    INTERFACE_INCLUDE_DIRECTORIES "${MUJOCO_PY_PATH}/include"
+)
 
-include_directories(${MUJOCO_INCLUDE_DIR})
-
-if(NOT MUJOCO_LIBRARY AND NOT TARGET mujoco::mujoco)
-    message(FATAL_ERROR "Cannot find MuJoCo library in ${MUJOCO_LIB_DIR}")
-endif()
+message(STATUS "Using MuJoCo from pip at ${MUJOCO_PY_PATH}")
 
 
 set(blasfeo_INCLUDE_DIRS "${LOCAL_DEP_DIR}/include")
 set(hpipm_INCLUDE_DIRS   "${LOCAL_DEP_DIR}/include")
 set(blasfeo_LIBRARIES    "${LOCAL_DEP_DIR}/lib/libblasfeo.a")
 set(hpipm_LIBRARIES      "${LOCAL_DEP_DIR}/lib/libhpipm.a")
-set(CROCODYD_INCLUDE_DIR "${LOCAL_DEP_DIR}/include")
+set(CROCODYD_INCLUDE_DIR    "${LOCAL_DEP_DIR}/include/crocoddyl")
 set(CROCODYD_LIB_DIR "${LOCAL_DEP_DIR}/lib")
+
+set(CROCODYD_LIB "${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/local/lib/libcrocoddyl.so")
+set(HPIPM_LIB "${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/local/lib/libhpipm.a")
+set(BLASFEO_LIB "${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/local/lib/libblasfeo.a")
 
 add_library(wm MODULE
     src/JointCommand.cpp
@@ -78,12 +89,13 @@ target_include_directories(wm PRIVATE
     ${hpipm_INCLUDE_DIRS}
     ${blasfeo_INCLUDE_DIRS}
     ${hpipm_INCLUDE_DIRS}
+    ${CROCODYD_INCLUDE_DIR}
 )
 
 # WM
 target_link_libraries(wm PRIVATE
     ${Boost_LIBRARIES}
-    ${CROCODYD_LIB_DIR}/libcrocoddyl.so
+    ${CROCODYD_LIB}
     mujoco::mujoco
     pybind11::module
     pinocchio::pinocchio

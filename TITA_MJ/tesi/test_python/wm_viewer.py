@@ -2,7 +2,7 @@ import mujoco
 import mujoco.viewer
 import time
 import numpy as np
-
+import ctypes
 import sys
 ctrl_path = "/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/compiled/"
 sys.path.insert(0, ctrl_path)
@@ -69,6 +69,18 @@ _actuated_joint_names = [
 ]
 
 print(_actuated_joint_names)
+# Print initial joint states in the order of actuated joint names
+print("Initial joint states (actuated order):")
+for name in _actuated_joint_names:
+    jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
+    if jid != -1:
+        qpos_adr = model.jnt_qposadr[jid]
+        q = data.qpos[qpos_adr] if qpos_adr >= 0 else float("nan")
+        dof_adr = model.jnt_dofadr[jid]
+        qvel = data.qvel[dof_adr] if dof_adr >= 0 else float("nan")
+        print(f"  {name:30s} pos: {q: .5f} vel: {qvel: .5f}")
+    else:
+        print(f"  {name:30s} - joint not found")
 
 armatures = {}
 for i in range(model.njnt):
@@ -78,9 +90,24 @@ for i in range(model.njnt):
         val = model.dof_armature[dof_adr]
     armatures[name] = val
 
-initial_robot_state = wm.robot_state_from_mujoco(model, data)
+print("model ptr:", model)
+print("data ptr:", data)
+print("id: ", id(model), id(data))
+
+print("Initiazlizing robot state and walking manager...")
+m_ptr = model._address  # puntatore interno
+d_ptr = data._address   # puntatore interno
+
+print(f"Model pointer: {m_ptr}, Data pointer: {d_ptr}")
+print(f"Model pointer (hex): {hex(m_ptr)}, Data pointer (hex): {hex(d_ptr)}")
+
+initial_robot_state = wm.robot_state_from_mujoco(m_ptr, d_ptr)
+
+print("Initial robot state:")
+print(initial_robot_state)
 walking_manager = wm.WalkingManager()
-wp = wm.WalkingPlanner(0.3, 0.0, 0.0, 0.25, 0.49)
+
+wp = wm.WalkingPlanner(0.0, 0.0, 0.0, 0.25, 0.49)
 res_init = walking_manager.init(initial_robot_state, armatures, wp)
 
 wp_variables = wp.get_variables()
@@ -232,21 +259,43 @@ while True:
     time.sleep(0.0)
     try:
         if viewer.is_running:
-            frame_idx += 1
+
+            print(f"Frame {frame_idx}:")
 
             real_diff = time.time() - start_real
             sim_diff = data.time - start_sim
-
+        
             #if frame_idx % 100 == 0: 
             #    print(f"RTF: {sim_diff / real_diff:.2f}x")
 
-            perturbator._maybe_apply_perturbation()
+            #perturbator._maybe_apply_perturbation()
+
+            for name in _actuated_joint_names:
+                jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
+                if jid != -1:
+                    qpos_adr = model.jnt_qposadr[jid]
+                    q = data.qpos[qpos_adr] if qpos_adr >= 0 else float("nan")
+                    dof_adr = model.jnt_dofadr[jid]
+                    qvel = data.qvel[dof_adr] if dof_adr >= 0 else float("nan")
+                    print(f"  {name:30s} pos: {q: .5f} vel: {qvel: .5f}")
+                else:
+                    print(f"  {name:30s} - joint not found")
                 
             start_real = time.time()
             start_sim = data.time
             
-            robot_state = wm.robot_state_from_mujoco(model, data)
-            #print(robot_state)
+            robot_state = wm.robot_state_from_mujoco(model._address, data._address)
+            # Also print joint values coming from robot_state (for comparison)
+            print("robot_state joints (actuated order):")
+            for name in _actuated_joint_names:
+                try:
+                    jd = robot_state.joint_state[name]
+                    pos_rs = jd.pos
+                    vel_rs = jd.vel
+                    print(f"  {name:30s} pos_rs: {pos_rs: .5f} vel_rs: {vel_rs: .5f}")
+                except Exception:
+                    print(f"  {name:30s} - not present in robot_state")
+            
             pos_des = np.array([0.0, 0.0, 0.4])
             result_update = walking_manager.update(robot_state, pos_des)
 
@@ -267,6 +316,13 @@ while True:
                 if frame_idx >= frame_th:
                     #print(f"{joint_name}: {val:.3f}"    )
                     torque_sorted.append(val)
+            
+            print("number of joints:", model.njnt)
+            for i, joint_name in enumerate(_actuated_joint_names):
+                q = data.qpos[model.jnt_qposadr[1+i]]  
+                tau = data.qfrc_actuator[6+i] 
+                print(f"  {joint_name:15s} | pos: {q: .5f} | torque: {tau: .5f}")
+            print("-------")
 
             #print(torque_sorted)
             if frame_idx >= frame_th:
@@ -275,6 +331,8 @@ while True:
                 else:
                     print(f"Warning: NaN nei torque, frame {frame_idx}, skipping assignment")
 
+            print(f"Applied control: {data.ctrl}")
+            
             #print("--------\nframe:", frame_idx)
             #print("ctrl:", data.ctrl)
             #print("torque:  ", torque_sorted)
@@ -283,6 +341,8 @@ while True:
             #print(f"prev: {[f'{x:.3f}' for x in body_coordinate]}, new: {[f'{x:.3f}' for x in body_coordinate_new]}")
             mujoco.mj_step(model, data)
             viewer.sync()
+
+            frame_idx += 1
         else:
             break
     except Exception as e:
