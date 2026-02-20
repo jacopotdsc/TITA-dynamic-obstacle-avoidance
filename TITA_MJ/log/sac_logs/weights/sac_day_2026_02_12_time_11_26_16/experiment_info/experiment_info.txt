@@ -1,0 +1,100 @@
+Enviroment: Tita-v0
+Episode lenght: 1500
+Observation space: 46 x 1 (stacked frames)
+Action space: (8,)
+Action size: 120.0
+
+	Action Scale: 10.0
+	Action Repeat: 1
+	Frame Stack: 1
+	cost_action_nn: -0.005
+	cost_action_rate: -0.001
+	cost_action_rate_second_order: -0.0001
+	cost_ang_vel_xy: -0.001
+	cost_early_termination: -10
+	cost_orientation: -3.0
+	reward_tracking_ang_vel: 0.5
+	reward_tracking_height: 1
+	reward_tracking_lin_vel: 1
+
+Perturbation config:
+	enable: True
+	first_perturb: 500
+	fixed_duration_steps: 200
+	fixed_perturbation: True
+	fixed_wait_steps: 500
+	kick_durations: [0.05, 0.2]
+	kick_wait_times: [1.0, 3.0]
+	max_force: 100.0
+	max_perturbations: 2
+	velocity_kick: [0.0, 3.0]
+Observation:
+	com_height_wrt_ground
+	gravity_body_frame
+	linvel
+	angvel
+	joint_angles
+	joint_vel
+	command
+	mpc_sol_com_vel
+	mpc_sol_pl_vel
+	mpc_sol_pr_vel
+	prev_nn_act
+
+SAC Hyperparameters:
+	Tau: 0.005
+	Gamma: 0.99
+	Alpha: 0.001
+	N-step return horizon: 5
+
+Starting training enviroment Tita-v0
+
+Buffer parameters:
+	 Total size: 1_010_000
+	 Buffer num: 4
+	 Stack num: 1
+Train Buffer - Batch Observation Shape: (1, 46)
+Train Buffer - Single Sample Shape: (46,)
+Test Buffer - Batch Observation Shape: (1, 46)
+Test Buffer - Single Sample Shape: (46,)
+
+Loading Actor and Critic weights from: sac_day_2026_02_12_time_10_39_36
+Loaded Actor and Critic weights from: /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_02_12_time_10_39_36/final
+
+SAC Trainer parameters:
+	 Num train/test envs 4 / 4
+	 learning rate: 1e-05
+	 hidden sizes: [512, 256, 128]
+	 Max epochs: 100
+	 Batch size: 1024
+	 Epoch num steps: 6000
+	 Collection step num env steps: 80 , roullout:  20
+	 Update step num gradient steps per sample: 1.0
+	 Test step num episodes: 4 
+
+Epoch: 0, epoch elapsed time: 00:00:24, time since start: 00:00:24
+
+Epoch: 1, epoch elapsed time: 00:15:38, time since start: 00:16:03
+
+Epoch: 2, epoch elapsed time: 00:13:03, time since start: 00:29:06
+
+Epoch: 3, epoch elapsed time: 00:05:42, time since start: 00:34:49
+
+Epoch: 4, epoch elapsed time: 00:05:39, time since start: 00:40:28
+
+Epoch: 5, epoch elapsed time: 00:06:09, time since start: 00:46:38
+
+Epoch: 6, epoch elapsed time: 00:05:50, time since start: 00:52:29
+
+Epoch: 7, epoch elapsed time: 00:06:08, time since start: 00:58:37
+
+Epoch: 8, epoch elapsed time: 00:05:55, time since start: 01:04:32
+
+Total training time: 01:05:15
+
+Training completed!
+Logs saved to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs
+Saving weights in /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs
+Saved actor weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_02_12_time_11_26_16/final/final_actor_state_dict.pt
+Saved critic1 weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_02_12_time_11_26_16/final/final_critic_state_dict_1.pt
+Saved critic2 weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_02_12_time_11_26_16/final/final_critic_state_dict_2.pt

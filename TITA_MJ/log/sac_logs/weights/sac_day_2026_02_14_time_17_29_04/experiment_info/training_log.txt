@@ -1,0 +1,7 @@
+Initial test step: test_reward: -0.933128 ± 0.152413, best_reward: -0.933128 ± 0.152413 in #0
+Epoch #1: test_reward: 0.171185 ± 0.267713, best_reward: 0.171185 ± 0.267713 in #1
+Epoch #2: test_reward: 0.318942 ± 0.241034, best_reward: 0.318942 ± 0.241034 in #2
+Epoch #3: test_reward: 0.176017 ± 0.292239, best_reward: 0.318942 ± 0.241034 in #2
+Epoch #4: test_reward: 0.462138 ± 0.772432, best_reward: 0.462138 ± 0.772432 in #4
+Epoch #5: test_reward: 1.194500 ± 0.245582, best_reward: 1.194500 ± 0.245582 in #5
+Epoch #6: test_reward: 1.073846 ± 0.284895, best_reward: 1.194500 ± 0.245582 in #5
