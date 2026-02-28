@@ -1,0 +1,22 @@
+Initial test step: test_reward: -0.275876 ± 0.000000, best_reward: -0.275876 ± 0.000000 in #0
+Epoch #1: test_reward: 0.476593 ± 0.000000, best_reward: 0.476593 ± 0.000000 in #1
+Epoch #2: test_reward: 0.298492 ± 0.000000, best_reward: 0.476593 ± 0.000000 in #1
+Epoch #3: test_reward: -0.147714 ± 0.000000, best_reward: 0.476593 ± 0.000000 in #1
+Epoch #4: test_reward: 0.020856 ± 0.000000, best_reward: 0.476593 ± 0.000000 in #1
+Epoch #5: test_reward: -0.429380 ± 0.000000, best_reward: 0.476593 ± 0.000000 in #1
+Epoch #6: test_reward: -0.489034 ± 0.000000, best_reward: 0.476593 ± 0.000000 in #1
+Epoch #7: test_reward: 0.574223 ± 0.000000, best_reward: 0.574223 ± 0.000000 in #7
+Epoch #8: test_reward: 0.402594 ± 0.000000, best_reward: 0.574223 ± 0.000000 in #7
+Epoch #9: test_reward: 1.514663 ± 0.000000, best_reward: 1.514663 ± 0.000000 in #9
+Epoch #10: test_reward: 0.154964 ± 0.000000, best_reward: 1.514663 ± 0.000000 in #9
+Epoch #11: test_reward: 0.550512 ± 0.000000, best_reward: 1.514663 ± 0.000000 in #9
+Epoch #12: test_reward: -0.304161 ± 0.000000, best_reward: 1.514663 ± 0.000000 in #9
+Epoch #13: test_reward: -0.265004 ± 0.000000, best_reward: 1.514663 ± 0.000000 in #9
+Epoch #14: test_reward: 0.990094 ± 0.000000, best_reward: 1.514663 ± 0.000000 in #9
+Epoch #15: test_reward: -0.315329 ± 0.000000, best_reward: 1.514663 ± 0.000000 in #9
+Epoch #16: test_reward: 1.389232 ± 0.000000, best_reward: 1.514663 ± 0.000000 in #9
+Epoch #17: test_reward: 0.075702 ± 0.000000, best_reward: 1.514663 ± 0.000000 in #9
+Epoch #18: test_reward: 1.294107 ± 0.000000, best_reward: 1.514663 ± 0.000000 in #9
+Epoch #19: test_reward: 0.423537 ± 0.000000, best_reward: 1.514663 ± 0.000000 in #9
+Epoch #20: test_reward: 0.555513 ± 0.000000, best_reward: 1.514663 ± 0.000000 in #9
+Saved /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_02_28_time_12_50_26/experiment_info/plots/task_0_0/render_test_reward_info.png
