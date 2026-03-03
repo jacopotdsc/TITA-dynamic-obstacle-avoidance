@@ -29,6 +29,13 @@ else
     echo "Hpipm folder already exists, skipping clone."
 fi
 
+echo ">>>     Cloning Crocoddyl..."
+if [ ! -d "crocoddyl" ]; then
+    git clone https://github.com/loco-3d/crocoddyl
+else
+    echo "Crocoddyl folder already exists, skipping clone."
+fi
+
 # 3. Build BLASFEO
 echo ">>>     Building BLASFEO..."
 cd "$DEP_PATH/blasfeo"
@@ -77,6 +84,8 @@ sleep 3
 # 5. Build Crocoddyl
 echo ">>>     Building Crocoddyl..."
 cd "$DEP_PATH/crocoddyl"
+mkdir -p build
+cd build
 
 # Directory di installazione assoluta (come per HPIPM)
 INSTALL_DIR_ABS=$(readlink -f "../../local")
@@ -85,9 +94,10 @@ cmake .. \
     -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR_ABS" \
     -DCMAKE_BUILD_TYPE=Release
 
-make -j$(nproc)
+make -j$(( $(nproc) / 2 ))
 make install
 
 echo "-------------------------------------------------------"
 echo " Crocoddyl installed in: $INSTALL_DIR_ABS"
 echo "-------------------------------------------------------"
+w

@@ -107,7 +107,7 @@ print("Initial robot state:")
 print(initial_robot_state)
 walking_manager = wm.WalkingManager()
 
-wp = wm.WalkingPlanner(0.0, 0.0, 0.0, 0.25, 0.49)
+wp = wm.WalkingPlanner(0.0, 0.0, 0.0, 0.4, 0.25, 0.49)
 res_init = walking_manager.init(initial_robot_state, armatures, wp)
 
 wp_variables = wp.get_variables()
@@ -255,12 +255,16 @@ perturbator = Perturbator(model, data, info, dt, torso_body_id, torso_mass, view
 
 # --------------------------------
 np.set_printoptions(precision=5, suppress=True)
+
+imu_id = model.site("imu").id
+
+
 while True:
     time.sleep(0.0)
     try:
         if viewer.is_running:
 
-            print(f"Frame {frame_idx}:")
+            #print(f"Frame {frame_idx}:")
 
             real_diff = time.time() - start_real
             sim_diff = data.time - start_sim
@@ -269,7 +273,7 @@ while True:
             #    print(f"RTF: {sim_diff / real_diff:.2f}x")
 
             #perturbator._maybe_apply_perturbation()
-
+            '''
             for name in _actuated_joint_names:
                 jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
                 if jid != -1:
@@ -280,13 +284,33 @@ while True:
                     print(f"  {name:30s} pos: {q: .5f} vel: {qvel: .5f}")
                 else:
                     print(f"  {name:30s} - joint not found")
-                
+            '''
+            print("-----------\nFrame:", frame_idx)
+
+            # separiamo accelerometro e giroscopio
+            accel =  model.sensor("local_linacc").id 
+            gyro  =  model.sensor("local_angvel").id 
+
+
+            accel_sensor_adr = model.sensor_adr[accel]
+            accel_sensor_dim = model.sensor_dim[accel]
+            accel_data = data.sensordata[accel_sensor_adr : accel_sensor_adr + accel_sensor_dim]
+
+            gyro_sensor_adr = model.sensor_adr[gyro]
+            gyro_sensor_dim = model.sensor_dim[gyro]
+            gyro_data = data.sensordata[gyro_sensor_adr : gyro_sensor_adr + gyro_sensor_dim]
+
+            # stampiamo
+            print("-----------\nFrame:", frame_idx)
+            print("Accelerometro (local):", accel_data)
+            print("Giroscopio (local):", gyro_data)
+
             start_real = time.time()
             start_sim = data.time
             
             robot_state = wm.robot_state_from_mujoco(model._address, data._address)
             # Also print joint values coming from robot_state (for comparison)
-            print("robot_state joints (actuated order):")
+            '''print("robot_state joints (actuated order):")
             for name in _actuated_joint_names:
                 try:
                     jd = robot_state.joint_state[name]
@@ -294,12 +318,11 @@ while True:
                     vel_rs = jd.vel
                     print(f"  {name:30s} pos_rs: {pos_rs: .5f} vel_rs: {vel_rs: .5f}")
                 except Exception:
-                    print(f"  {name:30s} - not present in robot_state")
+                    print(f"  {name:30s} - not present in robot_state")'''
             
-            pos_des = np.array([0.0, 0.0, 0.4])
-            result_update = walking_manager.update(robot_state, pos_des)
+            result_update = walking_manager.update(robot_state)
 
-            torque = result_update.cmd
+            torque = result_update.torque
             #if frame_idx == 0 or frame_idx % 100 == 0:
             #    print(torque)
             mpc_solution = result_update.solution
@@ -317,12 +340,13 @@ while True:
                     #print(f"{joint_name}: {val:.3f}"    )
                     torque_sorted.append(val)
             
-            print("number of joints:", model.njnt)
-            for i, joint_name in enumerate(_actuated_joint_names):
-                q = data.qpos[model.jnt_qposadr[1+i]]  
-                tau = data.qfrc_actuator[6+i] 
-                print(f"  {joint_name:15s} | pos: {q: .5f} | torque: {tau: .5f}")
-            print("-------")
+            
+            #print("number of joints:", model.njnt)
+            #for i, joint_name in enumerate(_actuated_joint_names):
+            #    q = data.qpos[model.jnt_qposadr[1+i]]  
+            #    tau = data.qfrc_actuator[6+i] 
+            #    print(f"  {joint_name:15s} | pos: {q: .5f} | torque: {tau: .5f}")
+            #print("-------")
 
             #print(torque_sorted)
             if frame_idx >= frame_th:
@@ -330,7 +354,7 @@ while True:
                     data.ctrl[:] = torque_sorted
                 else:
                     print(f"Warning: NaN nei torque, frame {frame_idx}, skipping assignment")
-
+            '''
             print(f"Applied control: {data.ctrl}")
             
             #print("--------\nframe:", frame_idx)
@@ -339,6 +363,7 @@ while True:
             #print("mpc_sol:", mpc_solution)
             #draw_perturbation_arrow(viewer, perturbator)
             #print(f"prev: {[f'{x:.3f}' for x in body_coordinate]}, new: {[f'{x:.3f}' for x in body_coordinate_new]}")
+            '''
             mujoco.mj_step(model, data)
             viewer.sync()
 

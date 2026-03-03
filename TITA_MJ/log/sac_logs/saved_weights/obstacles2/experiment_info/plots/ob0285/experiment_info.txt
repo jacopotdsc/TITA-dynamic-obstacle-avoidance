@@ -1,0 +1,203 @@
+Enviroment: Tita-v0
+Episode lenght: 1000
+Observation space: 54 x 3 (stacked frames)
+Action space: (8,)
+Action size: 120.0
+
+	Action Scale: 5.0
+	Action Repeat: 1
+	Frame Stack: 3
+	cost_action_nn: -0.0001
+	cost_action_rate: -0.005
+	cost_ang_vel_xy: -0.005
+	cost_early_termination: -10
+	cost_feet_slip: -0.1
+	cost_joint_velocity: -1e-05
+	cost_leg_base_angle: -0.1
+	cost_lin_vel_z: -0.01
+	cost_orientation: -1.0
+	reward_tracking_ang_vel: 0.5
+	reward_tracking_height: 0.1
+	reward_tracking_lin_vel: 1
+
+Perturbation config:
+	enable: True
+	first_perturb: 100
+	fixed_duration_steps: 200
+	fixed_perturbation: True
+	fixed_wait_steps: 200
+	kick_durations: [0.05, 0.2]
+	kick_wait_times: [1.0, 3.0]
+	max_force_x: 200.0
+	max_force_y: 120.0
+	max_force_z: 0.0
+	max_perturbations: 0
+	perturbation_directions: '0': !!python/object/apply:numpy._core.multiarray._reconstruct
+  args:
+  - &id001 !!python/name:numpy.ndarray ''
+  - !!python/tuple
+    - 0
+  - !!binary |
+    Yg==
+  state: !!python/tuple
+  - 1
+  - !!python/tuple
+    - 3
+  - &id002 !!python/object/apply:numpy.dtype
+    args:
+    - i8
+    - false
+    - true
+    state: !!python/tuple
+    - 3
+    - <
+    - null
+    - null
+    - null
+    - -1
+    - -1
+    - 0
+  - false
+  - !!binary |
+    AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+'1': !!python/object/apply:numpy._core.multiarray._reconstruct
+  args:
+  - *id001
+  - !!python/tuple
+    - 0
+  - !!binary |
+    Yg==
+  state: !!python/tuple
+  - 1
+  - !!python/tuple
+    - 3
+  - *id002
+  - false
+  - !!binary |
+    //////////8AAAAAAAAAAAAAAAAAAAAA
+'2': !!python/object/apply:numpy._core.multiarray._reconstruct
+  args:
+  - *id001
+  - !!python/tuple
+    - 0
+  - !!binary |
+    Yg==
+  state: !!python/tuple
+  - 1
+  - !!python/tuple
+    - 3
+  - *id002
+  - false
+  - !!binary |
+    AAAAAAAAAAABAAAAAAAAAAAAAAAAAAAA
+'3': !!python/object/apply:numpy._core.multiarray._reconstruct
+  args:
+  - *id001
+  - !!python/tuple
+    - 0
+  - !!binary |
+    Yg==
+  state: !!python/tuple
+  - 1
+  - !!python/tuple
+    - 3
+  - *id002
+  - false
+  - !!binary |
+    AAAAAAAAAAD//////////wAAAAAAAAAA
+
+	velocity_kick: [0.0, 3.0]
+Observation:
+	com_height_wrt_ground
+	gravity_body_frame
+	linvel
+	angvel
+	joint_angles
+	joint_vel
+	command
+	mpc_sol_com_vel
+	mpc_sol_pl_vel
+	mpc_sol_pr_vel
+	joint_torque_controller_normalized
+	prev_nn_act
+
+SAC Hyperparameters:
+	Tau: 0.005
+	Gamma: 0.99
+	Alpha: 0.2
+	N-step return horizon: 5
+
+Starting training enviroment Tita-v0
+
+Buffer parameters:
+	 Total size: 1_010_000
+	 Buffer num: 4
+	 Stack num: 1
+Train Buffer - Batch Observation Shape: (1, 162)
+Train Buffer - Single Sample Shape: (162,)
+Test Buffer - Batch Observation Shape: (1, 162)
+Test Buffer - Single Sample Shape: (162,)
+Actor file not found: /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/final
+ -> Continuing training from scratch.
+
+SAC Trainer parameters:
+	 Num train/test envs 4 / 1
+	 learning rate: 0.0001
+	 hidden sizes: [512, 256, 128]
+	 Max epochs: 100
+	 Batch size: 1024
+	 Epoch num steps: 4000
+	 Collection step num env steps: 40 , roullout:  10
+	 Update step num gradient steps per sample: 1.0
+	 Test step num episodes: 1 
+
+Epoch: 0, epoch elapsed time: 00:00:11, time since start: 00:00:11
+
+Epoch: 1, epoch elapsed time: 00:04:03, time since start: 00:04:14
+
+Epoch: 2, epoch elapsed time: 00:04:17, time since start: 00:08:31
+
+Epoch: 3, epoch elapsed time: 00:04:23, time since start: 00:12:55
+
+Epoch: 4, epoch elapsed time: 00:04:25, time since start: 00:17:21
+
+Epoch: 5, epoch elapsed time: 00:04:27, time since start: 00:21:48
+
+Epoch: 6, epoch elapsed time: 00:04:31, time since start: 00:26:19
+
+Epoch: 7, epoch elapsed time: 00:04:28, time since start: 00:30:48
+
+Epoch: 8, epoch elapsed time: 00:04:19, time since start: 00:35:07
+
+Epoch: 9, epoch elapsed time: 00:04:43, time since start: 00:39:50
+
+Epoch: 10, epoch elapsed time: 00:04:44, time since start: 00:44:34
+
+Epoch: 11, epoch elapsed time: 00:04:44, time since start: 00:49:19
+
+Epoch: 12, epoch elapsed time: 00:04:30, time since start: 00:53:49
+
+Epoch: 13, epoch elapsed time: 00:04:47, time since start: 00:58:36
+
+Epoch: 14, epoch elapsed time: 00:04:48, time since start: 01:03:25
+
+Epoch: 15, epoch elapsed time: 00:04:49, time since start: 01:08:15
+
+Epoch: 16, epoch elapsed time: 00:04:52, time since start: 01:13:07
+
+Epoch: 17, epoch elapsed time: 00:04:51, time since start: 01:17:59
+
+Epoch: 18, epoch elapsed time: 00:04:41, time since start: 01:22:40
+
+Epoch: 19, epoch elapsed time: 00:04:54, time since start: 01:27:34
+
+Epoch: 20, epoch elapsed time: 00:04:54, time since start: 01:32:29
+
+Total training time: 01:33:09
+
+Training completed!
+Logs saved to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs
+Saving weights in /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs
+Saved actor weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_03_01_time_18_54_00/final/final_actor_state_dict.pt
+Saved critic1 weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_03_01_time_18_54_00/final/final_critic_state_dict_1.pt
+Saved critic2 weights to /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_03_01_time_18_54_00/final/final_critic_state_dict_2.pt

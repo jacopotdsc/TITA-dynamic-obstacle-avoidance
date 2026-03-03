@@ -4,6 +4,8 @@ Simple PPO training script with vectorized environments.
 Demonstrates procedural API usage for training on Pendulum-v1.
 """
 
+from collections.abc import Sequence
+from typing import Any, TypeVar
 import os
 import sys
 import subprocess
@@ -29,6 +31,8 @@ from copy import deepcopy
 from tianshou.algorithm import TD3
 from tianshou.algorithm.modelfree.ddpg import ContinuousDeterministicPolicy
 from tianshou.algorithm import SAC
+#from tianshou.algorithm import AutoAlpha
+
 from tianshou.exploration import GaussianNoise
 
 from tianshou.algorithm import SAC
@@ -47,12 +51,15 @@ from tianshou.utils.net.common import Net
 from tianshou.utils.net.common import ActionReprNetWithVectorOutput
 from tianshou.utils.net.continuous import ContinuousActorProbabilistic, ContinuousCritic
 from tianshou.utils.space_info import SpaceInfo
+from tianshou.data.types import TObs
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from tianshou.utils.net.common import ActionReprNetWithVectorOutput
 from tianshou.utils.net.continuous import ContinuousActorProbabilistic
 from tianshou.data import Batch
+
+T = TypeVar("T")
 
 _STR_TRAIN = "train"
 _STR_TEST = "test"
@@ -158,6 +165,15 @@ def log_and_print(*args):
         print(message)
         LOG_ARRAY.append(message)
 
+def save_experiment_info(destination_dir: str, filename: str = "experiment_info.txt") -> str | None:
+    if destination_dir is None:
+        return None
+    os.makedirs(destination_dir, exist_ok=True)
+    info_file_path = os.path.join(destination_dir, filename)
+    with open(info_file_path, "w") as f:
+        f.write("\n".join(LOG_ARRAY))
+    return info_file_path
+
 def parser_args():
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
@@ -193,7 +209,7 @@ def parser_args():
 
     script_task = _STR_TRAIN
     alg_type = _STR_SAC
-    render_mode = "human"
+    render_mode = "rgb_array"
     name_weight_name = None
     make_log = False
     warmup_steps = int(args.warmup) if args.warmup > 0 else None
@@ -260,7 +276,7 @@ def test_fn(num_epoch, step_idx, policy, task, num_test_envs, num_view_test_env,
 
     ep_prev_time = current_time
     
-
+    '''
     policy.eval()
     test_collector.reset()
     res = test_collector.collect(n_episode=num_test_envs, render=0)
@@ -269,7 +285,6 @@ def test_fn(num_epoch, step_idx, policy, task, num_test_envs, num_view_test_env,
     buf = test_collector.buffer  
     start = 0
     csv_data = []
-
     for ep_len in res.lens:
         ep_obs = buf.obs[start:start+ep_len]
         ep_act = buf.act[start:start+ep_len]
@@ -316,7 +331,7 @@ def test_fn(num_epoch, step_idx, policy, task, num_test_envs, num_view_test_env,
             raise ValueError(f"Unsupported obs shape for key '{key}': {shape}")
 
 
-    act_headers = [f'action_{i}' for i in range(1, 9)]
+    act_headers = [f'action_{i}' for i in range(0, env_single.unwrapped.action_space[0])]
     headers = ['epoch','frame', 'episode_length', 'mean_length', 'reward'] + list(obs_headers) + act_headers
 
     global dir_experiment
@@ -330,7 +345,7 @@ def test_fn(num_epoch, step_idx, policy, task, num_test_envs, num_view_test_env,
         df = pd.DataFrame(csv_data, columns=headers)
 
     df.to_csv(csv_path, index=False)
-
+    '''
     if False and num_epoch >= 0 and num_epoch % 1 == 0:
         policy.eval()
         test_enviroment(
@@ -378,7 +393,8 @@ def test_enviroment(
         num_test_envs: int = 16,
         save_plot_dir: str = None,
         training_in_test: bool = False,
-        num_epoch: int = 0
+        num_epoch: int = 0,
+        mpc_only: bool = False
     ):
     
     if training_in_test == True:
@@ -411,7 +427,13 @@ def test_enviroment(
             os.makedirs(save_dir)
             break
         trial += 1
+
+    info_file_path = save_experiment_info(save_plot_dir, os.path.join(exp_dir_name, "experiment_info.txt"))
+    if info_file_path is not None:
+        print(f"\n\tExperiment info saved to {info_file_path}")
     
+    # fare logica che salvo nella stessa cartella e subdir diverse
+    # una con NN funzioante e l'altra baseline
 
     #video_folder = os.path.join("videos", f"{task_name}_{timestamp}")
     
@@ -432,13 +454,22 @@ def test_enviroment(
         truncated = False
 
         logging = {key: [] for key in env.unwrapped.get_obs_info()[0]}
-        logging.update({
+        extra_keys ={
             'action': [], 
             'reward_info': [], 
             'reward_per_frame': [],
             'n_frame': [],
             'perturb': [],
             'tita_controller_output': [],
+
+            'total_energy': [],
+            'total_torque': [],
+            'tracking_lin_vel': [],
+            'tracking_ang_vel': [],
+
+            'lin_vel_xyz_error': [],
+            'omega_vel_error': [],
+            'orientation_xy_error': [],
 
             "mpc_sol_com_pos" : [],
             "mpc_sol_com_vel" : [],
@@ -465,7 +496,9 @@ def test_enviroment(
             'right_feet_pos': [],
             'right_feet_vel': [],
             'right_feet_acc': [],
-        })
+        }
+
+        logging.update(extra_keys)
 
 
         start_time_inference = []
@@ -486,6 +519,9 @@ def test_enviroment(
             if isinstance(action, torch.Tensor):
                 action = action.cpu().numpy()
 
+            if mpc_only == True:
+                action = np.array([0.0])*(env.unwrapped.action_space.shape[0])
+
             scaled_action = action * env.unwrapped.get_config().action_scale
             obs, reward, terminated, truncated, reward_info = env.step(action)
             env.unwrapped._update_perturbation_visual()
@@ -500,7 +536,8 @@ def test_enviroment(
                
             obs_dict, slices = env.unwrapped.get_obs_info()
             for key, value in obs_dict.items():
-                logging[key].append(value.copy() if isinstance(value, np.ndarray) else value)
+                if key not in extra_keys.keys():
+                    logging[key].append(value.copy() if isinstance(value, np.ndarray) else value)
             
             env_info_dict = reward_info['info'] 
             reward_info.pop('info', None)
@@ -508,6 +545,9 @@ def test_enviroment(
 
             logging['action'].append(scaled_action.copy())
             logging['reward_per_frame'].append(reward)
+
+            logging['total_energy'].append( reward_info['cost_total_energy'] )
+            logging['total_torque'].append( reward_info['cost_total_torque'] )
 
             logging["mpc_sol_com_pos"].append(env_info_dict["mpc_sol_com_pos"])
             logging["mpc_sol_com_vel"].append(env_info_dict["mpc_sol_com_vel"])
@@ -518,6 +558,10 @@ def test_enviroment(
             logging["mpc_sol_pr_pos"].append(env_info_dict["mpc_sol_pr_pos"])
             logging["mpc_sol_pr_vel"].append(env_info_dict["mpc_sol_pr_vel"])
             logging["mpc_sol_pr_acc"].append(env_info_dict["mpc_sol_pr_acc"])
+            
+            logging["lin_vel_xyz_error"].append(env_info_dict["lin_vel_xyz_error"])
+            logging["omega_vel_error"].append(env_info_dict["omega_vel_error"])
+            logging["orientation_xy_error"].append(env_info_dict["orientation_xy_error"])
             
             gt_com_pos = env.unwrapped.data.subtree_com[0, :].copy()
             gt_com_lin_vel = env.unwrapped.data.qvel[0:3].copy()
@@ -625,16 +669,21 @@ def test_enviroment(
 
                     # --- COLONNA 1: NN HISTORY ACTION (Destra) ---
                     # Gamba Sinistra
-                    for i in range(4):
+                    size_action_space = env_single.unwrapped.action_space.shape[0]
+                    n_actuators = env_single.unwrapped.model.nu
+                    n_left = size_action_space // 2
+                    n_right = size_action_space - n_left
+                    for i in range( n_left ):
                         axes[0, 1].plot(frames, history_action[:, i], label=legend_left[i])
+                        
                     axes[0, 1].set_ylabel("Action (scaled)")
                     axes[0, 1].set_title("NN Action Output (Left Leg)")
                     axes[0, 1].legend(loc='upper right', fontsize='small')
                     axes[0, 1].grid(True, alpha=0.3)
 
                     # Gamba Destra
-                    for i in range(4):
-                        axes[1, 1].plot(frames, history_action[:, i+4], label=legend_right[i])
+                    for i in range(n_right):
+                        axes[1, 1].plot(frames, history_action[:, i+n_left], label=legend_right[i])
                     axes[1, 1].set_xlabel("Frame")
                     axes[1, 1].set_ylabel("Action (scaled)")
                     axes[1, 1].set_title("NN Action Output (Right Leg)")
@@ -658,41 +707,103 @@ def test_enviroment(
                     plt.savefig(saved)
                     print(f"Saved {saved}")
 
+                def save_csv(logging_array, data_str, csv_name):
+                    folder_csv = os.path.join(save_dir, "csv_data")
+                    os.makedirs(folder_csv, exist_ok=True)
+                    csv_path = os.path.join(folder_csv, csv_name)
+
+                    arr = np.array(logging_array)
+
+                    # Caso 1: una sola variabile (stringa)
+                    if isinstance(data_str, str):
+                        arr = arr.reshape(-1, 1)
+                        columns = [data_str]
+
+                    # Caso 2: più colonne
+                    else:
+                        if arr.ndim == 1:
+                            arr = arr.reshape(-1, 1)
+                        columns = data_str
+
+                    n_frames = arr.shape[0]
+                    frame_index = np.arange(n_frames)
+
+                    df = pd.DataFrame(arr, columns=columns)
+                    df.insert(0, "frame", frame_index)
+
+                    df.to_csv(csv_path, index=False)
+
+                    print(f"CSV saved in: {csv_path}")
+
                 def plot_reward_info():
                     history_reward_info = np.array(logging['reward_info'])
+                    frames = range(len(history_reward_info))
 
                     reward_info_keys = list(history_reward_info[0].keys())
-                    reward_info_keys = [key for key in reward_info_keys if env.unwrapped.get_config().reward_config.scales.get(key) != 0] 
-                    n_keys = len(reward_info_keys)
-                    
+                    reward_info_keys = [key for key in reward_info_keys 
+                                        if env.unwrapped.get_config().reward_config.scales.get(key) != 0 and key != "cost_early_termination"]
+
+                    # Separiamo chiavi estreme
+                    extreme_keys = []
+                    normal_keys = []
+                    value_th = 10
+                    for key in reward_info_keys:
+                        values = [info[key] for info in history_reward_info]
+                        if max(values) > value_th or min(values) < -value_th:
+                            extreme_keys.append(key)
+                        else:
+                            normal_keys.append(key)
+
+                    # Numero di subplot: 2 + 1 se ci sono estreme
+                    n_subplots = 2 + (1 if extreme_keys else 0)
+                    fig, axes = plt.subplots(n_subplots, 1, figsize=(12, 5*n_subplots), sharex=True)
+
+                    # Se solo 2 subplot, axes è array; se 1 subplot estremo aggiuntivo, axes diventa array di 3
+                    if n_subplots == 2:
+                        axes = np.array(axes)  # for consistency
+                    elif n_subplots == 3:
+                        axes = np.array(axes)
+
+                    subplot_idx = 0
+
+                    # --- Estreme (se ci sono) ---
+                    if extreme_keys:
+                        ax_extreme = axes[subplot_idx]
+                        for key in extreme_keys:
+                            values = [info[key] for info in history_reward_info]
+                            ax_extreme.plot(frames, values, label=key)
+                        ax_extreme.set_title(f"Big Reward Info (>< {value_th})")
+                        ax_extreme.set_ylabel("Value")
+                        ax_extreme.grid(True)
+                        ax_extreme.legend(loc='upper right', ncol=2)
+                        subplot_idx += 1
+
+                    # --- Normal keys divise su due subplot ---
+                    n_keys = len(normal_keys)
                     mid = (n_keys + 1) // 2
-                    fig, axes = plt.subplots(2, 1, figsize=(12, 10), sharex=True)
+                    for idx, key in enumerate(normal_keys):
+                        ax = axes[subplot_idx] if idx < mid else axes[subplot_idx+1]
+                        reward_values = [info[key] for info in history_reward_info]
+                        ax.plot(frames, reward_values, label=key)
 
-                    for idx, key in enumerate(reward_info_keys):
-                        if key != "cost_early_termination":
-                            ax = axes[0] if idx < mid else axes[1]
-                            
-                            reward_values = [info[key] for info in history_reward_info]
-                            ax.plot(frames, reward_values, label=key)
-                    axes[0].set_title("Reward Info")
-                    axes[0].set_ylabel("Value")
-                    axes[0].legend(loc='upper right', ncol=2) #
-                    axes[0].grid(True)
-
-                    # Configurazioni per il grafico inferiore
-                    axes[1].set_title("Reward Info")
-                    axes[1].set_ylabel("Value")
-                    axes[1].set_xlabel("Frame")
-                    axes[1].legend(loc='upper right', ncol=2)
-                    axes[1].grid(True)
+                    for i in range(subplot_idx, n_subplots):
+                        axes[i].set_title("Reward Info (Normal Keys)")
+                        axes[i].set_ylabel("Value")
+                        axes[i].set_xlabel("Frame")
+                        axes[i].legend(loc='upper right', ncol=2)
+                        axes[i].grid(True)
 
                     plt.tight_layout()
-                    #os.makedirs(save_dir, exist_ok=True)
-                    name = "render_test_reward_info.png"
-                    saved = os.path.join(save_dir, name)
+                    saved = os.path.join(save_dir, "render_test_reward_info.png")
                     plt.savefig(saved)
                     print(f"Saved {saved}")
-                    plt.savefig(saved)
+
+                    # --- CSV con tutte le chiavi ---
+                    reward_matrix = []
+                    for info in history_reward_info:
+                        row = [info[key] for key in reward_info_keys]
+                        reward_matrix.append(row)
+                    save_csv(reward_matrix, reward_info_keys, f"reward_info.csv")
 
                 def plot_total_reward_info():
                     reward_per_frame = np.array(logging["reward_per_frame"])
@@ -727,7 +838,83 @@ def test_enviroment(
                     saved = os.path.join(save_dir, "render_test_total_reward.png")
                     plt.savefig(saved)
                     print(f"Saved {saved}")
-                
+
+                    #save_csv(reward_per_frame, "reward_per_frame", "reward_per_frame.csv")
+
+                def plot_total_energy():
+                    history_total_energy = np.array(logging['total_energy']) / env.unwrapped.get_config().reward_config.scales['cost_total_energy']
+                    frames = range(len(history_total_energy))
+                    cumulative_total_energy = np.cumsum(history_total_energy)
+
+                    plt.figure(figsize=(10, 6))
+                    plt.plot(frames, history_total_energy, color='tab:orange', linewidth=2, label='Total energy cost')
+                    plt.title("Total Energy Over Time")
+                    plt.xlabel("Frame")
+                    plt.ylabel("|tau*dq| W")
+                    plt.legend(loc='upper right')
+                    plt.grid(True, alpha=0.3)
+                    plt.tight_layout()
+
+                    name = "render_test_total_energy.png"
+                    saved = os.path.join(save_dir, name)
+                    plt.savefig(saved)
+                    print(f"Saved {saved}")
+
+                    save_csv(history_total_energy, "energy_per_frame", "total_energy_per_frame.csv")
+
+                    plt.figure(figsize=(10, 6))
+                    plt.plot(frames, cumulative_total_energy, color='tab:red', linewidth=2, label='Cumulative total energy cost')
+                    plt.title("Cumulative Total Energy Over Time")
+                    plt.xlabel("Frame")
+                    plt.ylabel("sum_0^t |tau*dq| W")
+                    plt.legend(loc='upper left')
+                    plt.grid(True, alpha=0.3)
+                    plt.tight_layout()
+
+                    cumulative_name = "render_test_total_energy_cumulative.png"
+                    cumulative_saved = os.path.join(save_dir, cumulative_name)
+                    plt.savefig(cumulative_saved)
+                    print(f"Saved {cumulative_saved}")
+
+                    #save_csv(cumulative_total_energy, "cumulative_energy", "total_energy_cumulative.csv")
+
+                def plot_total_torque():
+                    history_total_torque = np.array(logging['total_torque']) / env.unwrapped.get_config().reward_config.scales['cost_total_torque']
+                    frames = range(len(history_total_torque))
+                    cumulative_total_torque = np.cumsum(history_total_torque)
+
+                    plt.figure(figsize=(10, 6))
+                    plt.plot(frames, history_total_torque, color='tab:purple', linewidth=2, label='Total torque cost')
+                    plt.title("Total Torque Over Time")
+                    plt.xlabel("Frame")
+                    plt.ylabel("|tau| N*m")
+                    plt.legend(loc='upper right')
+                    plt.grid(True, alpha=0.3)
+                    plt.tight_layout()
+
+                    name = "render_test_total_torque.png"
+                    saved = os.path.join(save_dir, name)
+                    plt.savefig(saved)
+                    print(f"Saved {saved}")
+
+                    save_csv(history_total_torque, "torque_per_frame", "total_torque_per_frame.csv")
+
+                    plt.figure(figsize=(10, 6))
+                    plt.plot(frames, cumulative_total_torque, color='tab:brown', linewidth=2, label='Cumulative total torque cost')
+                    plt.title("Cumulative Total Torque Over Time")
+                    plt.xlabel("Frame")
+                    plt.ylabel("sum_0^t |tau| N*m")
+                    plt.legend(loc='upper left')
+                    plt.grid(True, alpha=0.3)
+                    plt.tight_layout()
+
+                    cumulative_name = "render_test_total_torque_cumulative.png"
+                    cumulative_saved = os.path.join(save_dir, cumulative_name)
+                    plt.savefig(cumulative_saved)
+                    print(f"Saved {cumulative_saved}")
+
+                    #save_csv(cumulative_total_torque, "total_torque_cumulative", "total_torque_cumulative.csv")
+
                 def plot_com():
                     
                     history_gt_com_pos = np.array(logging['gt_com_pos'])
@@ -914,6 +1101,146 @@ def test_enviroment(
                     saved = os.path.join(save_dir, name)
                     plt.savefig(saved)
                     print(f"Saved {saved}")
+
+                def plot_lin_vel_errors():
+
+                    history_lin_vel_xyz_error = np.array(logging['lin_vel_xyz_error'])
+                    history_lin_vel_xy_error = history_lin_vel_xyz_error[:, :2]
+                    history_lin_vel_z_error = history_lin_vel_xyz_error[:, 2]
+
+                    cumulative_lin_vel_xy = np.cumsum(np.abs(history_lin_vel_xy_error))
+                    cumulative_lin_vel_z = np.cumsum(np.abs(history_lin_vel_z_error))
+
+                    frames = range(len(history_lin_vel_xy_error))
+
+                    fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+
+                    if history_lin_vel_xy_error.ndim == 1:
+                        axes[0].plot(frames, history_lin_vel_xy_error, label='lin_vel_xy_error', color='tab:blue')
+                    else:
+                        for i in range(history_lin_vel_xy_error.shape[1]):
+                            axes[0].plot(frames, history_lin_vel_xy_error[:, i], label=f'lin_vel_xy_error_{i}', linewidth=1.5)
+                    axes[0].set_title("Linear Velocity XY Error")
+                    axes[0].set_ylabel("Error m/s")
+                    axes[0].grid(True, alpha=0.3)
+                    axes[0].legend(loc='upper right')
+
+                    if history_lin_vel_z_error.ndim == 1:
+                        axes[1].plot(frames, history_lin_vel_z_error, label='lin_vel_z_error', color='tab:red')
+                    else:
+                        for i in range(history_lin_vel_z_error.shape[1]):
+                            axes[1].plot(frames, history_lin_vel_z_error[:, i], label=f'lin_vel_z_error_{i}', linewidth=1.5)
+                    axes[1].set_title("Linear Velocity Z Error")
+                    axes[1].set_xlabel("Frame")
+                    axes[1].set_ylabel("Error m/s")
+                    axes[1].grid(True, alpha=0.3)
+                    axes[1].legend(loc='upper right')
+
+                    plt.tight_layout()
+                    name = "render_test_lin_vel_errors.png"
+                    saved = os.path.join(save_dir, name)
+                    plt.savefig(saved)
+                    print(f"Saved {saved}")
+
+                    save_csv(history_lin_vel_xy_error, "lin_vel_xyz_error", "lin_vel_xyz_error.csv")
+
+                    fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+
+                    if cumulative_lin_vel_xy.ndim == 1:
+                        axes[0].plot(frames, cumulative_lin_vel_xy, label='cumulative_vel_xy_error', color='tab:blue')
+                    else:
+                        for i in range(cumulative_lin_vel_xy.shape[1]):
+                            axes[0].plot(frames, cumulative_lin_vel_xy[:, i], label=f'cumulative_lin_vel_xy{i}', linewidth=1.5)
+                    axes[0].set_title("Cumulative Linear Velocity XY Error")
+                    axes[0].set_ylabel("Cumulative error m/s")
+                    axes[0].grid(True, alpha=0.3)
+                    axes[0].legend(loc='upper right')
+
+                    if cumulative_lin_vel_z.ndim == 1:
+                        axes[1].plot(frames, cumulative_lin_vel_z, label='cumulative_lin_vel_z_error', color='tab:red')
+                    else:
+                        for i in range(cumulative_lin_vel_z.shape[1]):
+                            axes[1].plot(frames, cumulative_lin_vel_z[:, i], label=f'cumulative_lin_vel_z_error_{i}', linewidth=1.5)
+                    axes[1].set_title("Linear Velocity Z Error")
+                    axes[1].set_xlabel("Frame")
+                    axes[1].set_ylabel("Error m/s")
+                    axes[1].grid(True, alpha=0.3)
+                    axes[1].legend(loc='upper right')
+
+                    plt.tight_layout()
+                    name = "render_test_cumulative_lin_vel_errors.png"
+                    saved = os.path.join(save_dir, name)
+                    plt.savefig(saved)
+                    print(f"Saved {saved}")
+
+                def plot_omega_gravity_errors():
+                    history_omega_vel_error = np.array(logging['omega_vel_error'])
+                    history_orientation_xy_error = np.array(logging['orientation_xy_error'])
+                    frames = range(len(history_omega_vel_error))
+
+                    cumulative_omega_vel_error = np.cumsum(np.abs(history_omega_vel_error))
+                    cumulative_orientation_xy_error = np.cumsum(np.abs(history_orientation_xy_error))
+
+                    fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+
+                    if history_omega_vel_error.ndim == 1:
+                        axes[0].plot(frames, history_omega_vel_error, label='omega_vel_error', color='tab:purple')
+                    else:
+                        for i in range(history_omega_vel_error.shape[1]):
+                            axes[0].plot(frames, history_omega_vel_error[:, i], label=f'omega_vel_error_{i}', linewidth=1.5)
+                    axes[0].set_title("Omega Velocity Error")
+                    axes[0].set_ylabel("Error rad/s")
+                    axes[0].grid(True, alpha=0.3)
+                    axes[0].legend(loc='upper right')
+
+                    if history_orientation_xy_error.ndim == 1:
+                        axes[1].plot(frames, history_orientation_xy_error, label='orientation_xy_error', color='tab:green')
+                    else:
+                        for i in range(history_orientation_xy_error.shape[1]):
+                            axes[1].plot(frames, history_orientation_xy_error[:, i], label=f'orientation_xy_error_{i}', linewidth=1.5)
+                    axes[1].set_title("Gravity XY Error")
+                    axes[1].set_xlabel("Frame")
+                    axes[1].set_ylabel("Error desired IMU acceleration m/s²")
+                    axes[1].grid(True, alpha=0.3)
+                    axes[1].legend(loc='upper right')
+
+                    plt.tight_layout()
+                    name = "render_test_omega_gravity_errors.png"
+                    saved = os.path.join(save_dir, name)
+                    plt.savefig(saved)
+                    print(f"Saved {saved}")
+
+                    save_csv(history_omega_vel_error, "omega_vel_error", "omega_vel_error.csv")
+                    save_csv(history_orientation_xy_error, "orientation_xy_error", "orientation_xy_error.csv")
+
+                    fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+
+                    if cumulative_omega_vel_error.ndim == 1:
+                        axes[0].plot(frames, cumulative_omega_vel_error, label='cumulative_omega_vel_error', color='tab:purple')
+                    else:
+                        for i in range(cumulative_omega_vel_error.shape[1]):
+                            axes[0].plot(frames, cumulative_omega_vel_error[:, i], label=f'cumulative_omega_vel_error_{i}', linewidth=1.5)
+                    axes[0].set_title("Omega Velocity Error")
+                    axes[0].set_ylabel("Error rad/s")
+                    axes[0].grid(True, alpha=0.3)
+                    axes[0].legend(loc='upper right')
+
+                    if cumulative_orientation_xy_error.ndim == 1:
+                        axes[1].plot(frames, cumulative_orientation_xy_error, label='cumulative_orientation_xy_error', color='tab:green')
+                    else:
+                        for i in range(cumulative_orientation_xy_error.shape[1]):
+                            axes[1].plot(frames, cumulative_orientation_xy_error[:, i], label=f'cumulative_orientation_xy_error_{i}', linewidth=1.5)
+                    axes[1].set_title("Gravity XY Error")
+                    axes[1].set_xlabel("Frame")
+                    axes[1].set_ylabel("cumulative error desired IMU acceleration m/s²")
+                    axes[1].grid(True, alpha=0.3)
+                    axes[1].legend(loc='upper right')
+
+                    plt.tight_layout()
+                    name = "render_test_cumulative_omega_gravity_errors.png"
+                    saved = os.path.join(save_dir, name)
+                    plt.savefig(saved)
+                    print(f"Saved {saved}")
                     
                 if training_in_test == True:
                     subdir = os.path.join(save_plot_dir, "plots_train_in_test")
@@ -923,9 +1250,13 @@ def test_enviroment(
                 plotting_task = [
                     plot_reward_info,
                     plot_total_reward_info,
+                    plot_total_energy,
+                    plot_total_torque,
                     plot_com,
                     plot_feet,
                     plot_torques,
+                    plot_lin_vel_errors,
+                    plot_omega_gravity_errors,
                     plot_perturbation
                 ]
 
@@ -999,6 +1330,12 @@ def log_enviroment_config(task, env_single: gym.Env):
 
     for k in observation_dict.keys():
         log_and_print(f"\t{k}")
+
+        value_obs = observation_dict[k]
+        if isinstance(value_obs, dict):
+            for k_dict, v_dict in value_obs.items():
+                log_and_print(f"\t\t{k_dict}")
+
 
 def dist_fn(loc_scale: tuple[torch.Tensor, torch.Tensor]) -> Distribution:
     loc, scale = loc_scale
@@ -1102,6 +1439,78 @@ class TransformerActorNet(ActionReprNetWithVectorOutput):
         x = self.output_layer(x[:, -1, :])  # prendi solo l'ultima "token"
         return x, state
 
+class TaskConditionedNet(Net):
+    """
+    Wrapper di tianshou Net che aggiunge un binary token embedding.
+
+    L'env appende un token binario (0/1) come ULTIMO elemento di ogni
+    singola osservazione. Dopo FrameStackObservation + FlattenObservation
+    l'obs ha shape [frame_stack * single_obs_dim] e il token compare a
+    [single_obs_dim-1, 2*single_obs_dim-1, ...].
+
+    Questo modulo:
+      1. reshapa obs -> [B, frame_stack, single_obs_dim]
+      2. estrae il token dall'ULTIMO elemento di ogni frame ([:, :, -1])
+         posizioni nel flat obs: D-1, 2D-1, ..., F*D-1
+      3. li embeds con nn.Embedding(2, embed_dim) -> [B, F, embed_dim]
+      4. rimuove il token slot da ogni frame e flatten -> obs_core [B, F*(D-1)]
+      5. concatena obs_core + token_emb.reshape(B, F*embed_dim) e passa al Net interno
+    """
+
+    def __init__(
+        self,
+        state_shape: int | Sequence[int],
+        hidden_sizes: Sequence[int] = (),
+        activation: type = nn.Tanh,
+        frame_stack: int = 1,
+        embed_dim: int = 8,  
+        n_token: int = 1,
+        **kwargs
+    ):
+        super().__init__(state_shape=state_shape, hidden_sizes=hidden_sizes, activation=activation, **kwargs)
+
+        assert state_shape[0] % frame_stack == 0, (f"state dimension ({state_shape}) must be divisible by frame_stack ({frame_stack})")
+
+        self._frame_stack = frame_stack
+        self._single_dim  = state_shape[0] // frame_stack  # include il token slot
+
+        self.n_token = n_token
+        self.token_dim = 2 ** self.n_token
+        self.token_embedding = nn.Embedding( self.token_dim , embed_dim) 
+
+        net_in_dim = frame_stack * (self._single_dim - self.n_token + embed_dim)
+        self.net = Net(
+            state_shape=(net_in_dim,),
+            hidden_sizes=hidden_sizes,
+            activation=activation,
+        )
+
+    def forward(
+        self,
+        obs: TObs,
+        state: T | None = None,
+        info: dict[str, Any] | None = None,
+    ) -> tuple[torch.Tensor, T | Any]:
+        
+        if isinstance(obs, np.ndarray):
+            obs = torch.as_tensor(obs, dtype=torch.float32,
+                                  device=next(self.parameters()).device)
+        else:
+            obs = obs.to(next(self.parameters()).device).float()
+
+        B = obs.shape[0]
+        x = obs.view(B, self._frame_stack, self._single_dim)  # [B, F, D]
+
+        # token is the last element of each frame: positions D-1, 2D-1, ..., F*D-1
+        tokens    = x[:, :, -self.n_token:].long()                        # [B, F]
+        token_emb = self.token_embedding(tokens)              # [B, F, embed_dim]
+        token_emb = token_emb.reshape(B, -1)                  # [B, F*embed_dim]
+        obs_core  = x[:, :, :-self.n_token].reshape(B, -1)               # [B, F*(D-1)]  senza token
+
+        net_in = torch.cat([obs_core, token_emb], dim=-1)
+        return self.net(net_in, state, info)
+
+
 def create_wrapped_env(task: str, task_to_execute: int, render_mode=None,  ) -> gym.Env:
     env = gym.make(task, render_mode=render_mode, width=1000, height=600, task_to_execute=task_to_execute)
     #env = gym.wrappers.NormalizeObservation(env)  
@@ -1145,10 +1554,10 @@ def main():
 
     logdir = os.path.join(get_git_root(), "TITA_MJ", "log", f"{alg_type}_logs")
     device = "cuda"
-    lr = 1e-5
+    lr = 1e-4
     hidden_sizes = [512, 256, 128]
     num_training_envs = 4
-    num_test_envs = 2*env_single.unwrapped.get_num_tasks()
+    num_test_envs = 1#2*env_single.unwrapped.get_num_tasks()
     num_view_test_env = 1
     if script_task == _STR_TRAIN:
         training_envs = SubprocVectorEnv( [lambda i=i: create_wrapped_env(task, task_to_execute=i) for i in range(num_training_envs)], )
@@ -1175,6 +1584,15 @@ def main():
         #norm_layer=LayerNormalizer
     )
 
+    net_task_conditioned = TaskConditionedNet(
+        state_shape=state_shape,
+        hidden_sizes=hidden_sizes,
+        activation=activation_fn,
+        frame_stack=env_single.unwrapped.get_config().frame_stack,
+        embed_dim=4,
+        n_token=env_single.unwrapped.get_num_token()
+    ).to(device)
+
     net_norm = TitaNetObsNormalizer(
         state_shape=state_shape,
         hidden_sizes=hidden_sizes,
@@ -1196,7 +1614,7 @@ def main():
         device=device
     )
 
-    net = net_mlp
+    net = net_task_conditioned   # <-- usa Net interno con token embedding
 
     actor = ContinuousActorProbabilistic(
         preprocess_net=net,
@@ -1303,7 +1721,8 @@ def main():
             critic2_optim=AdamOptimizerFactory(lr=lr),
             tau=0.005,
             gamma=0.99,
-            alpha=0.001,
+            alpha=0.2,
+            #alpha=AutoAlpha(target_entropy=-action_shape[0], log_alpha=-1.2, optim=AdamOptimizerFactory(lr=lr))
             n_step_return_horizon=5,
         )
 
@@ -1548,7 +1967,7 @@ def main():
         log_and_print("\t Update step num repetitions:", trainer_type.update_step_num_repetitions)
         log_and_print("\t Test step num episodes:", trainer_type.test_step_num_episodes, "\n")
     elif alg_type == _STR_SAC: 
-        rollout = 20
+        rollout = 10
         trainer_type = OffPolicyTrainerParams(
                 training_collector=train_collector, 
                 test_collector=test_collector,  
@@ -1642,17 +2061,13 @@ def main():
             torch.save(critic2.state_dict(), final_critic2_path)
             log_and_print(f"Saved critic2 weights to {final_critic2_path}")
         else:
-            raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")
-        
-        
+            raise ValueError("Unsupported algorithm. Choose either 'ppo' or 'sac'.")        
     except Exception as e:
         log_and_print("Could not save model weights:", e)
     finally:
-        info_file_path = os.path.join(actor_base_dir, DIR_EXPERIMENT_INFO, "experiment_info.txt")
-        os.makedirs(os.path.dirname(info_file_path), exist_ok=True)
-        with open(info_file_path, "w") as f:
-            f.write("\n".join(LOG_ARRAY))
-        print(f"\n\tExperiment info saved to {info_file_path}")
+        info_file_path = save_experiment_info(os.path.join(actor_base_dir, DIR_EXPERIMENT_INFO))
+        if info_file_path is not None:
+            print(f"\n\tExperiment info saved to {info_file_path}")
 
         try:
             script_path = os.path.join(get_git_root(), "TITA_MJ", "tesi", "test_python", "plot.py")
@@ -1665,9 +2080,10 @@ def main():
                 task_name=task,
                 task_to_display=task_to_display,
                 policy=policy,
-                render_mode=None,
+                render_mode="rgb_array",
                 num_test_envs=num_test_envs,
-                save_plot_dir=os.path.join(actor_base_dir, DIR_EXPERIMENT_INFO, "plots")
+                save_plot_dir=os.path.join(actor_base_dir, DIR_EXPERIMENT_INFO, "plots"),
+                mpc_only=False
             )
         except Exception as e:
             print("\n\tError on testing enviroment after training:", e)

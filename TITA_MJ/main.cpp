@@ -167,7 +167,7 @@ int main() {
   // Walking Manager:
   labrob::RobotState initial_robot_state = labrob::robot_state_from_mujoco(mj_model_ptr, mj_data_ptr);
   labrob::WalkingManager walking_manager;
-  labrob::walkingPlanner walking_planner = labrob::walkingPlanner(0.0, 0.0, 0.0, 0.25, 0.49);
+  labrob::walkingPlanner walking_planner = labrob::walkingPlanner(1.0, 0.0, 0.0, 0.4, 0.25, 0.49);
   labrob::infoPinocchio pinocchio_info;
   walking_manager.init(initial_robot_state, armatures, walking_planner, pinocchio_info);
 
@@ -213,10 +213,10 @@ int main() {
 
   mjtNum simstart = mj_data_ptr->time;
   while( mj_data_ptr->time - simstart < 1.0/framerate ) { // non serve
-    std::cout << "--------------\nheight: " << mj_data_ptr->qpos[2] << std::endl;
-    std::cout << "com height: " << mj_data_ptr->subtree_com[2] << std::endl;
-    std::cout << "xpos: " << mj_data_ptr->xpos[2] << std::endl;
-  
+    //std::cout << "--------------\nheight: " << mj_data_ptr->qpos[2] << std::endl;
+    //std::cout << "com height: " << mj_data_ptr->subtree_com[2] << std::endl;
+    //std::cout << "xpos: " << mj_data_ptr->xpos[2] << std::endl;
+    std::cout << "--------\timestep: " << timestep_counter << "\t--------\n" << std::endl;
     mj_step1(mj_model_ptr, mj_data_ptr);
     labrob::RobotState robot_state = labrob::robot_state_from_mujoco(mj_model_ptr, mj_data_ptr);
     
@@ -225,7 +225,7 @@ int main() {
     labrob::SolutionMPC sol;
     Eigen::Vector3d position_desired = {0.0, 0.0, 0.35};
     labrob::infoPinocchio pinocchio_info;
-    walking_manager.update(robot_state, position_desired, joint_command, sol, pinocchio_info);
+    walking_manager.update(robot_state, joint_command, sol, pinocchio_info);
 
     // apply a disturbance
     //apply_disturbance(mj_model_ptr, mj_data_ptr, timestep_counter);
@@ -272,7 +272,7 @@ int main() {
   //std::cout << "Real time: " << real_elapsed << std::endl;
   //std::cout << "Real-time factor: " << RTF << std::endl;
 
-  //mujoco_ui.render();
+  mujoco_ui.render();
   }
 
   // Free memory (Mujoco):

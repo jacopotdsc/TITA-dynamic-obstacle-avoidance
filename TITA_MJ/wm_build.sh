@@ -1,9 +1,18 @@
-#!/bin/bash
+wm#!/bin/bash
 set -e  # esce se qualche comando fallisce
 
-# Ottieni la cartella assoluta del progetto
-PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ "$CONDA_DEFAULT_ENV" != "tianshou_gpu" ]; then
+    echo ">>> must be run inside the 'tianshou_gpu' conda environment. Current env: $CONDA_DEFAULT_ENV"
+    exit 1
+fi
+
+GIT_ROOT="$(git rev-parse --show-toplevel)"
+echo ">>> Git root: $GIT_ROOT"
+
+# Vai nella cartella TITA_MJ
+PROJECT_DIR="$GIT_ROOT/TITA_MJ"
 echo ">>> Project dir: $PROJECT_DIR"
+cd "$PROJECT_DIR"
 
 # Cancella il modulo Python compilato
 if [ -f "$PROJECT_DIR/compiled/wm.so" ]; then

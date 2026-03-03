@@ -180,7 +180,6 @@ bool WalkingManager::init(const labrob::RobotState& initial_robot_state,
 
 void WalkingManager::update(
     const labrob::RobotState& robot_state,
-    const Eigen::Vector3d position_desired,
     labrob::JointCommand& joint_command,
     labrob::SolutionMPC& sol,
     labrob::infoPinocchio& pinocchio_info
@@ -319,6 +318,18 @@ void WalkingManager::update(
     des_configuration_.base_link.vel = Eigen::Vector3d(0,0,sol.omega);
     des_configuration_.base_link.acc = Eigen::Vector3d(0,0,sol.alpha);
 
+    std::cout << "Desired CoM pos: " << des_configuration_.com.pos.transpose() << std::endl;
+    std::cout << "Desired CoM vel: " << des_configuration_.com.vel.transpose() << std::endl;
+    std::cout << "Desired CoM acc: " << des_configuration_.com.acc.transpose() << std::endl;
+    std::cout << "Desired pl pos: " << des_configuration_.lwheel.pos.p.transpose() << std::endl;
+    std::cout << "Desired pl vel: " << des_configuration_.lwheel.vel.transpose() << std::endl;
+    std::cout << "Desired pl acc: " << des_configuration_.lwheel.acc.transpose() << std::endl;
+    std::cout << "Desired pr pos: " << des_configuration_.rwheel.pos.p.transpose() << std::endl;
+    std::cout << "Desired pr vel: " << des_configuration_.rwheel.vel.transpose() << std::endl;
+    std::cout << "Desired pr acc: " << des_configuration_.rwheel.acc.transpose() << std::endl;
+    std::cout << "Desired theta: " << sol.theta << std::endl;
+    std::cout << "Desired omega: " << sol.omega << std::endl;
+    std::cout << "Desired alpha: " << sol.alpha << std::endl;
 
     joint_command = whole_body_controller_ptr_->compute_inverse_dynamics(robot_state, des_configuration_);
 

@@ -43,7 +43,7 @@ class walkingPlanner {
 
     
   public:  
-  walkingPlanner(double vel_lin = 0.0, double vel_ang = 0.0, double vel_z = 0.0, double z_min = 0.25, double z_max = 0.49) {
+  walkingPlanner(double vel_lin = 0.0, double vel_ang = 0.0, double vel_z = 0.0, double z0_param = 0.4, double z_min = 0.25, double z_max = 0.49) {
     x_ref.setZero(NX, N_STEP);
     u_ref.setZero(NU, N_STEP-1);
 
@@ -66,7 +66,7 @@ class walkingPlanner {
     theta0      = 0.0;
     x0          = 0.0;
     y0          = 0.0;
-    z0          = 0.4;
+    z0          = z0_param;
     z0_contact  = 0.0;
 
     z_min       = z_min;
@@ -116,8 +116,11 @@ class walkingPlanner {
         double z_contact = z0_contact + v_contact_z * t;
         
         if ( z <= z_min || z >= z_max ){
-          vz = 0.0;
+          vz += z <= z_min? +0.01 : -0.01 ;
         }
+
+
+        //z0 = std::clamp(z0 + vz * dt, z_min, z_max);
         
         // stop at last state
         if (t_step == N_STEP - 1){

@@ -121,127 +121,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/exec)
 
-set(LOCAL_DEP_DIR "/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/dependencies/local")
-cmake_minimum_required(VERSION 3.16)
-project(TITA_MJ)
-
-option(BUILD_PYTHON_BINDINGS "Decide if compile the bindings")
+#set(LOCAL_DEP_DIR "/home/ubuntu/Desktop/repo_rl/Residual_Learning_TITA/dependencies/local")
 set(LOCAL_DEP_DIR "${PROJECT_SOURCE_DIR}/../dependencies/local")
-
-if(BUILD_PYTHON_BINDINGS)
-message(STATUS ">>> MODE: PYTHON, compilining wm.so)")
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-set(CMAKE_INSTALL_RPATH "${PROJECT_SOURCE_DIR}/compiled;$ENV{CONDA_PREFIX}/lib;${PROJECT_SOURCE_DIR}/../dependencies/local/lib")
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-
-find_package(Boost REQUIRED COMPONENTS filesystem serialization system)
-find_package(glfw3 REQUIRED)
-find_package(pinocchio REQUIRED)
-#find_package(crocoddyl REQUIRED)
-find_package(pybind11 REQUIRED)
-find_package(Eigen3 REQUIRED)
-
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(IPOPT ipopt)
-
-if(IPOPT_FOUND)
-    message(STATUS "Ipopt found: ${IPOPT_INCLUDE_DIRS}")
-    include_directories(SYSTEM ${IPOPT_INCLUDE_DIRS})
-    link_directories(${IPOPT_LIBRARY_DIRS})
-else()
-    # Se pkg-config fallisce, proviamo il path diretto di Pixi/Conda
-    include_directories(SYSTEM "$ENV{CONDA_PREFIX}/include")
-    include_directories(SYSTEM "$ENV{CONDA_PREFIX}/include/coin-or")
-endif()
-
-#set(CONDA_PREFIX $ENV{CONDA_PREFIX})
-
-find_package(mujoco CONFIG QUIET)
-if(TARGET mujoco::mujoco)
-    message(STATUS "MuJoCo found: using mujoco::mujoco")
-else()
-    set(MUJOCO_PATH "$ENV{HOME}/.pixi/build/work/.../host_placehold*/lib")
-    find_library(MUJOCO_LIBRARY NAMES mujoco PATHS ${MUJOCO_PATH})
-    if(NOT MUJOCO_LIBRARY)
-        message(FATAL_ERROR "MuJoCo library not found in ${MUJOCO_PATH}")
-    endif()
-    add_library(mujoco::mujoco UNKNOWN IMPORTED)
-    set_target_properties(mujoco::mujoco PROPERTIES IMPORTED_LOCATION ${MUJOCO_LIBRARY})
-endif()
-
-include_directories(${MUJOCO_INCLUDE_DIR})
-
-if(NOT MUJOCO_LIBRARY AND NOT TARGET mujoco::mujoco)
-    message(FATAL_ERROR "Cannot find MuJoCo library in ${MUJOCO_LIB_DIR}")
-endif()
-
-
-set(blasfeo_INCLUDE_DIRS "${LOCAL_DEP_DIR}/include")
-set(hpipm_INCLUDE_DIRS   "${LOCAL_DEP_DIR}/include")
-set(blasfeo_LIBRARIES    "${LOCAL_DEP_DIR}/lib/libblasfeo.a")
-set(hpipm_LIBRARIES      "${LOCAL_DEP_DIR}/lib/libhpipm.a")
-set(CROCODYD_INCLUDE_DIR "${LOCAL_DEP_DIR}/include")
-set(CROCODYD_LIB_DIR "${LOCAL_DEP_DIR}/lib")
-
-add_library(wm MODULE
-    src/JointCommand.cpp
-    src/JointState.cpp
-    src/MPC.cpp
-    src/RobotState.cpp
-    src/SE3.cpp
-    src/WalkingManager.cpp
-    src/WholeBodyController.cpp
-    src/utils.cpp 
-    src/wm_binding.cpp
-)
-
-set_target_properties(wm PROPERTIES 
-    INTERPROCEDURAL_OPTIMIZATION TRUE
-    CXX_VISIBILITY_PRESET hidden
-    VISIBILITY_INLINES_HIDDEN ON
-    PREFIX ""
-)
-
-target_include_directories(wm PRIVATE
-    ${PROJECT_SOURCE_DIR}/include
-    ${blasfeo_INCLUDE_DIRS}/include
-    ${hpipm_INCLUDE_DIRS}
-    ${blasfeo_INCLUDE_DIRS}
-    ${hpipm_INCLUDE_DIRS}
-)
-
-# WM
-target_link_libraries(wm PRIVATE
-    ${Boost_LIBRARIES}
-    ${CROCODYD_LIB_DIR}/libcrocoddyl.so
-    mujoco::mujoco
-    pybind11::module
-    pinocchio::pinocchio
-    Eigen3::Eigen
-    ${hpipm_LIBRARIES}
-    ${blasfeo_LIBRARIES}
-)
-
-set_target_properties(wm PROPERTIES 
-    PREFIX ""
-)
-
-install(TARGETS wm
-        LIBRARY DESTINATION ${PROJECT_SOURCE_DIR}/compiled)
-        
-message(STATUS ">>> MODE: PYTHON, compilining wm.so)")
-
-else()
-
-message(STATUS ">>> MODE: C++ ")
-
-set(CMAKE_CXX_STANDARD 17)
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/exec)
-
-set(LOCAL_DEP_DIR "/home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/dependencies/local")
 
 message(STATUS ">>> FORCING LOCAL DEPS FROM: ${LOCAL_DEP_DIR}")
 
@@ -255,7 +136,17 @@ link_directories("${LOCAL_DEP_DIR}/lib")
 find_package(glfw3 REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(crocoddyl REQUIRED)
-find_package(mujoco CONFIG REQUIRED)
+
+set(MUJOCO_PY_PATH "/home/ubuntu/.local/lib/python3.10/site-packages/mujoco")
+list(APPEND CMAKE_INSTALL_RPATH ${MUJOCO_PY_PATH})
+
+add_library(mujoco::mujoco UNKNOWN IMPORTED)
+set_target_properties(mujoco::mujoco PROPERTIES
+    IMPORTED_LOCATION "${MUJOCO_PY_PATH}/libmujoco.so.3.3.7"
+    INTERFACE_INCLUDE_DIRECTORIES "${MUJOCO_PY_PATH}/include"
+)
+
+message(STATUS "Using MuJoCo from pip at ${MUJOCO_PY_PATH}")
 
 find_package(pinocchio REQUIRED)
 message(STATUS ">>> Pinocchio found at: ${pinocchio_DIR}")
@@ -357,7 +248,5 @@ target_compile_options(UtilsLib PRIVATE -Wno-deprecated-declarations -Wno-macro-
 target_compile_options(main PRIVATE -Wno-deprecated-declarations -Wno-macro-redefined)
 
 message(STATUS ">>> MODE: C++ ")
-
-endif()
 
 endif()
