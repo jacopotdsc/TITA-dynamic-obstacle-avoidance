@@ -31,7 +31,7 @@ from copy import deepcopy
 from tianshou.algorithm import TD3
 from tianshou.algorithm.modelfree.ddpg import ContinuousDeterministicPolicy
 from tianshou.algorithm import SAC
-#from tianshou.algorithm import AutoAlpha
+from tianshou.algorithm.modelfree.sac import AutoAlpha
 
 from tianshou.exploration import GaussianNoise
 
@@ -596,7 +596,9 @@ def test_enviroment(
             logging['perturb'].append(env_info_dict.get('perturb'))
             reward_info.pop('info', None)
             reward_info.pop('n_frame', None)
-            logging['reward_info'].append(reward_info.copy())
+            total_scaling = env.unwrapped.get_config().reward_config.total_scaling
+            scaled_reward_info = {k: v * total_scaling for k, v in reward_info.items()}
+            logging['reward_info'].append(scaled_reward_info)
 
             # Rendering and small loggin
             if n_frame == 0 or (n_frame+1) % 100 == 0 or terminated or truncated:
@@ -1323,7 +1325,14 @@ def log_enviroment_config(task, env_single: gym.Env):
     if hasattr(config, "pert_config"):
         log_and_print("\nPerturbation config:")
         for k, v in config.pert_config.items():
-            log_and_print(f"\t{k}: {v}")
+
+            if isinstance(v, dict):
+                log_and_print(f"\t{k}:")
+                for k_dict, v_dict in v.items():
+                    log_and_print(f"\t\t{k_dict}: {v_dict}")
+            else:
+                log_and_print(f"\t{k}: {v}")
+
 
     observation_dict = env_single.unwrapped.get_obs_info()[0]
     log_and_print(f"Observation:")
@@ -1501,13 +1510,17 @@ class TaskConditionedNet(Net):
         B = obs.shape[0]
         x = obs.view(B, self._frame_stack, self._single_dim)  # [B, F, D]
 
-        # token is the last element of each frame: positions D-1, 2D-1, ..., F*D-1
-        tokens    = x[:, :, -self.n_token:].long()                        # [B, F]
-        token_emb = self.token_embedding(tokens)              # [B, F, embed_dim]
-        token_emb = token_emb.reshape(B, -1)                  # [B, F*embed_dim]
-        obs_core  = x[:, :, :-self.n_token].reshape(B, -1)               # [B, F*(D-1)]  senza token
+        # token is the last n_token elements of each frame; combine bits into a single categorical index
+        # e.g. n_token=2: [b0, b1] -> b0*2 + b1, giving index in [0, 2**n_token)
+        token_bits = x[:, :, -self.n_token:].long()              # [B, F, n_token]
+        powers = 2 ** torch.arange(self.n_token - 1, -1, -1,
+                                   device=token_bits.device)     # [n_token]
+        token_idx = (token_bits * powers).sum(dim=-1)            # [B, F]
+        token_emb = self.token_embedding(token_idx)              # [B, F, embed_dim]
+        token_emb = token_emb.reshape(B, -1)                     # [B, F*embed_dim]
+        obs_core  = x[:, :, :-self.n_token].reshape(B, -1)      # [B, F*(D-n_token)]
 
-        net_in = torch.cat([obs_core, token_emb], dim=-1)
+        net_in = torch.cat([obs_core, token_emb], dim=-1)        # [B, F*(D-n_token+embed_dim)]
         return self.net(net_in, state, info)
 
 
@@ -1648,9 +1661,9 @@ def main():
             actor=actor,
             dist_fn=dist_fn,
             action_scaling=False,
-            action_bound_method="tanh",
             action_space=env_single.action_space,
             deterministic_eval=True,
+            action_bound_method='tanh',
         )
 
         optim = AdamOptimizerFactory(lr=lr)
@@ -1661,7 +1674,7 @@ def main():
             optim=optim,
             eps_clip=0.2,
             vf_coef=0.5,
-            ent_coef=0.0,
+            ent_coef=0.2,
             gae_lambda=0.95,
             max_grad_norm=0.5,
             gamma=0.99,
@@ -1720,9 +1733,9 @@ def main():
             critic2=critic2,
             critic2_optim=AdamOptimizerFactory(lr=lr),
             tau=0.005,
-            gamma=0.99,
+            gamma=0.98,
             alpha=0.2,
-            #alpha=AutoAlpha(target_entropy=-action_shape[0], log_alpha=-1.2, optim=AdamOptimizerFactory(lr=lr))
+            #alpha=AutoAlpha(target_entropy=-1.0*action_shape[0], log_alpha=-1.2, optim=AdamOptimizerFactory(lr=lr)),
             n_step_return_horizon=5,
         )
 
@@ -1902,7 +1915,8 @@ def main():
     dir_experiment = os.path.join(logdir, "weights", run_dir_name)
     
     checkpath_root = os.path.join(get_git_root(), "TITA_MJ", "log", f"{alg_type}_logs")
-    checkpath_actor = os.path.join(checkpath_root, name_weight_name if name_weight_name is not None else "", "final")
+    _rel_weight = name_weight_name.lstrip("/") if name_weight_name is not None else ""
+    checkpath_actor = os.path.join(checkpath_root, _rel_weight, "final")
     if name_weight_name is not None and os.path.exists(checkpath_actor):
         log_and_print(f"\nLoading Actor and Critic weights from: {name_weight_name.split('/')[-1]}")
         actor.load_state_dict(torch.load(os.path.join(os.path.join(checkpath_actor), "final_actor_state_dict.pt"), map_location=device))
@@ -1925,31 +1939,32 @@ def main():
 
     # ----- Create trainer and run training ----- 
     if alg_type == _STR_PPO:
+        rollout = 10
         trainer_type = OnPolicyTrainerParams(
                 training_collector=train_collector, 
                 test_collector=test_collector,  
                 logger=logger,
-                test_fn=test_fn,
+                test_fn=partial(test_fn, policy=deepcopy(actor), task=task, num_test_envs=num_test_envs, num_view_test_env=num_view_test_env, save_plot_dir=os.path.join(os.path.dirname(actor_path), DIR_EXPERIMENT_INFO, "plots") ),
                 #stop_fn=lambda mean_rewards: mean_rewards >= 2950.0,
                 save_best_fn=partial(save_best, alg_type=alg_type, actor_policy=actor, actor_path=actor_path, critic_policy=critic, critic_path=critic_path),
                 test_in_training=False,
 
                 # Know parameters 
-                max_epochs=10,   
-                batch_size=254,
+                max_epochs=100,   
+                batch_size=1024,
 
                 # online training: total number of enviroment steps to collect before updated
                 # offline training: total number of training step per epoch before update
-                epoch_num_steps=100*num_training_envs, #*num_test_envs,   
+                epoch_num_steps=EPISODE_LENGTH*num_training_envs, #*num_test_envs,   
 
                 # Transition to collect at each collection step
                 # before network update update 
-                collection_step_num_env_steps=200, #*num_training_envs, 
+                collection_step_num_env_steps=rollout*num_training_envs, #*num_training_envs, 
                 # Number of training at each epoch: epoch_num_steps / collection_step_num_env_steps
 
                 # The number of times data are used
                 # for gradient updates
-                update_step_num_repetitions=2000,
+                update_step_num_repetitions=rollout*num_training_envs,
 
                 # Number of episodes to colleact in each test step
                 # i.e. number of run for evaluation

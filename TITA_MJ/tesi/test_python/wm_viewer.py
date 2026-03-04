@@ -107,7 +107,7 @@ print("Initial robot state:")
 print(initial_robot_state)
 walking_manager = wm.WalkingManager()
 
-wp = wm.WalkingPlanner(0.0, 0.0, 0.0, 0.4, 0.25, 0.49)
+wp = wm.WalkingPlanner(1.0, 0.0, 0.0, 0.4, 0.25, 0.49)
 res_init = walking_manager.init(initial_robot_state, armatures, wp)
 
 wp_variables = wp.get_variables()
@@ -285,7 +285,7 @@ while True:
                 else:
                     print(f"  {name:30s} - joint not found")
             '''
-            print("-----------\nFrame:", frame_idx)
+            #print("-----------\nFrame:", frame_idx)
 
             # separiamo accelerometro e giroscopio
             accel =  model.sensor("local_linacc").id 
@@ -302,8 +302,8 @@ while True:
 
             # stampiamo
             print("-----------\nFrame:", frame_idx)
-            print("Accelerometro (local):", accel_data)
-            print("Giroscopio (local):", gyro_data)
+            #print("Accelerometro (local):", accel_data)
+            #print("Giroscopio (local):", gyro_data)
 
             start_real = time.time()
             start_sim = data.time

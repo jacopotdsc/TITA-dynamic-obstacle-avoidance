@@ -1,0 +1,22 @@
+Initial test step: test_reward: -62.259022 ± 0.000000, best_reward: -62.259022 ± 0.000000 in #0
+Epoch #1: test_reward: 146.975567 ± 0.000000, best_reward: 146.975567 ± 0.000000 in #1
+Epoch #2: test_reward: 124.061435 ± 0.000000, best_reward: 146.975567 ± 0.000000 in #1
+Epoch #3: test_reward: 196.036178 ± 0.000000, best_reward: 196.036178 ± 0.000000 in #3
+Epoch #4: test_reward: 246.273337 ± 0.000000, best_reward: 246.273337 ± 0.000000 in #4
+Epoch #5: test_reward: 102.389987 ± 0.000000, best_reward: 246.273337 ± 0.000000 in #4
+Epoch #6: test_reward: 515.150651 ± 0.000000, best_reward: 515.150651 ± 0.000000 in #6
+Epoch #7: test_reward: 216.517989 ± 0.000000, best_reward: 515.150651 ± 0.000000 in #6
+Epoch #8: test_reward: 575.564814 ± 0.000000, best_reward: 575.564814 ± 0.000000 in #8
+Epoch #9: test_reward: 619.723517 ± 0.000000, best_reward: 619.723517 ± 0.000000 in #9
+Epoch #10: test_reward: 18.972801 ± 0.000000, best_reward: 619.723517 ± 0.000000 in #9
+Epoch #11: test_reward: 30.723393 ± 0.000000, best_reward: 619.723517 ± 0.000000 in #9
+Epoch #12: test_reward: 69.863969 ± 0.000000, best_reward: 619.723517 ± 0.000000 in #9
+Epoch #13: test_reward: 619.561971 ± 0.000000, best_reward: 619.723517 ± 0.000000 in #9
+Epoch #14: test_reward: 128.551230 ± 0.000000, best_reward: 619.723517 ± 0.000000 in #9
+Epoch #15: test_reward: 631.591320 ± 0.000000, best_reward: 631.591320 ± 0.000000 in #15
+Epoch #16: test_reward: 158.101536 ± 0.000000, best_reward: 631.591320 ± 0.000000 in #15
+Epoch #17: test_reward: 113.693299 ± 0.000000, best_reward: 631.591320 ± 0.000000 in #15
+Epoch #18: test_reward: 6.061323 ± 0.000000, best_reward: 631.591320 ± 0.000000 in #15
+Epoch #19: test_reward: 27.771170 ± 0.000000, best_reward: 631.591320 ± 0.000000 in #15
+Epoch #20: test_reward: 628.980701 ± 0.000000, best_reward: 631.591320 ± 0.000000 in #15
+Saved /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_03_04_time_12_35_34/experiment_info/plots/task_0_0/render_test_reward_info.png
