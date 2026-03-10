@@ -1,0 +1,13 @@
+Initial test step: test_reward: 70.912849 ± 0.000000, best_reward: 70.912849 ± 0.000000 in #0
+Epoch #1: test_reward: 61.334125 ± 0.000000, best_reward: 70.912849 ± 0.000000 in #0
+Epoch #2: test_reward: 72.855578 ± 0.000000, best_reward: 72.855578 ± 0.000000 in #2
+Epoch #3: test_reward: 33.375177 ± 0.000000, best_reward: 72.855578 ± 0.000000 in #2
+Epoch #4: test_reward: 62.148889 ± 0.000000, best_reward: 72.855578 ± 0.000000 in #2
+Epoch #5: test_reward: 36.023598 ± 0.000000, best_reward: 72.855578 ± 0.000000 in #2
+Epoch #6: test_reward: 78.576313 ± 0.000000, best_reward: 78.576313 ± 0.000000 in #6
+Epoch #7: test_reward: 42.281498 ± 0.000000, best_reward: 78.576313 ± 0.000000 in #6
+Epoch #8: test_reward: 69.442881 ± 0.000000, best_reward: 78.576313 ± 0.000000 in #6
+Epoch #9: test_reward: 160.411794 ± 0.000000, best_reward: 160.411794 ± 0.000000 in #9
+Epoch #10: test_reward: 50.070866 ± 0.000000, best_reward: 160.411794 ± 0.000000 in #9
+Epoch #11: test_reward: 79.819074 ± 0.000000, best_reward: 160.411794 ± 0.000000 in #9
+Saved /home/ubuntu/Desktop/repo_rl/TITA-dynamic-obstacle-avoidance/TITA_MJ/log/sac_logs/weights/sac_day_2026_03_09_time_18_30_47/experiment_info/plots/task_0_0/render_test_reward_info.png
